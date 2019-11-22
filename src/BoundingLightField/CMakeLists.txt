@@ -27,18 +27,50 @@ else()
 endif()
 
 set(SRC
+	Behavior/MeshDataBehavior.h
+	Behavior/MeshDataBehavior.cpp
+
 	utils/debug.h
 	utils/debug.cpp
-	utils/window.h
-	utils/window.cpp
 	utils/shader.h
 	utils/shader.cpp
+	utils/tplutils.h
+	utils/fileutils.h
+	utils/fileutils.cpp
+	utils/strutils.h
+	utils/strutils.cpp
+
+	Ui/Dialog.h
+	Ui/Gui.h
+	Ui/Gui.cpp
+	Ui/Window.h
+	Ui/Window.cpp
 
 	main.cpp
+	Camera.h
+	Camera.cpp
+	IBehaviorHolder.h
+	Logger.h
+	Logger.cpp
+	Mesh.h
+	Mesh.cpp
+	ResourceManager.h
+	ResourceManager.cpp
+	RuntimeObject.h
+	RuntimeObject.cpp
+	Scene.cpp
+	Scene_load.cpp
+	Scene.h
+	Triangle.h
+	TurntableCamera.h
+	TurntableCamera.cpp
+	World.h
+	World.cpp
 )
 
 add_executable(BoundingLightField ${SRC})
+target_include_directories(BoundingLightField PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(BoundingLightField LINK_PRIVATE glad glfw imgui rapidjson glm tinyobjloader)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-target_link_libraries(BoundingLightField LINK_PRIVATE glad glfw)
+# For IDE projects
+group_source_by_folder(${SRC})

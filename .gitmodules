@@ -4,3 +4,15 @@
 [submodule "src/External/glad"]
 	path = src/External/glad
 	url = https://github.com/Dav1dde/glad
+[submodule "src/External/imgui"]
+	path = src/External/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "src/External/glm"]
+	path = src/External/glm
+	url = https://github.com/g-truc/glm
+[submodule "src/External/rapidjson"]
+	path = src/External/rapidjson
+	url = https://github.com/Tencent/rapidjson/
+[submodule "src/External/tinyobjloader"]
+	path = src/External/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader

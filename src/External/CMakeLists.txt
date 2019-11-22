@@ -35,3 +35,31 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw)
 set_property(TARGET glfw PROPERTY FOLDER "External")
+
+# Dear ImGui
+add_library(imgui STATIC 
+	imgui/imgui.h
+	imgui/imgui.cpp
+	imgui/imgui_widgets.cpp
+	imgui/imgui_demo.cpp
+	imgui/imgui_draw.cpp
+	imgui/examples/imgui_impl_glfw.h
+	imgui/examples/imgui_impl_glfw.cpp
+	imgui/examples/imgui_impl_opengl3.h
+	imgui/examples/imgui_impl_opengl3.cpp
+)
+target_include_directories(imgui PUBLIC imgui imgui/examples)
+target_link_libraries(imgui LINK_PRIVATE glad glfw)
+set_property(TARGET imgui PROPERTY FOLDER "External")
+
+# glm
+add_library(glm INTERFACE)
+target_include_directories(glm INTERFACE glm)
+
+# rapidjson
+add_library(rapidjson INTERFACE)
+target_include_directories(rapidjson INTERFACE rapidjson/include)
+
+# TinyObjLoader
+add_subdirectory(tinyobjloader)
+set_property(TARGET tinyobjloader PROPERTY FOLDER "External")
