@@ -6,10 +6,10 @@
 bool MeshDataBehavior::deserialize(const rapidjson::Value & json)
 {
 	if (json.HasMember("filename")) {
-		if (json["json"].IsString()) {
-			m_filename = json["json"].GetString();
+		if (json["filename"].IsString()) {
+			m_filename = json["filename"].GetString();
 		} else {
-			ERR_LOG << "Fidle 'filename' of MeshDataBehavior must be a string";
+			ERR_LOG << "Field 'filename' of MeshDataBehavior must be a string";
 			return false;
 		}
 	}

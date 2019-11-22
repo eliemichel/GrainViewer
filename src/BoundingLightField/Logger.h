@@ -28,7 +28,6 @@ public:
     inline std::ostream &stream() { return m_ss; }
 
 private:
-    static const char * shorterFilename(const char *filename);
     static void align(std::stringstream &ss);
 	static void init();
 

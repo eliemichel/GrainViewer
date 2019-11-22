@@ -12,10 +12,14 @@
 
 // TODO: Find a way to avoid this function
 #include "Behavior/MeshDataBehavior.h"
-static void addBehavior(std::shared_ptr<Behavior> b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
+#include "Behavior/MeshRenderer.h"
+static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 	if (type == "MeshDataBehavior") {
 		b = IBehaviorHolder::addBehavior<MeshDataBehavior>(obj);
+	}
+	else if (type == "MeshRenderer") {
+		b = IBehaviorHolder::addBehavior<MeshRenderer>(obj);
 	}
 }
 

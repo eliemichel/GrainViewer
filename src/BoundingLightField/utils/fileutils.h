@@ -33,6 +33,9 @@ inline std::string joinPath(const std::string& head, Args&&... rest) {
 
 std::string baseDir(const std::string & path);
 
+/// return foo.bar from /some/path/to/foo.bar
+std::string shortFileName(const std::string& path);
+
 // Transform both all / and \ into PATH_DELIM
 std::string fixPath(const std::string & path);
 

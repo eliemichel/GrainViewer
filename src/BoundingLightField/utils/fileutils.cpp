@@ -18,6 +18,11 @@ string baseDir(const string & path) {
 	return pos != string::npos ? path.substr(0, pos) : "";
 }
 
+string shortFileName(const string& path) {
+	size_t pos = path.find_last_of(PATH_DELIM);
+	return pos != string::npos ? path.substr(pos + 1) : path;
+}
+
 string fixPath(const string & path) {
 	string p = path;
 	p = replaceAll(p, "/", PATH_DELIM);

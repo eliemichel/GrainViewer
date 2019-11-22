@@ -79,6 +79,7 @@ Gui::Gui(std::shared_ptr<Window> window, std::shared_ptr<Scene> scene)
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	ImGui_ImplGlfw_InitForOpenGL(window->glfw(), true);
 	ImGui_ImplOpenGL3_Init("#version 150");
 	ImGui::GetStyle().WindowRounding = 0.0f;
@@ -95,6 +96,8 @@ Gui::~Gui() {
 }
 
 bool Gui::load() {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImGui::SetNextWindowSize(ImVec2(m_windowWidth, m_windowHeight));
 	ImGui::SetNextWindowPos(ImVec2(0.f, 0.f));
@@ -122,6 +125,8 @@ void Gui::update() {
 }
 
 void Gui::updateImGui() {
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 	ImVec4 clear_color = ImColor(114, 144, 154);
 	static float f = 0.0f;

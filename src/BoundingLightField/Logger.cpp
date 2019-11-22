@@ -105,10 +105,10 @@ Logger::Logger(const char *func, const char *file, int line, Logger::Level level
         break;
     }
 
-    if( level == LDEBUG )
+    if( level != LINFO )
     {
         std::stringstream pos;
-        pos << " (" << func << "():" << Logger::shorterFilename(file) << ":" << line << ")";
+        pos << " (" << func << "():" << shortFileName(file) << ":" << line << ")";
         Logger::align(pos);
         m_ss << Color::blue << pos.str() << Color::nocolor;
     }
@@ -132,16 +132,6 @@ Logger::~Logger()
     while ( str.empty() == false && str[str.length() - 1] == '\n')
         str.resize(str.length() - 1);
     std::cerr << str << std::endl;
-}
-
-const char * Logger::shorterFilename(const char *filename)
-{
-    const char *last_slash  = std::strrchr(filename, PATH_DELIM_CHAR);
-    if ( last_slash == 0)
-        return filename;
-    while ( last_slash > filename && last_slash[-1] != PATH_DELIM_CHAR)
-        --last_slash;
-    return last_slash;
 }
 
 void Logger::align(std::stringstream &ss)

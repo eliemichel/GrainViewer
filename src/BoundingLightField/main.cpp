@@ -33,7 +33,11 @@
 
 int main(int argc, char *argv[]) {
 	const char *title = "Bounding Light Field -- Copyright (c) 2019 -- CG Group @ Telecom Paris";
+
 	std::string filename = "scene.json";
+	if (argc >= 2) {
+		filename = std::string(argv[1]);
+	}
 
 	auto window = std::make_shared<Window>(800, 600, title);
 	if (!window->isValid()) {

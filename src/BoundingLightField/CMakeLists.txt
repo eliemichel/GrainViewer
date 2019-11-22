@@ -29,6 +29,8 @@ endif()
 set(SRC
 	Behavior/MeshDataBehavior.h
 	Behavior/MeshDataBehavior.cpp
+	Behavior/MeshRenderer.h
+	Behavior/MeshRenderer.cpp
 
 	utils/debug.h
 	utils/debug.cpp
@@ -61,6 +63,12 @@ set(SRC
 	Scene.cpp
 	Scene_load.cpp
 	Scene.h
+	Shader.h
+	Shader.cpp
+	ShaderPreprocessor.h
+	ShaderPreprocessor.cpp
+	ShaderProgram.h
+	ShaderProgram.cpp
 	Triangle.h
 	TurntableCamera.h
 	TurntableCamera.cpp
