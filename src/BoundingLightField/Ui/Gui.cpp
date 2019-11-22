@@ -112,6 +112,7 @@ bool Gui::load() {
 	ImGui::Text("Loading scene...");
 	ImGui::End();
 	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	if (auto window = m_window.lock()) {
 		glfwSwapBuffers(window->glfw());
 	}
@@ -158,6 +159,7 @@ void Gui::updateImGui() {
 void Gui::render() {
 	m_scene->render();
 	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void Gui::onResize(int width, int height) {

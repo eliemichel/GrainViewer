@@ -44,5 +44,5 @@ void main() {
 	toLight = -normalize(position_ws - light2_position);
 	c += bsdfPbrMetallicRoughness(position_ws, toLight, normal_ws, baseColor.rgb, roughness, metallic);
 
-	color = vec4(c, 1.0);
+	color = vec4(c, 0.5);
 }
