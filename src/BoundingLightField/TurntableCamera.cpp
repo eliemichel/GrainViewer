@@ -8,6 +8,17 @@
 using glm::vec3;
 using glm::quat;
 
+TurntableCamera::TurntableCamera()
+	: Camera()
+	, m_center(0, 0, 0)
+	, m_zoom(3.f)
+	, m_sensitivity(0.003f)
+	, m_zoomSensitivity(0.01f)
+{
+	m_quat = glm::quat(sqrt(2.f) / 2.f, -sqrt(2.f) / 2.f, 0.f, 0.f) * glm::quat(0.f, 0.f, 0.f, 1.f);
+	updateViewMatrix();
+}
+
 void TurntableCamera::updateViewMatrix() {
 	m_viewMatrix = glm::translate(vec3(0.f, 0.f, -m_zoom)) * glm::toMat4(m_quat) * glm::translate(m_center);
 	m_position = vec3(glm::inverse(m_viewMatrix)[3]);

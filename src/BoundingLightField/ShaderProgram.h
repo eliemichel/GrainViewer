@@ -7,26 +7,6 @@
  */
 class ShaderProgram {
 public:
-	inline static void setRoot(const std::string& root) { s_root = root; }
-	inline static const std::string& root() { return s_root; }
-
-	/**
-	 * Resolve full file path for a given shader type. This is used internally
-	 * by load() but might also be used externally to monitor the provided
-	 * files and call load whenever they change.
-	 */
-	static std::string shaderFullPath(const std::string& shaderName, GLenum type);
-
-	/**
-	 * List all relevant shader files returned by shaderFullPath, to be used
-	 * externally to monitor the provided files and call load whenever they change.
-	 */
-	static std::vector<std::string> allShaderFullPaths(const std::string& shaderName);
-
-private:
-	static std::string s_root;
-
-public:
 	ShaderProgram(const std::string& shaderName = "");
 	ShaderProgram(ShaderProgram&&) = default;
 	ShaderProgram& operator=(ShaderProgram&&) = default;

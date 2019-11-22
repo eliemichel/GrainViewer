@@ -49,9 +49,13 @@ set(SRC
 	Ui/Window.cpp
 
 	main.cpp
+	bufferFillers.h
+	bufferFillers.cpp
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h
+	GlBuffer.h
+	GlBuffer.cpp
 	Logger.h
 	Logger.cpp
 	Mesh.h

@@ -4,7 +4,8 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#include "Camera.h"
+#include <iostream>
+#include <algorithm>
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -13,8 +14,8 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <iostream>
-#include <algorithm>
+#include "Logger.h"
+#include "Camera.h"
 
 using glm::vec3;
 using glm::mat4;

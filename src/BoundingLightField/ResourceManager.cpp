@@ -4,36 +4,58 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#include "ResourceManager.h"
 #include "utils/strutils.h"
 #include "utils/fileutils.h"
 
-using namespace std;
+#include "ResourceManager.h"
 
-string ResourceManager::s_shareDir = "C:\\Elie\\src\\Augen\\share";
+std::string ResourceManager::s_shareDir = SHARE_DIR;
+std::string ResourceManager::s_resourceRoot = SHARE_DIR;
+std::vector<std::string> ResourceManager::s_shaderPath{ std::string() + SHARE_DIR + PATH_DELIM + "shaders" };
 
-void ResourceManager::setShareDir(const string & path) {
+void ResourceManager::setShareDir(const std::string & path) {
 	s_shareDir = path;
 }
 
-string ResourceManager::shareDir() {
+std::string ResourceManager::shareDir() {
 	return s_shareDir;
 }
 
-string ResourceManager::s_resourceRoot = "C:\\Elie\\src\\Augen\\share";
-
-void ResourceManager::setResourceRoot(const string & path) {
+void ResourceManager::setResourceRoot(const std::string & path) {
 	s_resourceRoot = path;
 }
 
-string ResourceManager::resourceRoot() {
+std::string ResourceManager::resourceRoot() {
 	return s_resourceRoot;
 }
 
-string ResourceManager::resolveResourcePath(const string & uri) {
+std::string ResourceManager::resolveResourcePath(const std::string & uri) {
 	if (startsWith(uri, "res://")) {
 		return resolvePath(uri.substr(6), shareDir());
 	} else {
 		return resolvePath(uri, resourceRoot());
 	}
+}
+
+std::string ResourceManager::shaderFullPath(const std::string& shaderName, GLenum type) {
+	// TODO: Implement a fallback mechanism using all elements of s_shaderPath
+
+	switch (type) {
+	case GL_VERTEX_SHADER:
+		return fixPath(joinPath(s_shaderPath[0], shaderName + ".vert.glsl"));
+	case GL_GEOMETRY_SHADER:
+		return fixPath(joinPath(s_shaderPath[0], shaderName + ".geo.glsl"));
+	case GL_FRAGMENT_SHADER:
+		return fixPath(joinPath(s_shaderPath[0], shaderName + ".frag.glsl"));
+	default:
+		return "";
+	}
+}
+
+std::vector<std::string> ResourceManager::allShaderFullPaths(const std::string& shaderName) {
+	return {
+		shaderFullPath(shaderName, GL_VERTEX_SHADER),
+		shaderFullPath(shaderName, GL_GEOMETRY_SHADER),
+		shaderFullPath(shaderName, GL_FRAGMENT_SHADER)
+	};
 }

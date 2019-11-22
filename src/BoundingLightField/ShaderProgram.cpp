@@ -2,35 +2,13 @@
 
 #include "utils/fileutils.h"
 #include "Logger.h"
+#include "ResourceManager.h"
 #include "ShaderProgram.h"
-
-std::string ShaderProgram::s_root = "";
 
 ShaderProgram::ShaderProgram(const std::string& shaderName)
 	: m_shaderName(shaderName)
 	, m_isValid(false)
 {}
-
-std::string ShaderProgram::shaderFullPath(const std::string& shaderName, GLenum type) {
-	switch (type) {
-	case GL_VERTEX_SHADER:
-		return fixPath(joinPath(s_root, shaderName + ".vert.glsl"));
-	case GL_GEOMETRY_SHADER:
-		return fixPath(joinPath(s_root, shaderName + ".geo.glsl"));
-	case GL_FRAGMENT_SHADER:
-		return fixPath(joinPath(s_root, shaderName + ".frag.glsl"));
-	default:
-		return "";
-	}
-}
-
-std::vector<std::string> ShaderProgram::allShaderFullPaths(const std::string& shaderName) {
-	return {
-		shaderFullPath(shaderName, GL_VERTEX_SHADER),
-		shaderFullPath(shaderName, GL_GEOMETRY_SHADER),
-		shaderFullPath(shaderName, GL_FRAGMENT_SHADER)
-	};
-}
 
 void ShaderProgram::load() {
 	m_programId = glCreateProgram();
@@ -38,13 +16,13 @@ void ShaderProgram::load() {
 	std::vector<std::string> defines(m_defines.begin(), m_defines.end());
 
 	Shader vertexShader(GL_VERTEX_SHADER);
-	vertexShader.load(shaderFullPath(m_shaderName, GL_VERTEX_SHADER), defines, m_snippets);
+	vertexShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_VERTEX_SHADER), defines, m_snippets);
 	vertexShader.compile();
 	vertexShader.check("vertex shader");
 	glAttachShader(m_programId, vertexShader.shaderId());
 
 	Shader geometryShader(GL_GEOMETRY_SHADER);
-	std::string geometryShaderPath = shaderFullPath(m_shaderName, GL_GEOMETRY_SHADER);
+	std::string geometryShaderPath = ResourceManager::shaderFullPath(m_shaderName, GL_GEOMETRY_SHADER);
 	if (isFile(geometryShaderPath)) {
 		geometryShader.load(geometryShaderPath, defines, m_snippets);
 		geometryShader.compile();
@@ -53,7 +31,7 @@ void ShaderProgram::load() {
 	}
 
 	Shader fragmentShader(GL_FRAGMENT_SHADER);
-	fragmentShader.load(shaderFullPath(m_shaderName, GL_FRAGMENT_SHADER), defines, m_snippets);
+	fragmentShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_FRAGMENT_SHADER), defines, m_snippets);
 	fragmentShader.compile();
 	fragmentShader.check("fragment shader");
 	glAttachShader(m_programId, fragmentShader.shaderId());
@@ -179,7 +157,7 @@ std::vector<std::string> ShaderProgram::getUniformList() const {
 
 	std::vector<std::string> uniformList(count);
 
-	for (GLuint i = 0; i < count; i++) {
+	for (GLuint i = 0; i < static_cast<GLuint>(count); i++) {
 		GLint size;
 		GLenum type;
 		GLsizei length;

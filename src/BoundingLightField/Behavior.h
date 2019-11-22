@@ -21,12 +21,7 @@ public:
 	template<typename T>
 	std::weak_ptr<T> getComponent() {
 		auto parent = m_parent.lock();
-		if (!parent) {
-			return std::weak_ptr<T>();
-		}
-		else {
-			return parent->getBehavior<T>();
-		}
+		return parent ? parent->getBehavior<T>() : std::weak_ptr<T>();
 	}
 
 	~Behavior() { onDestroy(); }
@@ -35,12 +30,37 @@ public:
 	bool isEnabled() const { return m_enabled; }
 
 public:
+	/**
+	 * Load component data from json file. Do NOT call OpenGL functions here, as this must be thread safe
+	 */
 	virtual bool deserialize(const rapidjson::Value & json) { return true; }
+
+	/**
+	 * Called on main loop start
+	 */
 	virtual void start() {}
+
+	/**
+	 * Call before destroying.
+	 */
 	virtual void onDestroy() {}
+
+	/**
+	 * Called at every frame, can alter this object
+	 * Precondition: start() has been called before, and onDestroy has not been called yet.
+	 */
 	virtual void update(float time) {}
+	/**
+	 * Called for rendering, cannot change this object data
+	 * Precondition: start() has been called before, and onDestroy has not been called yet.
+	 */
 	virtual void render(const Camera & camera, const World & world, RenderType target) const {}
-	virtual void reloadShaders() {} // TODO: shader loading and reloading should be handled by some Shader Pool object
+
+	/**
+	 * Called when it is needed to reload shaders.
+	 * TODO: shader loading and reloading should be handled by some Shader Pool object
+	 */
+	virtual void reloadShaders() {}
 
 private:
 	friend class IBehaviorHolder;

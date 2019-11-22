@@ -28,12 +28,12 @@ public:
 	void update(float time);
 	void render() const;
 
-	inline Camera & viewport() { return m_camera; }
+	inline Camera & viewportCamera() { return m_viewportCamera; }
 
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
 
 private:
-	TurntableCamera m_camera;
+	TurntableCamera m_viewportCamera;
 	World m_world;
 	std::vector<std::shared_ptr<RuntimeObject>> m_objects;
 };

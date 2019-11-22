@@ -39,7 +39,7 @@ private:
 	std::shared_ptr<Scene> m_scene;
 	std::vector<std::shared_ptr<Dialog>> m_dialogs;
 
-	double m_startTime;
+	float m_startTime;
 
 	float m_windowWidth;
 	float m_windowHeight;

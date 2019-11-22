@@ -4,15 +4,7 @@
 
 class TurntableCamera : public Camera {
 public:
-	TurntableCamera()
-		: Camera()
-		, m_zoom(3.f)
-		, m_sensitivity(0.003f)
-		, m_zoomSensitivity(0.01f)
-	{
-		m_quat = glm::quat(sqrt(2.f) / 2.f, -sqrt(2.f) / 2.f, 0.f, 0.f) * glm::quat(0.f, 0.f, 0.f, 1.f);
-		updateViewMatrix();
-	}
+	TurntableCamera();
 
 	void update(float time) override {}
 
