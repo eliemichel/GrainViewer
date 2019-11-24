@@ -16,3 +16,6 @@
 [submodule "src/External/tinyobjloader"]
 	path = src/External/tinyobjloader
 	url = https://github.com/syoyo/tinyobjloader
+[submodule "src/External/tinyexr"]
+	path = src/External/tinyexr
+	url = https://github.com/syoyo/tinyexr

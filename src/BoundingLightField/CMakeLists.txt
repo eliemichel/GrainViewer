@@ -27,6 +27,8 @@ else()
 endif()
 
 set(SRC
+	Behavior/ImpostorCloudRenderer.h
+	Behavior/ImpostorCloudRenderer.cpp
 	Behavior/MeshDataBehavior.h
 	Behavior/MeshDataBehavior.cpp
 	Behavior/MeshRenderer.h
@@ -41,6 +43,8 @@ set(SRC
 	utils/fileutils.cpp
 	utils/strutils.h
 	utils/strutils.cpp
+	utils/jsonutils.h
+	utils/jsonutils.cpp
 
 	Ui/Dialog.h
 	Ui/Gui.h
@@ -56,10 +60,13 @@ set(SRC
 	IBehaviorHolder.h
 	GlBuffer.h
 	GlBuffer.cpp
+	GlTexture.h
+	GlTexture.cpp
 	Logger.h
 	Logger.cpp
 	Mesh.h
 	Mesh.cpp
+	PointCloud.h
 	ResourceManager.h
 	ResourceManager.cpp
 	RuntimeObject.h
@@ -82,9 +89,26 @@ set(SRC
 	World.cpp
 )
 
+set(LIBS
+	glad
+	glfw
+	imgui
+	rapidjson
+	glm
+	tinyobjloader
+	tinyexr
+	libSOIL
+)
+
 add_executable(BoundingLightField ${SRC})
 target_include_directories(BoundingLightField PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(BoundingLightField LINK_PRIVATE glad glfw imgui rapidjson glm tinyobjloader)
+target_link_libraries(BoundingLightField LINK_PRIVATE ${LIBS})
+
+
+set(CMAKE_CXX_STANDARD 17)
+if(MSVC)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
+endif(MSVC)
 
 # For IDE projects
 group_source_by_folder(${SRC})

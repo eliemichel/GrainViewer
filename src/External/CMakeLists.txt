@@ -20,6 +20,10 @@
 # from, out of or in connection with the software or the use or other dealings
 # in the Software.
 
+###############################################################################
+# Submodules
+###############################################################################
+
 # Glad (v0.1.27), providing headers for OpenGL procedures
 # Here it is configured to link to OpenGL 4.5 Core profile, but you can change
 # the two following lines to get another one. If you do so, you must also
@@ -63,3 +67,18 @@ target_include_directories(rapidjson INTERFACE rapidjson/include)
 # TinyObjLoader
 add_subdirectory(tinyobjloader)
 set_property(TARGET tinyobjloader PROPERTY FOLDER "External")
+
+# TinyEXR
+add_library(tinyexr STATIC 
+	tinyexr/tinyexr.h
+	tinyexr/tinyexr.cc
+)
+target_include_directories(tinyexr PUBLIC tinyexr)
+set_property(TARGET tinyexr PROPERTY FOLDER "External")
+
+###############################################################################
+# Repackaged third party libraries
+###############################################################################
+
+# SOIL
+add_subdirectory(SOIL)
