@@ -69,6 +69,8 @@ set(SRC
 	Scene.h
 	Shader.h
 	Shader.cpp
+	ShaderPool.h
+	ShaderPool.cpp
 	ShaderPreprocessor.h
 	ShaderPreprocessor.cpp
 	ShaderProgram.h

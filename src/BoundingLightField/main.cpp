@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
 		filename = std::string(argv[1]);
 	}
 
-	auto window = std::make_shared<Window>(800, 600, title);
+	auto window = std::make_shared<Window>(1000, 600, title);
 	if (!window->isValid()) {
 		return EXIT_FAILURE;
 	}

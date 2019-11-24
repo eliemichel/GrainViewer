@@ -7,6 +7,7 @@
 #include "Scene.h"
 #include "RuntimeObject.h"
 #include "RenderType.h"
+#include "ShaderPool.h"
 
 #if _DEBUG
 #include "utils/debug.h"
@@ -23,6 +24,7 @@ Scene::Scene()
 {}
 
 void Scene::reloadShaders() {
+	ShaderPool::ReloadShaders();
 	m_world.reloadShaders();
 
 	for (auto obj : m_objects) {

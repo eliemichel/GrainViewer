@@ -4,6 +4,7 @@
 #include "ShaderProgram.h"
 #include "MeshDataBehavior.h"
 #include "MeshRenderer.h"
+#include "ShaderPool.h"
 
 bool MeshRenderer::deserialize(const rapidjson::Value& json)
 {
@@ -22,7 +23,12 @@ bool MeshRenderer::deserialize(const rapidjson::Value& json)
 
 void MeshRenderer::start()
 {
-	m_shader = std::make_unique<ShaderProgram>(m_shaderName);
+	m_shader = ShaderPool::GetShader(m_shaderName);
+	if (!m_shader) {
+		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders.";
+		m_shader = std::make_shared<ShaderProgram>(m_shaderName);
+	}
+
 	m_meshData = getComponent<MeshDataBehavior>();
 	m_modelMatrix = glm::mat4(1.0);
 }

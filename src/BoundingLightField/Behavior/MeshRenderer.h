@@ -18,7 +18,7 @@ public:
 private:
 	std::string m_shaderName;
 	std::weak_ptr<MeshDataBehavior> m_meshData;
-	std::unique_ptr<ShaderProgram> m_shader;
+	std::shared_ptr<ShaderProgram> m_shader;
 
 	glm::mat4 m_modelMatrix; // TODO: Move to a dedicated TransformBehavior
 };
