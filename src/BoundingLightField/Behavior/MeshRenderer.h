@@ -13,7 +13,6 @@ public:
 	bool deserialize(const rapidjson::Value& json) override;
 	void start() override;
 	void render(const Camera& camera, const World& world, RenderType target) const override;
-	void reloadShaders() override;
 
 private:
 	std::string m_shaderName;

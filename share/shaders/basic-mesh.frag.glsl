@@ -19,30 +19,59 @@ uniform vec3 emission = vec3(0.0, 0.0, 0.0);
 uniform vec3 normal = vec3(0.5, 0.5, 1.0);
 uniform float normal_mapping = 0.0;
 
-uniform vec3 light0_position = vec3(2.0, 2.0, 3.0);
-uniform vec3 light1_position = vec3(1.0, -2.0, 2.0);
-uniform vec3 light2_position = vec3(-1.0, 2.0, -1.0);
+uniform vec3 light0_position = vec3(2.0, 2.0, 3.0) * 5;
+uniform vec3 light1_position = vec3(1.0, -2.0, 2.0) * 5;
+uniform vec3 light2_position = vec3(-1.0, 2.0, -1.0) * 5;
+
+#include "include/uniform/camera.inc.glsl"
 
 #include "include/utils.inc.glsl"
+
+#define BURLEY_DIFFUSE
+//#define ANISOTROPIC
 #include "include/bsdf.inc.glsl"
 
 void main() {
+    vec3 bitangent_wsn = normalize(cross(normal_ws, tangent_ws));
+    vec3 tangent_wsn = normalize(tangent_ws);
+    vec3 normal_wsn = normalize(normal_ws);
 	mat3 TBN = mat3(
-        normalize(cross(normal_ws, tangent_ws)),
-        normalize(tangent_ws),
-        normalize(normal_ws)
+        bitangent_wsn,
+        tangent_wsn,
+        normal_wsn
     );
-    vec3 normal = normalize(normal_ws + TBN * (normal * 2.0 - 1.0) * normal_mapping);
+    normal_wsn = normalize(normal_wsn + TBN * (normal * 2.0 - 1.0) * normal_mapping);
 
     vec3 c = baseColor.rgb * vec3(0.1, 0.15, 0.2);
     vec3 toLight;
 
-    toLight = -normalize(position_ws - light0_position);
-	c += bsdfPbrMetallicRoughness(position_ws, toLight, normal_ws, baseColor.rgb, roughness, metallic);
-	toLight = -normalize(position_ws - light1_position);
-	c += bsdfPbrMetallicRoughness(position_ws, toLight, normal_ws, baseColor.rgb, roughness, metallic);
-	toLight = -normalize(position_ws - light2_position);
-	c += bsdfPbrMetallicRoughness(position_ws, toLight, normal_ws, baseColor.rgb, roughness, metallic);
+    vec3 toCamera = -normalize(position_ws - cameraPosition(viewMatrix));
+    
+    SurfaceAttributes surface;
+    surface.baseColor = vec3(1.0, 0.0, 0.0);
+    surface.metallic = 0.0;
+    surface.roughness = 0.5;
+    surface.reflectance = 1.0;
+    surface.emissive = vec3(0.0, 0.0, 0.0);
+    surface.occlusion = 1.0;
+#ifdef ANISOTROPIC
+    surface.anisotropy = -0.5;
 
-	color = vec4(c, 0.5);
+    bitangent_wsn = normalize(cross(normal_wsn, tangent_wsn));
+    tangent_wsn = normalize(cross(bitangent_wsn, normal_wsn));
+#endif
+
+    toLight = -normalize(position_ws - light0_position);
+#ifdef ANISOTROPIC
+    c += brdf(toCamera, normal_wsn, toLight, tangent_wsn, bitangent_wsn, surface);
+#else
+    c += brdf(toCamera, normal_wsn, toLight, surface);
+#endif
+    
+    toLight = -normalize(position_ws - light1_position);
+    c += brdf(toCamera, normal_wsn, toLight, surface);
+    toLight = -normalize(position_ws - light2_position);
+    c += brdf(toCamera, normal_wsn, toLight, surface);
+
+	color = vec4(c, 1.0);
 }

@@ -50,8 +50,3 @@ void MeshRenderer::render(const Camera& camera, const World& world, RenderType t
 		glBindVertexArray(0);
 	}
 }
-
-void MeshRenderer::reloadShaders()
-{
-	m_shader->load();
-}
