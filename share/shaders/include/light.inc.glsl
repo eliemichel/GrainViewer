@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////
-// G-Buffer related functions
+// Light related functions
 
 struct PointLight {
 	sampler2D shadowMap;

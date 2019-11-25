@@ -11,7 +11,6 @@ class MeshDataBehavior;
 
 class SandRenderer : public Behavior {
 public:
-	void renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const;
 	void initShader(ShaderProgram & shader);
 	void updateShader(ShaderProgram & shader, float time);
 
@@ -34,6 +33,8 @@ private:
 	*/
 	bool loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory);
 	bool loadColormapTexture(const std::string & filename);
+
+	void renderDefault(const Camera & camera, const World & world) const;
 
 private:
 	struct PointersSsbo {
@@ -65,9 +66,9 @@ private:
 
 	std::weak_ptr<MeshDataBehavior> m_grainMeshData;
 
-	std::vector<std::unique_ptr<GlTexture>> m_normalTextures;
-	std::vector<std::unique_ptr<GlTexture>> m_depthTextures;
-	std::vector<std::unique_ptr<GlTexture>> m_albedoTextures;
+	std::vector<std::unique_ptr<GlTexture>> m_normalAlphaTextures;
+	std::vector<std::unique_ptr<GlTexture>> m_baseColorTextures;
+	std::vector<std::unique_ptr<GlTexture>> m_metallicRoughnessTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
 };
 

@@ -50,15 +50,17 @@ void Camera::update(float time) {
 
 void Camera::initUbo() {
 	glCreateBuffers(1, &m_ubo);
-	glNamedBufferStorage(m_ubo, static_cast<GLsizeiptr>((2 * 16 + 4) * sizeof(GLfloat)), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_ubo, static_cast<GLsizeiptr>((3 * 16 + 4) * sizeof(GLfloat)), NULL, GL_DYNAMIC_STORAGE_BIT);
 }
 void Camera::updateUbo() {
+	glm::mat4 inverseViewMatrix = inverse(m_viewMatrix);
 	GLsizeiptr matSize = static_cast<GLsizeiptr>(16 * sizeof(GLfloat));
 	GLsizeiptr vec2Size = static_cast<GLsizeiptr>(2 * sizeof(GLfloat));
 	GLsizeiptr matOffset = static_cast<GLintptr>(16 * sizeof(GLfloat));
 	glNamedBufferSubData(m_ubo, 0, matSize, glm::value_ptr(m_viewMatrix));
 	glNamedBufferSubData(m_ubo, matOffset, matSize, glm::value_ptr(m_projectionMatrix));
-	glNamedBufferSubData(m_ubo, 2 * matOffset, vec2Size, glm::value_ptr(resolution()));
+	glNamedBufferSubData(m_ubo, 2 * matOffset, matSize, glm::value_ptr(inverseViewMatrix));
+	glNamedBufferSubData(m_ubo, 3 * matOffset, vec2Size, glm::value_ptr(resolution()));
 }
 
 void Camera::setResolution(glm::vec2 resolution) {

@@ -11,7 +11,24 @@ struct GFragment {
 	float roughness;
 	float metallic;
 	vec3 emission;
+	float alpha;
 };
+
+/**
+ * Apply mix to all components of a GFragment
+ */
+GFragment LerpGFragment(GFragment ga, GFragment gb, float t) {
+	GFragment g;
+	g.baseColor = mix(ga.baseColor, gb.baseColor, t);
+	g.normal = normalize(mix(ga.normal, gb.normal, t));
+	g.ws_coord = mix(ga.ws_coord, gb.ws_coord, t);
+	g.metallic = mix(ga.metallic, gb.metallic, t);
+	g.roughness = mix(ga.roughness, gb.roughness, t);
+	g.emission = mix(ga.emission, gb.emission, t);
+	g.alpha = mix(ga.alpha, gb.alpha, t);
+	g.material_id = ga.material_id; // cannot be interpolated
+	return g;
+}
 
 void unpackGFragment(
 	in sampler2D gbuffer1,

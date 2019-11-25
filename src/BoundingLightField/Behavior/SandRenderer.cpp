@@ -11,140 +11,10 @@
 #include "bufferFillers.h"
 #include "MeshDataBehavior.h"
 
-void SandRenderer::renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const
-{
-	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;
-
-	///////////////////////////////////////////////////////////////////////////
-	// Culling
-
-	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
-
-	m_cullingPointersSsbo->fillBlock<PointersSsbo>(0, [effectivePointCount, this](PointersSsbo *pointers, size_t _) {
-		pointers->nextInstanceElement = 0;
-		pointers->nextImpostorElement = static_cast<GLuint>(effectivePointCount - 1);
-	});
-
-	m_cullingShader->use();
-	m_cullingShader->bindUniformBlock("Camera", camera.ubo());
-	m_cullingShader->setUniform("modelMatrix", m_modelMatrix);
-	m_cullingShader->setUniform("viewModelMatrix", viewModelMatrix);
-	m_cullingShader->setUniform("nbPoints", effectivePointCount);
-	m_cullingShader->setUniform("uInstanceLimit", static_cast<GLfloat>(1.05));
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-	m_cullingPointersSsbo->bindSsbo(2);
-	m_elementBuffer->bindSsbo(3);
-	glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-
-	GLuint instanceCount = 0;
-	GLuint impostorFirst = 0;
-	GLuint impostorCount = effectivePointCount;
-	m_cullingPointersSsbo->readBlock<PointersSsbo>(0, [&instanceCount, &impostorCount, &impostorFirst, effectivePointCount, this](PointersSsbo *pointers, size_t _) {
-		if (pointers->nextInstanceElement != 0) {
-			instanceCount = pointers->nextInstanceElement - 1;
-			impostorFirst = pointers->nextImpostorElement + 1;
-			impostorCount = effectivePointCount - impostorFirst;
-		}
-	});
-
-	// TODO: Write from compute shader
-	m_drawIndirectBuffer->fillBlock<DrawElementsIndirectCommand>(0, [impostorCount, impostorFirst, this](DrawElementsIndirectCommand *cmd, size_t _) {
-		cmd->count = impostorCount;
-		cmd->instanceCount = 1;
-		cmd->firstIndex = impostorFirst;
-		cmd->baseVertex = 0;
-		cmd->baseInstance = 0;
-	});
-
-	///////////////////////////////////////////////////////////////////////////
-	// Impostors drawing
-
-	glEnable(GL_PROGRAM_POINT_SIZE);
-
-	shader.use();
-
-	// Set uniforms
-	m_shader->bindUniformBlock("Camera", camera.ubo());
-	m_shader->setUniform("modelMatrix", m_modelMatrix);
-	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
-	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-
-	// Bind textures
-	size_t o = 0;
-	for (auto & tex : m_normalTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
-	}
-	for (auto & tex : m_depthTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
-	}
-	for (auto & tex : m_albedoTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
-	}
-
-	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		m_colormapTexture->bind();
-	}
-
-	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-	//skybox.bindEnvTexture();
-
-	glBindVertexArray(m_vao);
-	m_drawIndirectBuffer->bind();
-	m_elementBuffer->bind();
-	glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, nullptr);
-	glBindVertexArray(0);
-
-	///////////////////////////////////////////////////////////////////////////
-	// Instances drawing
-
-	m_instanceCloudShader->use();
-
-	// Set uniforms
-	m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
-	m_instanceCloudShader->setUniform("modelMatrix", m_modelMatrix);
-	m_instanceCloudShader->setUniform("viewModelMatrix", viewModelMatrix);
-	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-
-	// Render
-	if (auto mesh = m_grainMeshData.lock()) {
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-		m_elementBuffer->bindSsbo(2);
-		glBindVertexArray(mesh->vao());
-		glDrawArraysInstanced(GL_TRIANGLES, 0, mesh->pointCount(), instanceCount);
-		glBindVertexArray(0);
-	}
-}
-
 void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
 	shader.use();
-	for (size_t i = 0; i < m_normalTextures.size(); ++i) {
-		std::ostringstream ss;
-		ss << "impostorTexture" << i;
-		shader.setUniform(ss.str(), static_cast<GLint>(o++));
-	}
-	for (size_t i = 0; i < m_depthTextures.size(); ++i) {
-		std::ostringstream ss;
-		ss << "impostorDepthTexture" << i;
-		shader.setUniform(ss.str(), static_cast<GLint>(o++));
-	}
-	for (size_t i = 0; i < m_albedoTextures.size(); ++i) {
-		std::ostringstream ss;
-		ss << "impostorAlbedoTexture" << i;
-		shader.setUniform(ss.str(), static_cast<GLint>(o++));
-	}
-	if (m_colormapTexture) {
-		shader.setUniform("colormapTexture", static_cast<GLint>(o++));
-	}
+	
 	shader.setUniform("cubemap", static_cast<GLint>(o++));
 
 	shader.setUniform("uFrameCount", static_cast<GLuint>(m_frameCount));
@@ -161,29 +31,18 @@ void SandRenderer::updateShader(ShaderProgram & shader, float time) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // private classes for serialization only
-class MultiViewImpostorCloudModel {
+class SandRendererModel {
 public:
-	bool readJson(const rapidjson::Value & json) { JREAD(albedo); JREAD(normal); JREAD(depth); return true; }
-	void writeJson(JsonWriter & writer) const { writer.StartObject(); JWRITE(albedo); JWRITE(normal); JWRITE(depth); writer.EndObject(); }
+	bool readJson(const rapidjson::Value & json) { JREAD(baseColor); JREAD(normalAlpha); JREAD(metallicRoughness); return true; }
+	void writeJson(JsonWriter & writer) const { writer.StartObject(); JWRITE(baseColor); JWRITE(normalAlpha); JWRITE(metallicRoughness); writer.EndObject(); }
 
-	const std::string & albedo() const { return m_albedo; }
-	const std::string & normal() const { return m_normal; }
-	const std::string & depth() const { return m_depth; }
+	const std::string & baseColor() const { return m_baseColor; }
+	const std::string & normalAlpha() const { return m_normalAlpha; }
+	const std::string & metallicRoughness() const { return m_metallicRoughness; }
 private:
-	std::string m_albedo;
-	std::string m_normal;
-	std::string m_depth;
-};
-class ObjectPhysics {
-public:
-	bool readJson(const rapidjson::Value & json) { JREAD_DEFAULT(enabled, false); JREAD(shader); return true; }
-	void writeJson(JsonWriter & writer) const { writer.StartObject(); JWRITE(enabled); JWRITE(shader); writer.EndObject(); }
-
-	bool enabled() const { return m_enabled; }
-	const std::string & shader() const { return m_shader; }
-private:
-	bool m_enabled;
-	std::string m_shader;
+	std::string m_baseColor;
+	std::string m_normalAlpha;
+	std::string m_metallicRoughness;
 };
 
 bool SandRenderer::deserialize(const rapidjson::Value & json)
@@ -208,17 +67,17 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 		return false;
 	}
 
-	std::vector<MultiViewImpostorCloudModel> models;
-	jrArray<MultiViewImpostorCloudModel>(json, "models", models);
+	std::vector<SandRendererModel> models;
+	jrArray<SandRendererModel>(json, "models", models);
 	for (auto m : models) {
-		if (!m.normal().empty()) {
-			loadImpostorTexture(m_normalTextures, ResourceManager::resolveResourcePath(m.normal()));
+		if (!m.normalAlpha().empty()) {
+			loadImpostorTexture(m_normalAlphaTextures, ResourceManager::resolveResourcePath(m.normalAlpha()));
 		}
-		if (!m.depth().empty()) {
-			loadImpostorTexture(m_depthTextures, ResourceManager::resolveResourcePath(m.depth()));
+		if (!m.baseColor().empty()) {
+			loadImpostorTexture(m_baseColorTextures, ResourceManager::resolveResourcePath(m.baseColor()));
 		}
-		if (!m.albedo().empty()) {
-			loadImpostorTexture(m_albedoTextures, ResourceManager::resolveResourcePath(m.albedo()));
+		if (!m.metallicRoughness().empty()) {
+			loadImpostorTexture(m_metallicRoughnessTextures, ResourceManager::resolveResourcePath(m.metallicRoughness()));
 		}
 	}
 
@@ -298,8 +157,15 @@ void SandRenderer::update(float time)
 
 void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
-	const ShaderProgram & shader = (target == ShadowMapRendering) ? *m_shadowMapShader : *m_shader;
-	renderWithShader(camera, world, shader);
+	switch (target) {
+	case DefaultRendering:
+		renderDefault(camera, world);
+		break;
+	case ShadowMapRendering:
+	default:
+		// TODO
+		break;
+	}
 }
 
 void SandRenderer::reloadShaders()
@@ -360,4 +226,142 @@ bool SandRenderer::loadColormapTexture(const std::string & filename)
 {
 	m_colormapTexture = ResourceManager::loadTexture(filename);
 	return m_colormapTexture != nullptr;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Rendering
+///////////////////////////////////////////////////////////////////////////////
+
+void SandRenderer::renderDefault(const Camera & camera, const World & world) const
+{
+	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;
+
+	///////////////////////////////////////////////////////////////////////////
+	// Culling
+
+	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
+
+	m_cullingPointersSsbo->fillBlock<PointersSsbo>(0, [effectivePointCount, this](PointersSsbo *pointers, size_t _) {
+		pointers->nextInstanceElement = 0;
+		pointers->nextImpostorElement = static_cast<GLuint>(effectivePointCount - 1);
+	});
+
+	m_cullingShader->use();
+	m_cullingShader->bindUniformBlock("Camera", camera.ubo());
+	m_cullingShader->setUniform("modelMatrix", m_modelMatrix);
+	m_cullingShader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_cullingShader->setUniform("nbPoints", effectivePointCount);
+	m_cullingShader->setUniform("uInstanceLimit", static_cast<GLfloat>(1.05));
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+	m_cullingPointersSsbo->bindSsbo(2);
+	m_elementBuffer->bindSsbo(3);
+	glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
+	GLuint instanceCount = 0;
+	GLuint impostorFirst = 0;
+	GLuint impostorCount = effectivePointCount;
+	m_cullingPointersSsbo->readBlock<PointersSsbo>(0, [&instanceCount, &impostorCount, &impostorFirst, effectivePointCount, this](PointersSsbo *pointers, size_t _) {
+		if (pointers->nextInstanceElement != 0) {
+			instanceCount = pointers->nextInstanceElement - 1;
+			impostorFirst = pointers->nextImpostorElement + 1;
+			impostorCount = effectivePointCount - impostorFirst;
+		}
+	});
+
+	// TODO: Write from compute shader
+	m_drawIndirectBuffer->fillBlock<DrawElementsIndirectCommand>(0, [impostorCount, impostorFirst, this](DrawElementsIndirectCommand *cmd, size_t _) {
+		cmd->count = impostorCount;
+		cmd->instanceCount = 1;
+		cmd->firstIndex = impostorFirst;
+		cmd->baseVertex = 0;
+		cmd->baseInstance = 0;
+	});
+
+	///////////////////////////////////////////////////////////////////////////
+	// Impostors drawing
+
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
+	m_shader->use();
+
+	// Set uniforms
+	m_shader->bindUniformBlock("Camera", camera.ubo());
+	m_shader->setUniform("modelMatrix", m_modelMatrix);
+	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+
+	// TODO: Use UBO
+	size_t o = 0;
+	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
+		GLuint n = m_normalAlphaTextures[k]->depth();
+		GLuint viewCount = (n / 2) << 2;
+
+		std::ostringstream oss1;
+		oss1 << "impostor[" << k << "].viewCount";
+		m_shader->setUniform(oss1.str(), viewCount);
+
+		std::ostringstream oss2;
+		oss2 << "impostor[" << k << "].normalAlphaTexture";
+		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		m_normalAlphaTextures[k]->bind();
+		++o;
+
+		if (m_baseColorTextures.size() > k) {
+			std::ostringstream oss;
+			oss << "impostor[" << k << "].baseColorTexture";
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_baseColorTextures[k]->bind();
+			++o;
+		}
+
+		if (m_metallicRoughnessTextures.size() > k) {
+			std::ostringstream oss;
+			oss << "impostor[" << k << "].metallicRoughnesTexture";
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_metallicRoughnessTextures[k]->bind();
+			++o;
+		}
+	}
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+
+	if (m_colormapTexture) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
+		m_colormapTexture->bind();
+	}
+
+	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
+	//skybox.bindEnvTexture();
+
+	glBindVertexArray(m_vao);
+	m_drawIndirectBuffer->bind();
+	m_elementBuffer->bind();
+	glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, nullptr);
+	glBindVertexArray(0);
+
+	///////////////////////////////////////////////////////////////////////////
+	// Instances drawing
+
+	m_instanceCloudShader->use();
+
+	// Set uniforms
+	m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
+	m_instanceCloudShader->setUniform("modelMatrix", m_modelMatrix);
+	m_instanceCloudShader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+
+	// Render
+	if (auto mesh = m_grainMeshData.lock()) {
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+		m_elementBuffer->bindSsbo(2);
+		glBindVertexArray(mesh->vao());
+		glDrawArraysInstanced(GL_TRIANGLES, 0, mesh->pointCount(), instanceCount);
+		glBindVertexArray(0);
+	}
 }

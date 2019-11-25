@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////
 // Ray-tracing routines
 
-// requires that you include utils.inc.glsl for isOrthographic()
+// requires that you include utils.inc.glsl for isOrthographic() and uniforms/camera.inc.glsl for resolution
 
 struct Ray {
     vec3 origin;
@@ -9,7 +9,7 @@ struct Ray {
 };
 
 Ray fragmentRay(in vec4 fragCoord, in mat4 projectionMatrix) {
-    vec2 uv = fragCoord.xy / iResolution * 2.f - vec2(1.f);
+    vec2 uv = fragCoord.xy / resolution.xy * 2.f - vec2(1.f);
     
     if (isOrthographic(projectionMatrix)) {
         float a = 1.0 / projectionMatrix[0][0];
