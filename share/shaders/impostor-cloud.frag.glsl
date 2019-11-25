@@ -1,8 +1,9 @@
 #version 450 core
 #include "sys:defines"
 
-flat in int id;
+flat in uint id;
 in vec3 position_ws;
+in mat4 gs_from_ws;
 
 layout (location = 0) out vec4 gbuffer_color1;
 layout (location = 1) out uvec4 gbuffer_color2;
@@ -27,11 +28,16 @@ void main() {
 	vec3 normal_ws = vec3(0.0, 0.0, 1.0);
 
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-
     Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
+    Ray ray_gs = TransformRay(ray_ws, gs_from_ws);
 
-	GFragment fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_ws, position_ws, 0.01);
+    vec3 position_gs = (gs_from_ws * vec4(position_ws, 1.0)).xyz;
+
+	GFragment fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, 0.01);
+	
 	//GFragment fragment = IntersectRaySphere(ray_ws, position_ws, 0.005);
+
+	fragment.normal = transpose(mat3(gs_from_ws)) * fragment.normal;
 
 	if (fragment.alpha < 0.5) discard;
 	//GFragment fragment;

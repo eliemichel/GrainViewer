@@ -295,7 +295,7 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 	size_t o = 0;
 	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
 		GLuint n = m_normalAlphaTextures[k]->depth();
-		GLuint viewCount = (n / 2) << 2;
+		GLuint viewCount = static_cast<GLuint>(sqrt(n / 2));
 
 		std::ostringstream oss1;
 		oss1 << "impostor[" << k << "].viewCount";

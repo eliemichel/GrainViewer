@@ -19,12 +19,12 @@ struct SphericalImpostorHit {
  */
 uint DirectionToViewIndex(vec3 d, uint n) {
 	d = d / dot(vec3(1, 1, 1), abs(d));
-	vec2 uv = (vec2(1, -1) * d.y + d.x + 1) * float(n - 1) * 0.5;
-	uint i = uint(dot(round(uv), vec2(n, 1)));
+	vec2 uv = (vec2(1, -1) * d.y + d.x + 1) * (float(n) - 1) * 0.5;
+	float i = dot(round(uv), vec2(n, 1));
 	if (d.z > 0) {
 		i += n * n;
 	}
-	return i;
+	return uint(i);
 }
 
 /**
@@ -99,6 +99,7 @@ SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius
 	float l = -(ray_bs.origin.z / ray_bs.direction.z);
 	vec3 uv_bs = ray_bs.origin + l * ray_bs.direction;
 	vec2 uv_ts = uv_bs.xy / radius * .5 + .5;
+	uv_ts.y = 1.0 - uv_ts.y;
 
 	SphericalImpostorHit hit;
 	hit.position = ray.origin + l * ray.direction;
@@ -153,11 +154,7 @@ GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, v
 GFragment IntersectRaySphericalGBillboardNoInterp(SphericalImpostor impostor, Ray ray, vec3 p, float radius) {
 	uint n = impostor.viewCount;
 	uint i = DirectionToViewIndex(-ray.direction, n);
-	SphericalImpostorHit hit = IntersectRayBillboard(ray, i, p, radius, n);
-	hit.textureCoords.z = i%144;
-	GFragment g = SampleBillboard(impostor, hit);
-	//g.baseColor = hit.position - p;
-	//g.alpha = 1.0;
+	GFragment g = SampleBillboard(impostor, IntersectRayBillboard(ray, i, p, radius, n));
 	return g;
 }
 

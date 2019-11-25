@@ -7,7 +7,7 @@ layout(std430, binding = 1) buffer points {
 	PointCloundVboEntry vbo[];
 };
 
-flat out int vId;
+flat out uint pointId;
 
 uniform uint uFrameCount = 136;
 uniform uint uPointCount = 15000;
@@ -20,10 +20,11 @@ uniform mat4 viewModelMatrix;
 
 void main() {
     uint frame = uint(time * uFps) % uFrameCount;
-	vec3 p = vbo[gl_VertexID + uPointCount*frame].position.xyz;
+	//vec3 p = vbo[gl_VertexID + uPointCount*frame].position.xyz;
+	pointId = gl_VertexID;
+    vec3 p = vbo[pointId].position.xyz;
 
 	p.xyz = p.xzy;
     
     gl_Position = vec4(p, 1.0);
-    vId = gl_VertexID;
 }

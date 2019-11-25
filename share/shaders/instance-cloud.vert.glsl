@@ -1,14 +1,8 @@
 #version 450 core
 
-struct InstanceData {
-	uint index;
-	vec3 position;
-};
-
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 uv;
-layout (location = 3) in vec4 raw_instance;
 
 struct PointCloundVboEntry {
     vec4 position;
@@ -31,25 +25,19 @@ uniform mat4 viewModelMatrix;
 uniform vec3 lightPos = vec3(-10.f, 10.f, 10.f);
 uniform vec3 lightPos2 = vec3(10.f, -5.f, -10.f);
 
-
-float randv2(vec2 co){
-    return fract(sin(dot(co ,vec2(12.9898,78.233))) * 43758.5453);
-}
-
-InstanceData vec4ToInstanceData(vec4 v) {
-	return InstanceData(floatBitsToUint(v.x), v.yzw);
-}
+#include "include/random.inc.glsl"
+#include "sand/random-grains.inc.glsl"
 
 void main() {
-	InstanceData instance = vec4ToInstanceData(raw_instance);
-
     uint pointId = elements[gl_InstanceID];
-    vec3 center = vbo[pointId].position.xzy;
+    vec3 grainCenter_ws = vbo[pointId].position.xzy;
 
-	vec4 p = vec4(position * 0.02 + center, 1.0);
+    mat3 ws_from_gs = transpose(mat3(randomGrainMatrix(int(pointId), grainCenter_ws)));
+    
+	vec4 p = vec4(ws_from_gs * position * 0.0225 + grainCenter_ws, 1.0);
 
-    position_ws = (modelMatrix * p).xyz;
-    normal_ws = mat3(modelMatrix) * normal;
+    position_ws = p.xyz;
+    normal_ws = ws_from_gs * mat3(modelMatrix) * normal;
 
     gl_Position = projectionMatrix * viewMatrix * vec4(position_ws, 1.0);
     

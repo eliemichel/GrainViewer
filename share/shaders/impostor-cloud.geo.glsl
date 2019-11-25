@@ -4,19 +4,22 @@
 layout (points) in;
 layout (points, max_vertices = 1) out;
 
-flat in int vId[];
+flat in uint pointId[];
 
-flat out int id;
+flat out uint id;
 out vec3 position_ws;
+out mat4 gs_from_ws;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "include/uniform/camera.inc.glsl"
 
 #include "include/utils.inc.glsl"
+#include "include/random.inc.glsl"
+#include "sand/random-grains.inc.glsl"
 
 void main() {
-	id = vId[0];
+	id = pointId[0];
 	float actualRadius = 0.005;
 
     position_ws = (modelMatrix * gl_in[0].gl_Position).xyz;
@@ -31,6 +34,8 @@ void main() {
         float c = projectionMatrix[1][1] * resolution.y;
         gl_PointSize = max(a * actualRadius, c * actualRadius);
     }
+
+    gs_from_ws = randomGrainMatrix(int(id), position_ws);
 
     EmitVertex();
     EndPrimitive();

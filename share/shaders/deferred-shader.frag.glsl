@@ -4,6 +4,7 @@
 #define HDR
 //#define REINHART
 //#define DEBUG_HUD
+#define SHOW_NORMAL
 #define WHITE_BACKGROUND
 #define OLD_BRDF
 

@@ -37,7 +37,7 @@ void main() {
 	vec3 p = vbo[i].position.xyz;
 	vec4 position_cs = viewModelMatrix * vec4(p.xzy, 1.0);
 
-	if (length(position_cs) < uInstanceLimit && 0 == 1) {
+	if (length(position_cs) < uInstanceLimit) {
 		// will be drawn as an instance
 		int nid = atomicAdd(pointers.nextInstanceElement, 1);
 		elements[nid] = i;
