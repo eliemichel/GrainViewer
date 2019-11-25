@@ -4,6 +4,7 @@
 #include "Behavior.h"
 #include "PointCloud.h"
 #include "GlTexture.h"
+#include "GlBuffer.h"
 
 class ShaderProgram;
 
@@ -32,20 +33,21 @@ private:
 	*/
 	bool loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory);
 	bool loadColormapTexture(const std::string & filename);
-	void reloadOneShader(ShaderProgram & shader);
 
 private:
 	glm::mat4 m_modelMatrix; // TODO: move to Transform component
 	std::string m_shaderName = "point-cloud-multi-view-impostors";
+	std::string m_shadowMapShaderName;
 
-	std::unique_ptr<ShaderProgram> m_shader;
-	std::unique_ptr<ShaderProgram> m_shadowMapShader;
+	std::shared_ptr<ShaderProgram> m_shader;
+	std::shared_ptr<ShaderProgram> m_shadowMapShader;
 	bool m_isDeferredRendered;
 	size_t m_nbPoints;
 	size_t m_frameCount;
 
 	GLuint m_vao;
 	GLuint m_vbo;
+	std::unique_ptr<GlBuffer> m_drawIndirectBuffer;
 
 	std::vector<std::unique_ptr<GlTexture>> m_normalTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_depthTextures;

@@ -20,6 +20,8 @@ public:
 	inline void define(const std::string& def) { m_defines.insert(def); }
 	inline void undefine(const std::string& def) { m_defines.erase(def); }
 
+	inline const std::set<std::string> & getDefines() const { return m_defines; }
+
 	inline void setSnippet(const std::string& key, const std::string& value) { m_snippets[key] = value; }
 
 	/**
@@ -49,6 +51,8 @@ public:
 	bool bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding = 1);
 
 	std::vector<std::string> getUniformList() const;
+
+	void copy(const ShaderProgram & other);
 
 private:
 	std::string m_shaderName;

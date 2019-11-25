@@ -55,35 +55,8 @@ bool Scene::load(const std::string & filename)
 	rapidjson::Value& root = d["augen"];
 
 	if (root.HasMember("shaders")) {
-		auto& json = root["shaders"];
-		if (!json.IsObject()) { ERR_LOG << "shaders field must be an object."; return false; }
-
-		for (auto it = json.MemberBegin(), end = json.MemberEnd(); it != end; ++it) {
-			std::string name = it->name.GetString();
-			std::vector<std::string> defines;
-			std::string baseFile;
-			if (it->value.IsString()) {
-				baseFile = it->value.GetString();
-			}
-			else if (it->value.IsObject()) {
-				if (it->value.HasMember("baseFile") && it->value["baseFile"].IsString()) {
-					baseFile = it->value["baseFile"].GetString();
-				}
-				if (it->value.HasMember("defines") && it->value["defines"].IsArray()) {
-					for (rapidjson::SizeType i = 0; i < it->value["defines"].Size(); i++) {
-						auto& def = it->value["defines"][i];
-						if (!def.IsString()) {
-							ERR_LOG << "Shader defines must be strings (in shader '" << name << "')";
-							continue;
-						}
-						defines.push_back(def.GetString());
-					}
-				}
-			}
-			else {
-				ERR_LOG << "Shader entry must be either a string ofr an object. Ignoring shader '" << name << "'";
-			}
-			ShaderPool::AddShader(name, baseFile, defines);
+		if (!ShaderPool::Deserialize(root["shaders"])) {
+			return false;
 		}
 	}
 

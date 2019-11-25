@@ -169,3 +169,10 @@ std::vector<std::string> ShaderProgram::getUniformList() const {
 	return uniformList;
 }
 
+void ShaderProgram::copy(const ShaderProgram & other)
+{
+	m_shaderName = other.m_shaderName;
+	for (const auto &def : other.m_defines) {
+		define(def);
+	}
+}

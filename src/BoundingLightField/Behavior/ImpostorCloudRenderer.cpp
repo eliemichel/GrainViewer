@@ -7,6 +7,8 @@
 #include "ImpostorCloudRenderer.h"
 #include "GlTexture.h"
 #include "ShaderProgram.h"
+#include "ShaderPool.h"
+#include "bufferFillers.h"
 
 void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const
 {
@@ -48,9 +50,17 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
 	//skybox.bindEnvTexture();
 
+	m_drawIndirectBuffer->fillBlock<DrawArraysIndirectCommand>(0, [this](DrawArraysIndirectCommand *cmd, size_t _) {
+		cmd->count = static_cast<GLuint>(m_nbPoints / m_frameCount);
+		cmd->instanceCount = 1;
+		cmd->first = 0;
+		cmd->baseInstance = 0;
+	});
+
 	// Render
 	glBindVertexArray(m_vao);
-	glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(m_nbPoints / m_frameCount));
+	m_drawIndirectBuffer->bind();
+	glDrawArraysIndirect(GL_POINTS, nullptr);
 	glBindVertexArray(0);
 }
 
@@ -161,16 +171,31 @@ bool ImpostorCloudRenderer::deserialize(const rapidjson::Value & json)
 	
 	// Shader
 	jrOption(json, "shader", m_shaderName, m_shaderName);
+	m_shadowMapShaderName = m_shaderName + "_SHADOW_MAP";
+	ShaderPool::AddShaderVariant(m_shadowMapShaderName, m_shaderName, "SHADOW_MAP");
 
 	return true;
 }
 
 void ImpostorCloudRenderer::start()
 {
-	m_shader = std::make_unique<ShaderProgram>(m_shaderName);
-	m_shadowMapShader = std::make_unique<ShaderProgram>(m_shaderName);
-	m_shadowMapShader->define("SHADOW_MAP");
+	m_shader = ShaderPool::GetShader(m_shaderName);
+	m_shadowMapShader = ShaderPool::GetShader(m_shadowMapShaderName);
+
+	if (!m_shader || !m_shadowMapShader) {
+		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
+		// Legacy behavior
+		m_shader = std::make_shared<ShaderProgram>(m_shaderName);
+		m_shadowMapShader = std::make_unique<ShaderProgram>(m_shaderName);
+		m_shadowMapShader->define("SHADOW_MAP");
+	}
+
+	m_drawIndirectBuffer = std::make_unique<GlBuffer>(GL_DRAW_INDIRECT_BUFFER);
+	m_drawIndirectBuffer->addBlock<DrawArraysIndirectCommand>();
+	m_drawIndirectBuffer->alloc();
+
 	m_isDeferredRendered = true;
+	m_modelMatrix = glm::mat4(1.0);
 	//m_nbPoints = 0;
 }
 
@@ -201,8 +226,8 @@ void ImpostorCloudRenderer::render(const Camera & camera, const World & world, R
 
 void ImpostorCloudRenderer::reloadShaders()
 {
-	reloadOneShader(*m_shader);
-	reloadOneShader(*m_shadowMapShader);
+	initShader(*m_shader);
+	initShader(*m_shadowMapShader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -258,9 +283,3 @@ bool ImpostorCloudRenderer::loadColormapTexture(const std::string & filename)
 	m_colormapTexture = ResourceManager::loadTexture(filename);
 	return m_colormapTexture != nullptr;
 }
-
-void ImpostorCloudRenderer::reloadOneShader(ShaderProgram & shader) {
-	shader.load();
-	initShader(shader);
-}
-

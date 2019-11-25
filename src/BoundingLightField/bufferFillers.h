@@ -17,6 +17,13 @@ typedef struct {
 	GLfloat tangent[3];
 } PointAttributes;
 
+typedef  struct {
+	GLuint  count;
+	GLuint  instanceCount;
+	GLuint  first;
+	GLuint  baseInstance;
+} DrawArraysIndirectCommand;
+
 void fillPointAttributes(
 	PointAttributes *attributes,
 	size_t nbElements,
