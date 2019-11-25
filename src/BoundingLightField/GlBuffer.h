@@ -72,6 +72,20 @@ public:
 		glUnmapNamedBuffer(m_buffer);
 	}
 
+	template <class T>
+	inline void readBlock(size_t blockId, std::function<void(T*, size_t)> fill_callback) {
+		const Block & b = m_blocks[blockId];
+		assert(sizeof(T) == b.stride);
+		GLsizei size = static_cast<GLsizei>(b.nbElements * sizeof(T));
+		GLsizei offset = b.endByteOffset - size;
+		T *attributes = static_cast<T*>(glMapNamedBufferRange(
+			m_buffer, offset, size,
+			GL_MAP_READ_BIT
+		));
+		fill_callback(attributes, b.nbElements);
+		glUnmapNamedBuffer(m_buffer);
+	}
+
 	// Only works with const reference arguments (I gave up for the more general one)
 	// There must be sth to do w/ std::forward<Args>(args)...
 	template <class T, typename... Args>
@@ -86,6 +100,8 @@ public:
 	void finalize();
 
 	void bind() const;
+	/// Bind as SSBO
+	void bindSsbo(GLuint index) const;
 	void unbind() const;
 
 	inline GLuint name() const { return m_buffer; }
@@ -115,12 +131,3 @@ private:
 	bool m_isAllocated;
 	std::vector<Block> m_blocks;
 };
-
-
-typedef struct {
-	GLuint vertexCount;
-	GLuint instanceCount;
-	GLuint firstVertex;
-	GLuint baseInstance;
-} DrawArraysIndirectCommmand;
-

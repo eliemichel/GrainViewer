@@ -7,6 +7,11 @@
  */
 class ShaderProgram {
 public:
+	enum ShaderProgramType {
+		RenderShader,
+		ComputeShader,
+	};
+public:
 	ShaderProgram(const std::string& shaderName = "");
 	ShaderProgram(ShaderProgram&&) = default;
 	ShaderProgram& operator=(ShaderProgram&&) = default;
@@ -16,6 +21,9 @@ public:
 	 */
 	inline void setShaderName(const std::string& shaderName) { m_shaderName = shaderName; }
 	inline const std::string& shaderName() const { return m_shaderName; }
+
+	inline void setType(ShaderProgramType type) { m_type = type; }
+	inline ShaderProgramType type() const { return m_type; }
 
 	inline void define(const std::string& def) { m_defines.insert(def); }
 	inline void undefine(const std::string& def) { m_defines.erase(def); }
@@ -56,6 +64,7 @@ public:
 
 private:
 	std::string m_shaderName;
+	ShaderProgramType m_type;
 	std::set<std::string> m_defines;
 	std::map<std::string, std::string> m_snippets;
 	GLuint m_programId;

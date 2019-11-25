@@ -37,7 +37,7 @@ void GlBuffer::alloc() {
 		return;
 	}
 	glCreateBuffers(1, &m_buffer);
-	glNamedBufferStorage(m_buffer, byteSize(), NULL, GL_MAP_WRITE_BIT);
+	glNamedBufferStorage(m_buffer, byteSize(), NULL, GL_MAP_WRITE_BIT | GL_MAP_READ_BIT);
 	m_isAllocated = true;
 }
 
@@ -71,6 +71,10 @@ void GlBuffer::finalize() {
 
 void GlBuffer::bind() const {
 	glBindBuffer(m_target, m_buffer);
+}
+
+void GlBuffer::bindSsbo(GLuint index) const {
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, m_buffer);
 }
 
 void GlBuffer::unbind() const {

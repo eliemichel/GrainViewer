@@ -11,7 +11,6 @@ flat out int id;
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "include/uniform/camera.inc.glsl"
-uniform float uInstanceLimit = 1.05;
 
 #include "include/utils.inc.glsl"
 
@@ -20,10 +19,6 @@ void main() {
 	float actualRadius = 0.005;
 
     vec4 position_cs = viewModelMatrix * gl_in[0].gl_Position;
-
-    if (length(position_cs) < uInstanceLimit) {
-    	return;
-    }
 
     gl_Position = projectionMatrix * position_cs;
     

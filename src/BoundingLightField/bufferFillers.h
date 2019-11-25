@@ -24,6 +24,14 @@ typedef  struct {
 	GLuint  baseInstance;
 } DrawArraysIndirectCommand;
 
+typedef  struct {
+	GLuint  count;
+	GLuint  instanceCount;
+	GLuint  firstIndex;
+	GLuint  baseVertex;
+	GLuint  baseInstance;
+} DrawElementsIndirectCommand;
+
 void fillPointAttributes(
 	PointAttributes *attributes,
 	size_t nbElements,

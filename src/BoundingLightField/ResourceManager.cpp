@@ -54,6 +54,8 @@ std::string ResourceManager::shaderFullPath(const std::string& shaderName, GLenu
 		return fixPath(joinPath(s_shaderPath[0], shaderName + ".geo.glsl"));
 	case GL_FRAGMENT_SHADER:
 		return fixPath(joinPath(s_shaderPath[0], shaderName + ".frag.glsl"));
+	case GL_COMPUTE_SHADER:
+		return fixPath(joinPath(s_shaderPath[0], shaderName + ".comp.glsl"));
 	default:
 		return "";
 	}

@@ -7,8 +7,9 @@
 #include "GlBuffer.h"
 
 class ShaderProgram;
+class MeshDataBehavior;
 
-class ImpostorCloudRenderer : public Behavior {
+class SandRenderer : public Behavior {
 public:
 	void renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const;
 	void initShader(ShaderProgram & shader);
@@ -36,9 +37,9 @@ private:
 
 private:
 	struct PointersSsbo {
-		GLuint nextInstanceElement;
-		GLuint nextImpostorElement;
-		GLuint _pad0[2];
+		GLint nextInstanceElement;
+		GLint nextImpostorElement;
+		GLint _pad0[2];
 	};
 
 private:
@@ -46,10 +47,12 @@ private:
 	std::string m_shaderName = "ImpostorCloud";
 	std::string m_shadowMapShaderName;
 	std::string m_cullingShaderName = "ImpostorCloudCulling";
+	std::string m_instanceCloudShaderName = "InstanceCloud";
 
 	std::shared_ptr<ShaderProgram> m_shader;
 	std::shared_ptr<ShaderProgram> m_shadowMapShader;
 	std::shared_ptr<ShaderProgram> m_cullingShader;
+	std::shared_ptr<ShaderProgram> m_instanceCloudShader;
 	bool m_isDeferredRendered;
 	size_t m_nbPoints;
 	size_t m_frameCount;
@@ -60,16 +63,12 @@ private:
 	std::unique_ptr<GlBuffer> m_cullingPointersSsbo;
 	std::unique_ptr<GlBuffer> m_elementBuffer;
 
+	std::weak_ptr<MeshDataBehavior> m_grainMeshData;
+
 	std::vector<std::unique_ptr<GlTexture>> m_normalTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_depthTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_albedoTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
-
-	std::vector<std::unique_ptr<ShaderProgram>> m_computeShaders;
-	std::unique_ptr<ShaderProgram> m_resetListsComputeShader;
-	GLuint m_physicsParticlesBuffer;
-	GLuint m_physicsTreeHeadPointerImage;
-	GLuint m_physicsTreeNodeBuffer;
 };
 
-registerBehaviorType(ImpostorCloudRenderer)
+registerBehaviorType(SandRenderer)

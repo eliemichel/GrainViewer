@@ -7,6 +7,7 @@
 
 ShaderProgram::ShaderProgram(const std::string& shaderName)
 	: m_shaderName(shaderName)
+	, m_type(RenderShader)
 	, m_isValid(false)
 {}
 
@@ -15,26 +16,35 @@ void ShaderProgram::load() {
 
 	std::vector<std::string> defines(m_defines.begin(), m_defines.end());
 
-	Shader vertexShader(GL_VERTEX_SHADER);
-	vertexShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_VERTEX_SHADER), defines, m_snippets);
-	vertexShader.compile();
-	vertexShader.check("vertex shader");
-	glAttachShader(m_programId, vertexShader.shaderId());
+	if (type() == RenderShader) {
+		Shader vertexShader(GL_VERTEX_SHADER);
+		vertexShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_VERTEX_SHADER), defines, m_snippets);
+		vertexShader.compile();
+		vertexShader.check("vertex shader");
+		glAttachShader(m_programId, vertexShader.shaderId());
 
-	Shader geometryShader(GL_GEOMETRY_SHADER);
-	std::string geometryShaderPath = ResourceManager::shaderFullPath(m_shaderName, GL_GEOMETRY_SHADER);
-	if (isFile(geometryShaderPath)) {
-		geometryShader.load(geometryShaderPath, defines, m_snippets);
-		geometryShader.compile();
-		geometryShader.check("geometry shader");
-		glAttachShader(m_programId, geometryShader.shaderId());
+		Shader geometryShader(GL_GEOMETRY_SHADER);
+		std::string geometryShaderPath = ResourceManager::shaderFullPath(m_shaderName, GL_GEOMETRY_SHADER);
+		if (isFile(geometryShaderPath)) {
+			geometryShader.load(geometryShaderPath, defines, m_snippets);
+			geometryShader.compile();
+			geometryShader.check("geometry shader");
+			glAttachShader(m_programId, geometryShader.shaderId());
+		}
+
+		Shader fragmentShader(GL_FRAGMENT_SHADER);
+		fragmentShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_FRAGMENT_SHADER), defines, m_snippets);
+		fragmentShader.compile();
+		fragmentShader.check("fragment shader");
+		glAttachShader(m_programId, fragmentShader.shaderId());
 	}
-
-	Shader fragmentShader(GL_FRAGMENT_SHADER);
-	fragmentShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_FRAGMENT_SHADER), defines, m_snippets);
-	fragmentShader.compile();
-	fragmentShader.check("fragment shader");
-	glAttachShader(m_programId, fragmentShader.shaderId());
+	else {
+		Shader computeShader(GL_COMPUTE_SHADER);
+		computeShader.load(ResourceManager::shaderFullPath(m_shaderName, GL_COMPUTE_SHADER), defines, m_snippets);
+		computeShader.compile();
+		computeShader.check("compute shader");
+		glAttachShader(m_programId, computeShader.shaderId());
+	}
 
 	glLinkProgram(m_programId);
 	m_isValid = check();

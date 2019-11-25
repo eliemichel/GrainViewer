@@ -4,13 +4,14 @@
 #include "utils/strutils.h"
 #include "PointCloud.h"
 #include "ResourceManager.h"
-#include "ImpostorCloudRenderer.h"
+#include "SandRenderer.h"
 #include "GlTexture.h"
 #include "ShaderProgram.h"
 #include "ShaderPool.h"
 #include "bufferFillers.h"
+#include "MeshDataBehavior.h"
 
-void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const
+void SandRenderer::renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const
 {
 	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;
 
@@ -58,7 +59,7 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	});
 
 	///////////////////////////////////////////////////////////////////////////
-	// Drawing
+	// Impostors drawing
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -69,8 +70,6 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	m_shader->setUniform("modelMatrix", m_modelMatrix);
 	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
 	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-
-	shader.setUniform("iResolution", camera.resolution());
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 
@@ -97,15 +96,36 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
 	//skybox.bindEnvTexture();
 
-	// Render
 	glBindVertexArray(m_vao);
 	m_drawIndirectBuffer->bind();
 	m_elementBuffer->bind();
 	glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
+
+	///////////////////////////////////////////////////////////////////////////
+	// Instances drawing
+
+	m_instanceCloudShader->use();
+
+	// Set uniforms
+	m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
+	m_instanceCloudShader->setUniform("modelMatrix", m_modelMatrix);
+	m_instanceCloudShader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+
+	// Render
+	if (auto mesh = m_grainMeshData.lock()) {
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+		m_elementBuffer->bindSsbo(2);
+		glBindVertexArray(mesh->vao());
+		glDrawArraysInstanced(GL_TRIANGLES, 0, mesh->pointCount(), instanceCount);
+		glBindVertexArray(0);
+	}
 }
 
-void ImpostorCloudRenderer::initShader(ShaderProgram & shader) {
+void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
 	shader.use();
 	for (size_t i = 0; i < m_normalTextures.size(); ++i) {
@@ -131,7 +151,7 @@ void ImpostorCloudRenderer::initShader(ShaderProgram & shader) {
 	shader.setUniform("uFrameCount", static_cast<GLuint>(m_frameCount));
 }
 
-void ImpostorCloudRenderer::updateShader(ShaderProgram & shader, float time) {
+void SandRenderer::updateShader(ShaderProgram & shader, float time) {
 	shader.use();
 	shader.setUniform("time", static_cast<GLfloat>(time));
 }
@@ -167,7 +187,7 @@ private:
 	std::string m_shader;
 };
 
-bool ImpostorCloudRenderer::deserialize(const rapidjson::Value & json)
+bool SandRenderer::deserialize(const rapidjson::Value & json)
 {
 	if (!json.HasMember("pointcloud") || !json["pointcloud"].IsString()) {
 		ERR_LOG << "multiViewImpostor-cloud object requires a string field 'pointcloud'";
@@ -217,14 +237,17 @@ bool ImpostorCloudRenderer::deserialize(const rapidjson::Value & json)
 
 	jrOption(json, "cullingShader", m_cullingShaderName, m_cullingShaderName);
 
+	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
+
 	return true;
 }
 
-void ImpostorCloudRenderer::start()
+void SandRenderer::start()
 {
 	m_shader = ShaderPool::GetShader(m_shaderName);
 	m_shadowMapShader = ShaderPool::GetShader(m_shadowMapShaderName);
 	m_cullingShader = ShaderPool::GetShader(m_cullingShaderName);
+	m_instanceCloudShader = ShaderPool::GetShader(m_instanceCloudShaderName);
 
 	if (!m_shader || !m_shadowMapShader) {
 		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
@@ -235,6 +258,7 @@ void ImpostorCloudRenderer::start()
 	}
 
 	m_drawIndirectBuffer = std::make_unique<GlBuffer>(GL_DRAW_INDIRECT_BUFFER);
+	m_drawIndirectBuffer->addBlock<DrawElementsIndirectCommand>();
 	m_drawIndirectBuffer->addBlock<DrawElementsIndirectCommand>();
 	m_drawIndirectBuffer->alloc();
 
@@ -247,12 +271,14 @@ void ImpostorCloudRenderer::start()
 	m_elementBuffer->alloc();
 	m_elementBuffer->finalize(); // This buffer will never be mapped on CPU
 
+	m_grainMeshData = getComponent<MeshDataBehavior>();
+
 	m_isDeferredRendered = true;
 	m_modelMatrix = glm::mat4(1.0);
 	//m_nbPoints = 0;
 }
 
-void ImpostorCloudRenderer::onDestroy()
+void SandRenderer::onDestroy()
 {
 	if (m_nbPoints == 0) {
 		// cloud has never been loaded, nothing to free (assert that..)
@@ -265,19 +291,19 @@ void ImpostorCloudRenderer::onDestroy()
 	glDeleteVertexArrays(1, &m_vao);
 }
 
-void ImpostorCloudRenderer::update(float time)
+void SandRenderer::update(float time)
 {
 	updateShader(*m_shader, time);
 	updateShader(*m_shadowMapShader, time);
 }
 
-void ImpostorCloudRenderer::render(const Camera & camera, const World & world, RenderType target) const
+void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
 	const ShaderProgram & shader = (target == ShadowMapRendering) ? *m_shadowMapShader : *m_shader;
 	renderWithShader(camera, world, shader);
 }
 
-void ImpostorCloudRenderer::reloadShaders()
+void SandRenderer::reloadShaders()
 {
 	initShader(*m_shader);
 	initShader(*m_shadowMapShader);
@@ -287,7 +313,7 @@ void ImpostorCloudRenderer::reloadShaders()
 // private members
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ImpostorCloudRenderer::load(const PointCloud & pointCloud) {
+bool SandRenderer::load(const PointCloud & pointCloud) {
 	// A. Load point cloud
 	m_nbPoints = pointCloud.data().size();
 	std::vector<GLfloat> attributes(m_nbPoints * 8);
@@ -314,7 +340,7 @@ bool ImpostorCloudRenderer::load(const PointCloud & pointCloud) {
 	return true;
 }
 
-bool ImpostorCloudRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory) {
+bool SandRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory) {
 	auto tex = ResourceManager::loadTextureStack(textureDirectory);
 	
 	if (!tex) {
@@ -331,7 +357,7 @@ bool ImpostorCloudRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTe
 }
 
 
-bool ImpostorCloudRenderer::loadColormapTexture(const std::string & filename)
+bool SandRenderer::loadColormapTexture(const std::string & filename)
 {
 	m_colormapTexture = ResourceManager::loadTexture(filename);
 	return m_colormapTexture != nullptr;

@@ -7,9 +7,9 @@ ShaderPool ShaderPool::s_instance = ShaderPool();
 // Public static methods
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShaderPool::AddShader(const std::string & shaderName, const std::string & baseFile, const std::vector<std::string> & defines)
+void ShaderPool::AddShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)
 {
-	s_instance.addShader(shaderName, baseFile, defines);
+	s_instance.addShader(shaderName, baseFile, type, defines);
 }
 
 void ShaderPool::AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define)
@@ -36,13 +36,14 @@ bool ShaderPool::Deserialize(const rapidjson::Value & json)
 // Private singleton methods
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, const std::vector<std::string> & defines)
+void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)
 {
 	if (m_shaders.count(shaderName) > 0) {
 		WARN_LOG << "Duplicate shader name: " << shaderName << " (ignoring duplicates)";
 		return;
 	}
 	m_shaders[shaderName] = std::make_shared<ShaderProgram>(baseFile);
+	m_shaders[shaderName]->setType(type);
 	for (const std::string& def : defines) {
 		m_shaders[shaderName]->define(def);
 	}
@@ -91,6 +92,7 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 		std::string name = it->name.GetString();
 		std::vector<std::string> defines;
 		std::string baseFile;
+		ShaderProgram::ShaderProgramType type = ShaderProgram::RenderShader;
 		if (it->value.IsString()) {
 			baseFile = it->value.GetString();
 		}
@@ -108,11 +110,23 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 					defines.push_back(def.GetString());
 				}
 			}
+			if (it->value.HasMember("type") && it->value["type"].IsString()) {
+				std::string strtype = it->value["type"].GetString();
+				if (strtype == "compute") {
+					type = ShaderProgram::ComputeShader;
+				} else if (strtype == "render") {
+					type = ShaderProgram::RenderShader;
+				}
+				else {
+					ERR_LOG << "Shader type not recognized: " << strtype << " (in shader '" << name << "')";
+					continue;
+				}
+			}
 		}
 		else {
 			ERR_LOG << "Shader entry must be either a string ofr an object. Ignoring shader '" << name << "'";
 		}
-		addShader(name, baseFile, defines);
+		addShader(name, baseFile, type, defines);
 		LOG << " - shader '" << name << "' loaded";
 	}
 	return true;

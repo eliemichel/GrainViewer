@@ -30,7 +30,6 @@ private:
 	GLsizei m_pointCount;
 	std::unique_ptr<GlBuffer> m_vertexBuffer;
 	GLuint m_vao;
-	GLuint m_vbo;
 };
 
 registerBehaviorType(MeshDataBehavior)

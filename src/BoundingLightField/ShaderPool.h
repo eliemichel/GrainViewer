@@ -10,7 +10,7 @@
 
 class ShaderPool {
 public:
-	static void AddShader(const std::string & shaderName, const std::string & baseFile, const std::vector<std::string> & defines);
+	static void AddShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines);
 
 	/**
 	 * Copy a base shader and add an extra define. If the define is already
@@ -34,7 +34,7 @@ private:
 	ShaderPool& operator=(const ShaderPool&) {}
 	ShaderPool(const ShaderPool&) {}
 
-	void addShader(const std::string & shaderName, const std::string & baseFile, const std::vector<std::string> & defines);
+	void addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines);
 	void addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define);
 	std::shared_ptr<ShaderProgram> getShader(const std::string & shaderName) const;
 	void reloadShaders();

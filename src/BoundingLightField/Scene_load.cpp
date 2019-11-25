@@ -15,12 +15,14 @@
 #include "Behavior/MeshDataBehavior.h"
 #include "Behavior/MeshRenderer.h"
 #include "Behavior/ImpostorCloudRenderer.h"
+#include "Behavior/SandRenderer.h"
 static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 #define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
 	handleType(MeshDataBehavior);
 	handleType(MeshRenderer);
 	handleType(ImpostorCloudRenderer);
+	handleType(SandRenderer);
 #undef handleType
 }
 
