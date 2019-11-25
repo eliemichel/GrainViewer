@@ -20,6 +20,8 @@ layout (std430, binding = 2) buffer elementsSsbo {
     uint elements[];
 };
 
+out vec3 normal_ws;
+out vec3 position_ws;
 out vec4 grainAlbedo;
 
 uniform mat4 modelMatrix;
@@ -46,7 +48,10 @@ void main() {
 
 	vec4 p = vec4(position * 0.02 + center, 1.0);
 
-    gl_Position = projectionMatrix * viewModelMatrix * p;
+    position_ws = (modelMatrix * p).xyz;
+    normal_ws = mat3(modelMatrix) * normal;
+
+    gl_Position = projectionMatrix * viewMatrix * vec4(position_ws, 1.0);
     
 	float f = float(pointId + 1) * 0.1 + 1;
     float fac = randv2(vec2(2*f, 2 + f));

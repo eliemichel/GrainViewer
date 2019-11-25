@@ -26,6 +26,7 @@ Scene::Scene()
 void Scene::reloadShaders() {
 	ShaderPool::ReloadShaders();
 	m_world.reloadShaders();
+	m_deferredShader.reloadShaders();
 
 	for (auto obj : m_objects) {
 		obj->reloadShaders();
@@ -44,6 +45,10 @@ void Scene::render() const {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
+	if (m_isDeferredShadingEnabled) {
+		m_deferredShader.bindFramebuffer();
+	}
+
 	const glm::vec2 & res = m_viewportCamera.resolution();
 	glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -52,5 +57,10 @@ void Scene::render() const {
 	m_world.render(m_viewportCamera);
 	for (auto obj : m_objects) {
 		obj->render(m_viewportCamera, m_world, DefaultRendering);
+	}
+
+	if (m_isDeferredShadingEnabled) {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		m_deferredShader.render(m_viewportCamera, m_world, DefaultRendering);
 	}
 }

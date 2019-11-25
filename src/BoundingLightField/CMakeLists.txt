@@ -60,10 +60,16 @@ set(SRC
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h
+	Framebuffer.h
+	Framebuffer.cpp
 	GlBuffer.h
 	GlBuffer.cpp
+	GlDeferredShader.h
+	GlDeferredShader.cpp
 	GlTexture.h
 	GlTexture.cpp
+	Light.h
+	Light.cpp
 	Logger.h
 	Logger.cpp
 	Mesh.h
@@ -84,6 +90,8 @@ set(SRC
 	ShaderPreprocessor.cpp
 	ShaderProgram.h
 	ShaderProgram.cpp
+	ShadowMap.h
+	ShadowMap.cpp
 	Triangle.h
 	TurntableCamera.h
 	TurntableCamera.cpp

@@ -1,6 +1,18 @@
 //////////////////////////////////////////////////////
 // Microfacet distributions and utility functions
 
+struct SurfaceAttributes {
+    vec3 baseColor;
+    float metallic;
+    float roughness;
+    float reflectance;
+    vec3 emissive;
+    float occlusion;
+#ifdef ANISOTROPIC
+    float anisotropy;
+#endif
+};
+
 float DistributionGGX(vec3 N, vec3 H, float a) {
     float a2 = a*a;
     float NdotH = max(dot(N, H), 0.0);

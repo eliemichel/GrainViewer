@@ -15,6 +15,7 @@
 #include "Camera.h"
 #include "TurntableCamera.h"
 #include "World.h"
+#include "GlDeferredShader.h"
 
 class RuntimeObject;
 
@@ -35,6 +36,8 @@ public:
 private:
 	TurntableCamera m_viewportCamera;
 	World m_world;
+	GlDeferredShader m_deferredShader;
 	std::vector<std::shared_ptr<RuntimeObject>> m_objects;
+	bool m_isDeferredShadingEnabled = true;
 };
 

@@ -41,7 +41,6 @@ void SandRenderer::renderWithShader(const Camera & camera, const World & world, 
 	GLuint impostorFirst = 0;
 	GLuint impostorCount = effectivePointCount;
 	m_cullingPointersSsbo->readBlock<PointersSsbo>(0, [&instanceCount, &impostorCount, &impostorFirst, effectivePointCount, this](PointersSsbo *pointers, size_t _) {
-		DEBUG_LOG << "nextInstanceElement: " << pointers->nextInstanceElement << ", nextImpostorElement: " << pointers->nextImpostorElement;
 		if (pointers->nextInstanceElement != 0) {
 			instanceCount = pointers->nextInstanceElement - 1;
 			impostorFirst = pointers->nextImpostorElement + 1;

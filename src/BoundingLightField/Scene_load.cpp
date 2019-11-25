@@ -62,6 +62,16 @@ bool Scene::load(const std::string & filename)
 		}
 	}
 
+	if (root.HasMember("deferredShader")) {
+		if (!m_deferredShader.deserialize(root["deferredShader"])) {
+			return false;
+		}
+	}
+
+	if (!m_world.deserialize(root)) { // look at both root["world"] and root["lights"]
+		return false;
+	}
+
 	if (root.HasMember("objects")) {
 		auto& objects = root["objects"];
 		if (!objects.IsArray()) { ERR_LOG << "objects field must be an array."; return false; }
