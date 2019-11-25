@@ -15,11 +15,11 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	shader.use();
 
 	// Set uniforms
-	shader.setUniform("modelMatrix", m_modelMatrix);
-	shader.setUniform("invModelMatrix", glm::inverse(m_modelMatrix));
-	shader.setUniform("viewMatrix", camera.viewMatrix());
-	shader.setUniform("invViewMatrix", glm::inverse(camera.viewMatrix()));
-	shader.setUniform("projectionMatrix", camera.projectionMatrix());
+	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;
+	m_shader->bindUniformBlock("Camera", camera.ubo());
+	m_shader->setUniform("modelMatrix", m_modelMatrix);
+	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
 
 	shader.setUniform("iResolution", camera.resolution());
 
@@ -255,7 +255,7 @@ bool ImpostorCloudRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTe
 
 bool ImpostorCloudRenderer::loadColormapTexture(const std::string & filename)
 {
-	m_colormapTexture = ResourceManager::loadTexture(filename, 10 /* levels */);
+	m_colormapTexture = ResourceManager::loadTexture(filename);
 	return m_colormapTexture != nullptr;
 }
 

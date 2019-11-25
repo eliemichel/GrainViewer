@@ -1,6 +1,7 @@
 //////////////////////////////////////////////////////
 // Misc utility functions
 
+const float pi = 3.1415926535897932384626433832795;
 const float PI = 3.1415926535897932384626433832795;
 
 vec3 color2normal(in vec4 color) {

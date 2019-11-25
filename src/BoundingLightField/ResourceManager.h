@@ -52,7 +52,7 @@ public:
 	/**
 	 * Load a regular texture
 	 */
-	static std::unique_ptr<GlTexture> loadTexture(const std::string & filename, GLsizei levels);
+	static std::unique_ptr<GlTexture> loadTexture(const std::string & filename, GLsizei levels = 0);
 
 	/**
 	 * Load of stack of textures as a GL_TEXTURE_2D_ARRAY

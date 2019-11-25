@@ -170,7 +170,7 @@ bool ResourceManager::imageDimensions(const fs::path & filepath, int & width, in
 
 
 bool ResourceManager::loadTextureSubData(GlTexture & texture, const fs::path & filepath, GLint zoffset, GLsizei width, GLsizei height, Rotation rotation) {
-	if (filepath.extension() == "exr") {
+	if (filepath.extension() == ".exr") {
 		return loadTextureSubDataTinyExr(texture, filepath, zoffset, width, height, rotation);
 	}
 	else {
@@ -237,6 +237,10 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureSOIL(const fs::path & fil
 		return nullptr;
 	}
 
+	if (levels == 0) {
+		levels = static_cast<GLsizei>(1 + floor(log2(max(width, height))));
+	}
+
 	auto tex = std::make_unique<GlTexture>(GL_TEXTURE_2D);
 	tex->storage(levels, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 	tex->subImage(0, 0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, image);
@@ -258,6 +262,10 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureTinyExr(const fs::path & 
 		WARN_LOG << "Unable to load texture from file: " << filepath;
 		LOG << "TinyExr returned: " << err;
 		return nullptr;
+	}
+
+	if (levels == 0) {
+		levels = static_cast<GLsizei>(1 + floor(log2(max(width, height))));
 	}
 
 	auto tex = std::make_unique<GlTexture>(GL_TEXTURE_2D);

@@ -14,14 +14,14 @@
 // TODO: Find a way to avoid this function
 #include "Behavior/MeshDataBehavior.h"
 #include "Behavior/MeshRenderer.h"
+#include "Behavior/ImpostorCloudRenderer.h"
 static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
-	if (type == TypeName<MeshDataBehavior>().Get()) {
-		b = IBehaviorHolder::addBehavior<MeshDataBehavior>(obj);
-	}
-	else if (type == TypeName<MeshRenderer>().Get()) {
-		b = IBehaviorHolder::addBehavior<MeshRenderer>(obj);
-	}
+#define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
+	handleType(MeshDataBehavior);
+	handleType(MeshRenderer);
+	handleType(ImpostorCloudRenderer);
+#undef handleType
 }
 
 bool Scene::load(const std::string & filename)
