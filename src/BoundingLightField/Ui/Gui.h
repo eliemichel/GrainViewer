@@ -16,10 +16,14 @@ class Dialog;
 
 class Gui {
 public:
-	Gui(std::shared_ptr<Window> window, std::shared_ptr<Scene> scene);
+	Gui(std::shared_ptr<Window> window);
 	~Gui();
 
-	bool load();
+	void setScene(std::shared_ptr<Scene> scene);
+
+	// Call these resp. before and after loading the scene
+	void  beforeLoading();
+	void  afterLoading();
 
 	void update();
 	void render();
@@ -32,6 +36,7 @@ public:
 
 private:
 	void setupCallbacks();
+	void setupDialogs();
 	void updateImGui();
 
 private:

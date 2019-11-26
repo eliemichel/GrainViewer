@@ -2,7 +2,7 @@
 
 in vec3 normal_ws;
 in vec3 position_ws;
-in vec4 grainAlbedo;
+in vec3 baseColor;
 
 layout (location = 0) out vec4 gbuffer_color1;
 layout (location = 1) out uvec4 gbuffer_color2;
@@ -15,7 +15,7 @@ uniform float metallic = 0.0;
 
 void main() {
     GFragment fragment;
-    fragment.baseColor = grainAlbedo.rgb;
+    fragment.baseColor = baseColor.rgb;
     fragment.normal = normal_ws;
     fragment.ws_coord = position_ws;
     fragment.material_id = pbrMaterial;

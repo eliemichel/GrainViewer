@@ -1,16 +1,21 @@
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include <glad/glad.h>
 #include <iostream>
 #include <GLFW/glfw3.h>
 
 #include "utils/debug.h"
 #include "Window.h"
+#include "Logger.h"
 
 Window::Window(int width, int height, const char *title)
 	: m_window(nullptr)
 {
 	// Initialize GLFW, the library responsible for window management
 	if (!glfwInit()) {
-		std::cerr << "ERROR: Failed to init GLFW" << std::endl;
+		ERR_LOG << "Failed to init GLFW";
 		return;
 	}
 
@@ -19,15 +24,15 @@ Window::Window(int width, int height, const char *title)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
-#if _DEBUG
+#ifndef NDEBUG
 	// Enable opengl debug output when building in debug mode
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
-#endif
+#endif // !NDEBUG
 
 	// Create the window
 	m_window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 	if (!m_window) {
-		std::cerr << "ERROR: Failed to open window" << std::endl;
+		ERR_LOG << "Failed to open window";
 		glfwTerminate();
 		return;
 	}
@@ -35,7 +40,7 @@ Window::Window(int width, int height, const char *title)
 	// Load the OpenGL context in the GLFW window using GLAD OpenGL wrangler
 	glfwMakeContextCurrent(m_window);
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-		std::cerr << "ERROR: Failed to initialize OpenGL context" << std::endl;
+		ERR_LOG << "Failed to initialize OpenGL context";
 		glfwTerminate();
 		return;
 	}
@@ -44,7 +49,7 @@ Window::Window(int width, int height, const char *title)
 	enableGlDebug();
 #endif // !NDEBUG
 
-	std::cout << "INFO: Running over OpenGL " << GLVersion.major << "." << GLVersion.minor << std::endl;
+	LOG << "Running over OpenGL " << GLVersion.major << "." << GLVersion.minor;
 }
 
 Window::~Window()

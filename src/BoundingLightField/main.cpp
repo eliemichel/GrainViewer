@@ -44,12 +44,16 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	auto gui = std::make_unique<Gui>(window);
 	auto scene = std::make_shared<Scene>();
+
+	gui->setScene(scene);
+
+	gui->beforeLoading();
 	if (!scene->load(filename)) {
 		return EXIT_FAILURE;
 	}
-
-	auto gui = std::make_unique<Gui>(window, scene);
+	gui->afterLoading();
 
 	while (!glfwWindowShouldClose(window->glfw())) {
 		glfwPollEvents();

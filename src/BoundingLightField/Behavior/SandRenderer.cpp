@@ -97,6 +97,9 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
+	jrOption(json, "grainRadius", m_grainRadius, m_grainRadius);
+	jrOption(json, "grainMeshScale", m_grainMeshScale, m_grainMeshScale);
+
 	return true;
 }
 
@@ -290,9 +293,16 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 	m_shader->setUniform("modelMatrix", m_modelMatrix);
 	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
 	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+	m_shader->setUniform("grainRadius", static_cast<GLfloat>(m_grainRadius));
+
+	size_t o = 0;
+
+	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+	m_colormapTexture->bind();
+	++o;
 
 	// TODO: Use UBO
-	size_t o = 0;
 	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
 		GLuint n = m_normalAlphaTextures[k]->depth();
 		GLuint viewCount = static_cast<GLuint>(sqrt(n / 2));
@@ -353,6 +363,15 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 	m_instanceCloudShader->setUniform("modelMatrix", m_modelMatrix);
 	m_instanceCloudShader->setUniform("viewModelMatrix", viewModelMatrix);
 	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+
+	m_instanceCloudShader->setUniform("grainRadius", static_cast<GLfloat>(m_grainRadius));
+	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_grainMeshScale));
+
+	o = 0;
+	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+	m_colormapTexture->bind();
+	++o;
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 

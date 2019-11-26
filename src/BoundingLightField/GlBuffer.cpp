@@ -7,7 +7,6 @@
 #include "GlBuffer.h"
 
 GlBuffer::~GlBuffer() {
-	DEBUG_LOG << "GlBuffer dtor";
 	free();
 }
 

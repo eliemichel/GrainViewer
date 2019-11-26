@@ -26,6 +26,14 @@ else()
 	add_definitions(-DSHARE_DIR="./share")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
+endif(MSVC)
+
+###############################################################################
+# Main executable
+
 set(SRC
 	Behavior/ImpostorCloudRenderer.h
 	Behavior/ImpostorCloudRenderer.cpp
@@ -53,6 +61,8 @@ set(SRC
 	Ui/Gui.cpp
 	Ui/Window.h
 	Ui/Window.cpp
+	Ui/SandRendererDialog.h
+	Ui/SandRendererDialog.cpp
 
 	main.cpp
 	bufferFillers.h
@@ -75,6 +85,7 @@ set(SRC
 	Mesh.h
 	Mesh.cpp
 	PointCloud.h
+	PointCloud.cpp
 	ResourceManager.h
 	ResourceManager.cpp
 	RuntimeObject.h
@@ -114,11 +125,32 @@ add_executable(BoundingLightField ${SRC})
 target_include_directories(BoundingLightField PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(BoundingLightField LINK_PRIVATE ${LIBS})
 
-
-set(CMAKE_CXX_STANDARD 17)
-if(MSVC)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
-endif(MSVC)
-
 # For IDE projects
 group_source_by_folder(${SRC})
+
+###############################################################################
+# Tools
+
+set(PointCloudConvert_SRC
+	Tools/PointCloudConvert.cpp
+
+	utils/strutils.h
+	utils/strutils.cpp
+	utils/fileutils.h
+	utils/fileutils.cpp
+	Logger.h
+	Logger.cpp
+	PointCloud.h
+	PointCloud.cpp
+)
+
+set(PointCloudConvert_LIBS
+	glm
+)
+
+add_executable(PointCloudConvert ${PointCloudConvert_SRC})
+target_include_directories(PointCloudConvert PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(PointCloudConvert LINK_PRIVATE ${PointCloudConvert_LIBS})
+set_property(TARGET PointCloudConvert PROPERTY FOLDER "Tools")
+
+group_source_by_folder(${PointCloudConvert_SRC})

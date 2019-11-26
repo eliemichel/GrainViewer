@@ -24,6 +24,7 @@ public:
 	Scene();
 
 	bool load(const std::string & filename);
+	const std::string & filename() const { return m_filename; }
 	
 	void reloadShaders();
 	void update(float time);
@@ -34,6 +35,7 @@ public:
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
 
 private:
+	std::string m_filename;
 	TurntableCamera m_viewportCamera;
 	World m_world;
 	GlDeferredShader m_deferredShader;

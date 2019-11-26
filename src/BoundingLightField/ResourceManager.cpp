@@ -143,7 +143,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & text
 	}
 	GLsizei width = static_cast<GLsizei>(imageWidth);
 	GLsizei height = static_cast<GLsizei>(imageHeight);
-	DEBUG_LOG << "Allocating texture array of size " << imageWidth << "x" << imageHeight << "x" << stackSize << endl;
+	DEBUG_LOG << "Allocating texture array of size " << imageWidth << "x" << imageHeight << "x" << stackSize;
 	auto tex = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
 	tex->setWrapMode(GL_CLAMP_TO_EDGE);
 	tex->storage(1, GL_RGBA8, width, height, stackSize);

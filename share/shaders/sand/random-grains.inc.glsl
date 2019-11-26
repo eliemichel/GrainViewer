@@ -1,4 +1,5 @@
 // requires random.inc.glsl
+#pragma variant NO_GRAIN_ROTATION
 
 mat3 randomGrainOrientation(int id) {
     vec3 vx = normalize(randVec(vec3(id, id, id)));
@@ -9,12 +10,20 @@ mat3 randomGrainOrientation(int id) {
 }
 
 mat4 randomGrainMatrix(int id, vec3 position_ws = vec3(0.0, 0.0, 0.0)) {
+#ifdef NO_GRAIN_ROTATION
+    mat3 rot = mat3(1.0);
+#else // NO_GRAIN_ROTATION
     mat3 rot = randomGrainOrientation(id);
-    vec3 position_gs = position_ws;
+#endif // NO_GRAIN_ROTATION
     return mat4(
         vec4(rot[0], 0.0),
         vec4(rot[1], 0.0),
         vec4(rot[2], 0.0),
-        vec4(position_gs, 1.0)
+        vec4(position_ws, 1.0)
     );
+}
+
+// Used to query colorramp image
+float randomGrainColorFactor(int id) {
+    return randv2(vec2(id, id));
 }

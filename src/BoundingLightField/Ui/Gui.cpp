@@ -18,8 +18,23 @@
 #include "Window.h"
 #include "Scene.h"
 #include "Dialog.h"
+#include "RuntimeObject.h"
 
 using namespace std;
+
+// TODO: Find a way to avoid this function
+#include "SandRendererDialog.h"
+static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
+#define handleType(T) \
+	if (type == TypeName<T>().Get()) { \
+		auto dialog = DialogFactory<T>().MakeShared(); \
+		dialog->setControlledBehavior(std::dynamic_pointer_cast<T>(component)); \
+		return std::dynamic_pointer_cast<Dialog>(dialog); \
+	}
+	handleType(SandRenderer);
+	return nullptr;
+#undef handleType
+}
 
 static void printUsage() {
 	cerr
@@ -72,9 +87,9 @@ void Gui::setupCallbacks()
 	}
 }
 
-Gui::Gui(std::shared_ptr<Window> window, std::shared_ptr<Scene> scene)
+Gui::Gui(std::shared_ptr<Window> window)
 	: m_window(window)
-	, m_scene(scene)
+	, m_scene(nullptr)
 {
 	setupCallbacks();
 
@@ -96,7 +111,14 @@ Gui::~Gui() {
 	ImGui::DestroyContext();
 }
 
-bool Gui::load() {
+void Gui::setScene(std::shared_ptr<Scene> scene)
+{
+	m_scene = scene;
+	setupDialogs();
+}
+
+void Gui::beforeLoading()
+{
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
@@ -116,14 +138,41 @@ bool Gui::load() {
 	if (auto window = m_window.lock()) {
 		glfwSwapBuffers(window->glfw());
 	}
+}
+
+void Gui::afterLoading()
+{
+	if (auto window = m_window.lock()) {
+		int width, height;
+		glfwGetFramebufferSize(window->glfw(), &width, &height);
+		onResize(width, height);
+	}
 
 	m_startTime = static_cast<float>(glfwGetTime());
-	return true;
+	setupDialogs();
+}
+
+void Gui::setupDialogs()
+{
+	m_dialogs.clear();
+	if (m_scene) {
+		for (const auto& obj : m_scene->objects()) {
+			IBehaviorHolder::ConstBehaviorIterator it, end;
+			for (it = obj->cbeginBehaviors(), end = obj->cendBehaviors(); it != end;  ++it) {
+				auto dialog = makeComponentDialog(it->first, it->second);
+				if (dialog) {
+					m_dialogs.push_back(dialog);
+				}
+			}
+		}
+	}
 }
 
 void Gui::update() {
 	updateImGui();
-	m_scene->update(static_cast<float>(glfwGetTime()) - m_startTime);
+	if (m_scene) {
+		m_scene->update(static_cast<float>(glfwGetTime()) - m_startTime);
+	}
 }
 
 void Gui::updateImGui() {
@@ -150,14 +199,16 @@ void Gui::updateImGui() {
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
 		for (auto d : m_dialogs) {
-			d->update();
+			d->draw();
 		}
 		ImGui::End();
 	}
 }
 
 void Gui::render() {
-	m_scene->render();
+	if (m_scene) {
+		m_scene->render();
+	}
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -170,12 +221,14 @@ void Gui::onResize(int width, int height) {
 		int fbWidth, fbHeight;
 		glfwGetFramebufferSize(window->glfw(), &fbWidth, &fbHeight);
 		glViewport(0, 0, fbWidth, fbHeight);
-		m_scene->viewportCamera().setResolution(glm::vec2(fbWidth, fbHeight));
+		if (m_scene) {
+			m_scene->viewportCamera().setResolution(glm::vec2(fbWidth, fbHeight));
+		}
 	}
 }
 
 void Gui::onMouseButton(int button, int action, int mods) {
-	if (m_imguiFocus) {
+	if (m_imguiFocus || !m_scene) {
 		return;
 	}
 
@@ -218,7 +271,9 @@ void Gui::onCursorPosition(double x, double y) {
 		return;
 	}
 
-	m_scene->viewportCamera().updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+	if (m_scene) {
+		m_scene->viewportCamera().updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+	}
 }
 
 void Gui::onKey(int key, int scancode, int action, int mods) {
@@ -240,24 +295,32 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 			}
 			break;
 
+		case GLFW_KEY_P:
+			m_showPanel = !m_showPanel;
+			break;
+		}
+	}
+
+	if (action == GLFW_PRESS && m_scene) {
+		switch (key) {
 		case GLFW_KEY_R:
-			m_scene->reloadShaders();
+			if (mods & GLFW_MOD_CONTROL) {
+				beforeLoading();
+				m_scene->load(m_scene->filename());
+				afterLoading();
+			}
+			else {
+				m_scene->reloadShaders();
+			}
 			break;
 
 		case GLFW_KEY_A:
 			m_scene->viewportCamera().tiltLeft();
 			break;
 
-		case GLFW_KEY_P:
-			m_showPanel = !m_showPanel;
-			break;
-
 		case GLFW_KEY_E:
 			m_scene->viewportCamera().tiltRight();
 			break;
-
-		default:
-			printUsage();
 		}
 	}
 }

@@ -148,7 +148,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::mat4& value) 
 bool ShaderProgram::bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding) {
 	GLuint index = uniformBlockIndex(uniformBlockName);
 	if (index == GL_INVALID_INDEX) {
-		WARN_LOG << "Uniform Block not found with name " << uniformBlockName;
+		// WARN_LOG << "Uniform Block not found with name " << uniformBlockName; // pb: this warning is repeated at each frame, enable verbosity onl right after loading
 		return false;
 	}
 	glBindBufferBase(GL_UNIFORM_BUFFER, uniformBlockBinding, buffer);

@@ -38,9 +38,7 @@ public:
 	inline GlBuffer(GLenum target)
 		: m_target(target)
 		, m_isAllocated(false)
-	{
-		DEBUG_LOG << "GlBuffer ctor";
-	}
+	{}
 	~GlBuffer();
 
 	template <class T>

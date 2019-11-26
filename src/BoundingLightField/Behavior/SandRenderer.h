@@ -23,6 +23,14 @@ public:
 	void render(const Camera & camera, const World & world, RenderType target) const override;
 	void reloadShaders() override;
 
+public:
+	// Public properties
+	float grainRadius() const { return m_grainRadius; }
+	void setGrainRadius(float value) { m_grainRadius = value; }
+
+	float grainMeshScale() const { return m_grainMeshScale; }
+	void setGrainMeshScale(float value) { m_grainMeshScale = value; }
+
 private:
 	bool load(const PointCloud & pointCloud);
 	/**
@@ -44,6 +52,9 @@ private:
 	};
 
 private:
+	float m_grainRadius = 0.007f;
+	float m_grainMeshScale = 0.45f;
+
 	glm::mat4 m_modelMatrix; // TODO: move to Transform component
 	std::string m_shaderName = "ImpostorCloud";
 	std::string m_shadowMapShaderName;

@@ -28,6 +28,8 @@ static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeOb
 
 bool Scene::load(const std::string & filename)
 {
+	m_objects.clear();
+
 	rapidjson::Document d;
 	bool valid;
 	std::ifstream in(filename);
@@ -114,5 +116,6 @@ bool Scene::load(const std::string & filename)
 
 	DEBUG_LOG << "Loading done.";
 
+	m_filename = filename;
 	return true;
 }
