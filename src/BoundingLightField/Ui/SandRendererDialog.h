@@ -7,7 +7,7 @@
 class SandRendererDialog : public Dialog {
 public:
 	void draw() override;
-	void setControlledBehavior(std::weak_ptr<SandRenderer> behavior);
+	void setControlledBehavior(std::weak_ptr<SandRenderer> behavior) { m_cont = behavior; }
 
 private:
 	std::weak_ptr<SandRenderer> m_cont;

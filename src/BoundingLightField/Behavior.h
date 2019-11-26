@@ -15,6 +15,7 @@
 /**
  * There is a little mix of "Behavior" and "Component" to mean the same thing. TODO: clean that
  * IMPORTANT: Call registerBehaviorType(MyBehavior) macro for each new behavior
+ * Also, you must add it to a Scene_load function for loading to work
  */
 class Behavior {
 public:

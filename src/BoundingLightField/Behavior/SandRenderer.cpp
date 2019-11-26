@@ -10,6 +10,7 @@
 #include "ShaderPool.h"
 #include "bufferFillers.h"
 #include "MeshDataBehavior.h"
+#include "TransformBehavior.h"
 
 void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
@@ -97,8 +98,13 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
-	jrOption(json, "grainRadius", m_grainRadius, m_grainRadius);
-	jrOption(json, "grainMeshScale", m_grainMeshScale, m_grainMeshScale);
+#define jrPropperty(prop) jrOption(json, #prop, m_properties. ## prop, m_properties. ## prop)
+	jrPropperty(grainRadius);
+	jrPropperty(grainMeshScale);
+	jrPropperty(instanceLimit);
+	jrPropperty(disableImpostors);
+	jrPropperty(disableInstances);
+#undef jrProperty
 
 	return true;
 }
@@ -118,10 +124,10 @@ void SandRenderer::start()
 		m_shadowMapShader->define("SHADOW_MAP");
 	}
 
-	m_drawIndirectBuffer = std::make_unique<GlBuffer>(GL_DRAW_INDIRECT_BUFFER);
-	m_drawIndirectBuffer->addBlock<DrawElementsIndirectCommand>();
-	m_drawIndirectBuffer->addBlock<DrawElementsIndirectCommand>();
-	m_drawIndirectBuffer->alloc();
+	m_commandBuffer = std::make_unique<GlBuffer>(GL_DRAW_INDIRECT_BUFFER);
+	m_commandBuffer->addBlock<DrawElementsIndirectCommand>();
+	m_commandBuffer->addBlock<DrawArraysIndirectCommand>();
+	m_commandBuffer->alloc();
 
 	m_cullingPointersSsbo = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);
 	m_cullingPointersSsbo->addBlock<PointersSsbo>();
@@ -133,10 +139,9 @@ void SandRenderer::start()
 	m_elementBuffer->finalize(); // This buffer will never be mapped on CPU
 
 	m_grainMeshData = getComponent<MeshDataBehavior>();
+	m_transform = getComponent<TransformBehavior>();
 
 	m_isDeferredRendered = true;
-	m_modelMatrix = glm::mat4(1.0);
-	//m_nbPoints = 0;
 }
 
 void SandRenderer::onDestroy()
@@ -180,6 +185,15 @@ void SandRenderer::reloadShaders()
 ///////////////////////////////////////////////////////////////////////////////
 // private members
 ///////////////////////////////////////////////////////////////////////////////
+
+glm::mat4 SandRenderer::modelMatrix() const {
+	if (auto transform = m_transform.lock()) {
+		return transform->modelMatrix();
+	}
+	else {
+		return glm::mat4(1.0f);
+	}
+}
 
 bool SandRenderer::load(const PointCloud & pointCloud) {
 	// A. Load point cloud
@@ -237,11 +251,21 @@ bool SandRenderer::loadColormapTexture(const std::string & filename)
 
 void SandRenderer::renderDefault(const Camera & camera, const World & world) const
 {
-	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;
+	renderCulling(camera, world);
 
-	///////////////////////////////////////////////////////////////////////////
-	// Culling
+	if (!m_properties.disableImpostors) {
+		renderImpostorsDefault(camera, world);
+	}
 
+	if (!m_properties.disableInstances) {
+		renderInstancesDefault(camera, world);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+// Culling
+void SandRenderer::renderCulling(const Camera & camera, const World & world) const
+{
 	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
 
 	m_cullingPointersSsbo->fillBlock<PointersSsbo>(0, [effectivePointCount, this](PointersSsbo *pointers, size_t _) {
@@ -251,10 +275,10 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 
 	m_cullingShader->use();
 	m_cullingShader->bindUniformBlock("Camera", camera.ubo());
-	m_cullingShader->setUniform("modelMatrix", m_modelMatrix);
-	m_cullingShader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_cullingShader->setUniform("modelMatrix", modelMatrix());
+	m_cullingShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 	m_cullingShader->setUniform("nbPoints", effectivePointCount);
-	m_cullingShader->setUniform("uInstanceLimit", static_cast<GLfloat>(1.05));
+	m_cullingShader->setUniform("instanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 	m_cullingPointersSsbo->bindSsbo(2);
 	m_elementBuffer->bindSsbo(3);
@@ -273,27 +297,41 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 	});
 
 	// TODO: Write from compute shader
-	m_drawIndirectBuffer->fillBlock<DrawElementsIndirectCommand>(0, [impostorCount, impostorFirst, this](DrawElementsIndirectCommand *cmd, size_t _) {
+	// a. impostors
+	m_commandBuffer->fillBlock<DrawElementsIndirectCommand>(0, [impostorCount, impostorFirst, this](DrawElementsIndirectCommand *cmd, size_t _) {
 		cmd->count = impostorCount;
 		cmd->instanceCount = 1;
 		cmd->firstIndex = impostorFirst;
 		cmd->baseVertex = 0;
 		cmd->baseInstance = 0;
 	});
+	// b. instances
+	GLuint grainMeshPointCount = 0;
+	if (auto mesh = m_grainMeshData.lock()) {
+		grainMeshPointCount = mesh->pointCount();
+	}
+	m_commandBuffer->fillBlock<DrawArraysIndirectCommand>(1, [grainMeshPointCount, instanceCount, this](DrawArraysIndirectCommand *cmd, size_t _) {
+		cmd->count = grainMeshPointCount;
+		cmd->instanceCount = instanceCount;
+		cmd->first = 0;
+		cmd->baseInstance = 0;
+	});
+}
 
-	///////////////////////////////////////////////////////////////////////////
-	// Impostors drawing
-
+///////////////////////////////////////////////////////////////////////////
+// Impostors drawing
+void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & world) const
+{
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
 	m_shader->use();
 
 	// Set uniforms
 	m_shader->bindUniformBlock("Camera", camera.ubo());
-	m_shader->setUniform("modelMatrix", m_modelMatrix);
-	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_shader->setUniform("modelMatrix", modelMatrix());
+	m_shader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-	m_shader->setUniform("grainRadius", static_cast<GLfloat>(m_grainRadius));
+	m_shader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
 
 	size_t o = 0;
 
@@ -348,26 +386,28 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 	//skybox.bindEnvTexture();
 
 	glBindVertexArray(m_vao);
-	m_drawIndirectBuffer->bind();
+	m_commandBuffer->bind();
 	m_elementBuffer->bind();
 	glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
+}
 
-	///////////////////////////////////////////////////////////////////////////
-	// Instances drawing
-
+///////////////////////////////////////////////////////////////////////////
+// Instances drawing
+void SandRenderer::renderInstancesDefault(const Camera & camera, const World & world) const
+{
 	m_instanceCloudShader->use();
 
 	// Set uniforms
 	m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
-	m_instanceCloudShader->setUniform("modelMatrix", m_modelMatrix);
-	m_instanceCloudShader->setUniform("viewModelMatrix", viewModelMatrix);
+	m_instanceCloudShader->setUniform("modelMatrix", modelMatrix());
+	m_instanceCloudShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
 
-	m_instanceCloudShader->setUniform("grainRadius", static_cast<GLfloat>(m_grainRadius));
-	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_grainMeshScale));
+	m_instanceCloudShader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
+	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_properties.grainMeshScale));
 
-	o = 0;
+	GLuint o = 0;
 	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
 	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 	m_colormapTexture->bind();
@@ -380,7 +420,8 @@ void SandRenderer::renderDefault(const Camera & camera, const World & world) con
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 		m_elementBuffer->bindSsbo(2);
 		glBindVertexArray(mesh->vao());
-		glDrawArraysInstanced(GL_TRIANGLES, 0, mesh->pointCount(), instanceCount);
+		m_commandBuffer->bind();
+		glDrawArraysIndirect(GL_TRIANGLES, static_cast<void*>(static_cast<DrawElementsIndirectCommand*>(nullptr) + 1));
 		glBindVertexArray(0);
 	}
 }

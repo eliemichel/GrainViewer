@@ -106,7 +106,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTexture(const std::string & file
 	return tex;
 }
 
-std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & textureDirectory) {
+std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & textureDirectory, int levels) {
 	vector<fs::path> textureFilenames;
 
 	fs::directory_iterator dir(textureDirectory);
@@ -144,6 +144,10 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & text
 	GLsizei width = static_cast<GLsizei>(imageWidth);
 	GLsizei height = static_cast<GLsizei>(imageHeight);
 	DEBUG_LOG << "Allocating texture array of size " << imageWidth << "x" << imageHeight << "x" << stackSize;
+	if (levels == 0) {
+		levels = static_cast<GLsizei>(1 + floor(log2(max(width, height))));
+	}
+
 	auto tex = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
 	tex->setWrapMode(GL_CLAMP_TO_EDGE);
 	tex->storage(1, GL_RGBA8, width, height, stackSize);

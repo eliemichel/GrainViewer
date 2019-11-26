@@ -16,6 +16,7 @@
 #include "Behavior/MeshRenderer.h"
 #include "Behavior/ImpostorCloudRenderer.h"
 #include "Behavior/SandRenderer.h"
+#include "Behavior/TransformBehavior.h"
 static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 #define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
@@ -23,6 +24,7 @@ static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeOb
 	handleType(MeshRenderer);
 	handleType(ImpostorCloudRenderer);
 	handleType(SandRenderer);
+	handleType(TransformBehavior);
 #undef handleType
 }
 

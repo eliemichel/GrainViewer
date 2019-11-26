@@ -43,6 +43,8 @@ set(SRC
 	Behavior/MeshRenderer.cpp
 	Behavior/SandRenderer.h
 	Behavior/SandRenderer.cpp
+	Behavior/TransformBehavior.h
+	Behavior/TransformBehavior.cpp
 
 	utils/debug.h
 	utils/debug.cpp

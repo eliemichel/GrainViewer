@@ -8,6 +8,7 @@
 
 class ShaderProgram;
 class MeshDataBehavior;
+class TransformBehavior;
 
 class SandRenderer : public Behavior {
 public:
@@ -25,13 +26,19 @@ public:
 
 public:
 	// Public properties
-	float grainRadius() const { return m_grainRadius; }
-	void setGrainRadius(float value) { m_grainRadius = value; }
-
-	float grainMeshScale() const { return m_grainMeshScale; }
-	void setGrainMeshScale(float value) { m_grainMeshScale = value; }
+	struct Properties {
+		float grainRadius = 0.007f;
+		float grainMeshScale = 0.45f;
+		float instanceLimit = 1.05f;
+		bool disableImpostors = false;
+		bool disableInstances = false;
+	};
+	Properties & properties() { return m_properties; }
+	const Properties & properties() const { return m_properties; }
 
 private:
+	glm::mat4 modelMatrix() const;
+
 	bool load(const PointCloud & pointCloud);
 	/**
 	* @param textureDirectory Directory containing 2*n*n textures
@@ -43,6 +50,9 @@ private:
 	bool loadColormapTexture(const std::string & filename);
 
 	void renderDefault(const Camera & camera, const World & world) const;
+	void renderCulling(const Camera & camera, const World & world) const;
+	void renderImpostorsDefault(const Camera & camera, const World & world) const;
+	void renderInstancesDefault(const Camera & camera, const World & world) const;
 
 private:
 	struct PointersSsbo {
@@ -52,10 +62,8 @@ private:
 	};
 
 private:
-	float m_grainRadius = 0.007f;
-	float m_grainMeshScale = 0.45f;
+	Properties m_properties;
 
-	glm::mat4 m_modelMatrix; // TODO: move to Transform component
 	std::string m_shaderName = "ImpostorCloud";
 	std::string m_shadowMapShaderName;
 	std::string m_cullingShaderName = "ImpostorCloudCulling";
@@ -71,10 +79,11 @@ private:
 
 	GLuint m_vao;
 	GLuint m_vbo;
-	std::unique_ptr<GlBuffer> m_drawIndirectBuffer;
+	std::unique_ptr<GlBuffer> m_commandBuffer;
 	std::unique_ptr<GlBuffer> m_cullingPointersSsbo;
 	std::unique_ptr<GlBuffer> m_elementBuffer;
 
+	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<MeshDataBehavior> m_grainMeshData;
 
 	std::vector<std::unique_ptr<GlTexture>> m_normalAlphaTextures;

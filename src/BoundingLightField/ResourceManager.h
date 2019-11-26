@@ -57,7 +57,7 @@ public:
 	/**
 	 * Load of stack of textures as a GL_TEXTURE_2D_ARRAY
 	 */
-	static std::unique_ptr<GlTexture> loadTextureStack(const std::string & textureDirectory);
+	static std::unique_ptr<GlTexture> loadTextureStack(const std::string & textureDirectory, int levels = 0);
 
 	/**
 	 * Get the width and height of an image

@@ -1,12 +1,12 @@
 #version 450 core
 
 #include "sys:defines"
-#define HDR
+//#define HDR
 //#define REINHART
 //#define DEBUG_HUD
 //#define SHOW_NORMAL
 #define WHITE_BACKGROUND
-#define OLD_BRDF
+//#define OLD_BRDF
 
 #include "include/utils.inc.glsl"
 
@@ -30,7 +30,7 @@ uniform float time;
 #include "include/light.inc.glsl"
 
 uniform PointLight light[3];
-uniform float lightPowerScale = 3.0;
+uniform float lightPowerScale = 1.0;
 
 #include "include/gbuffer.inc.glsl"
 
@@ -75,9 +75,8 @@ void main() {
 #else // OLD_BRDF
 			vec3 f = brdf(toCam, fragment.normal, toLight, surface);
 #endif // OLD_BRDF
-			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0) * (1.0 - shadow * 0.8);
+			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0);// * (1.0 - shadow * 0.8);
 		}
-
 		out_fragment.radiance += vec4(fragment.emission, 0.0);
 		break;
 	}

@@ -31,14 +31,14 @@ uniform float grainMeshScale = 4.5;
 
 void main() {
     uint pointId = elements[gl_InstanceID];
-    vec3 grainCenter_ws = vbo[pointId].position.xzy;
+    vec3 grainCenter_ws = (modelMatrix * vbo[pointId].position).xyz;
 
     mat3 ws_from_gs = transpose(mat3(randomGrainMatrix(int(pointId), grainCenter_ws)));
     
 	vec4 p = vec4(ws_from_gs * position * grainRadius * grainMeshScale + grainCenter_ws, 1.0);
 
     position_ws = p.xyz;
-    normal_ws = ws_from_gs * mat3(modelMatrix) * normal;
+    normal_ws = ws_from_gs * normal;
 
     gl_Position = projectionMatrix * viewMatrix * vec4(position_ws, 1.0);
     

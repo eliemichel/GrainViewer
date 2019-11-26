@@ -24,7 +24,5 @@ void main() {
 	pointId = gl_VertexID;
     vec3 p = vbo[pointId].position.xyz;
 
-	p.xyz = p.xzy;
-    
     gl_Position = vec4(p, 1.0);
 }

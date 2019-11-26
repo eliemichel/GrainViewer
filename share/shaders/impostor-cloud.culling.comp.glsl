@@ -2,7 +2,7 @@
 #include "sys:defines"
 
 uniform uint nbPoints;
-uniform float uInstanceLimit = 1.05;
+uniform float instanceLimit = 1.05;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
@@ -35,9 +35,9 @@ void main() {
 	if (i >= nbPoints) return;
 
 	vec3 p = vbo[i].position.xyz;
-	vec4 position_cs = viewModelMatrix * vec4(p.xzy, 1.0);
+	vec4 position_cs = viewModelMatrix * vec4(p.xyz, 1.0);
 
-	if (length(position_cs) < uInstanceLimit) {
+	if (length(position_cs) < instanceLimit) {
 		// will be drawn as an instance
 		int nid = atomicAdd(pointers.nextInstanceElement, 1);
 		elements[nid] = i;
