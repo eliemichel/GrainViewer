@@ -177,7 +177,7 @@ bool ImpostorCloudRenderer::deserialize(const rapidjson::Value & json)
 	// Position
 	// TODO: this should be in another Component/DataObject
 	PointCloud cloud;
-	std::string & filename = ResourceManager::resolveResourcePath(json["pointcloud"].GetString());
+	std::string filename = ResourceManager::resolveResourcePath(json["pointcloud"].GetString());
 	if (endsWith(filename, ".bin")) {
 		cloud.loadBin(filename);
 	}

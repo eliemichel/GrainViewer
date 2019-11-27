@@ -28,4 +28,7 @@ add_library(libSOIL
 )
 
 target_include_directories(libSOIL PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+if(CMAKE_COMPILER_IS_GNUCC)
+	target_link_libraries(libSOIL LINK_PRIVATE GL)
+endif(CMAKE_COMPILER_IS_GNUCC)
 set_property(TARGET libSOIL PROPERTY FOLDER "External")

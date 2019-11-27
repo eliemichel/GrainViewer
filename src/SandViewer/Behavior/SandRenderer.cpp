@@ -56,7 +56,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	// Position
 	// TODO: this should be in another Component/DataObject
 	PointCloud cloud;
-	std::string & filename = ResourceManager::resolveResourcePath(json["pointcloud"].GetString());
+	std::string filename = ResourceManager::resolveResourcePath(json["pointcloud"].GetString());
 	if (endsWith(filename, ".bin")) {
 		cloud.loadBin(filename);
 	}
@@ -98,7 +98,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
-#define jrPropperty(prop) jrOption(json, #prop, m_properties. ## prop, m_properties. ## prop)
+#define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
 	jrPropperty(grainRadius);
 	jrPropperty(grainMeshScale);
 	jrPropperty(instanceLimit);
@@ -210,7 +210,7 @@ bool SandRenderer::load(const PointCloud & pointCloud) {
 	glBindVertexArray(m_vao);
 
 	glCreateBuffers(1, &m_vbo);
-	glNamedBufferStorage(m_vbo, static_cast<GLsizeiptr>(attributes.size() * sizeof(GLfloat)), attributes.data(), NULL);
+	glNamedBufferStorage(m_vbo, static_cast<GLsizeiptr>(attributes.size() * sizeof(GLfloat)), attributes.data(), 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);

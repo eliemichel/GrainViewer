@@ -31,7 +31,7 @@ bool World::deserialize(const rapidjson::Value & json)
 				jrOption(world, "prefilterEnv", prefilterEnv, false);
 
 				// Set skybox
-				std::string & path = ResourceManager::resolveResourcePath(world["dirname"].GetString());
+				//std::string path = ResourceManager::resolveResourcePath(world["dirname"].GetString());
 				//m_skybox.loadCubemap(path, generateMipMaps, prefilterEnv);
 				//m_skybox.reloadShaders();
 			}

@@ -53,6 +53,7 @@ add_library(imgui STATIC
 	imgui/examples/imgui_impl_opengl3.cpp
 )
 target_include_directories(imgui PUBLIC imgui imgui/examples)
+add_definitions(-DIMGUI_IMPL_OPENGL_LOADER_GLAD)
 target_link_libraries(imgui LINK_PRIVATE glad glfw)
 set_property(TARGET imgui PROPERTY FOLDER "External")
 

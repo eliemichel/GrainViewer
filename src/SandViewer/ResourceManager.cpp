@@ -6,7 +6,9 @@
 
 #include <glad/glad.h>
 #include <fstream>
+#include <algorithm>
 #include <filesystem>
+#include <cmath>
 namespace fs = std::filesystem;
 
 #include "utils/strutils.h"
@@ -143,7 +145,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & text
 	int imageWidth = 0, imageHeight = 0;
 	if (!ResourceManager::imageDimensions(textureFilenames[0], imageWidth, imageHeight)) {
 		ERR_LOG << "Could not load texture files.";
-		return false;
+		return nullptr;
 	}
 	GLsizei width = static_cast<GLsizei>(imageWidth);
 	GLsizei height = static_cast<GLsizei>(imageHeight);
@@ -159,7 +161,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & text
 	// Read all layers
 	for (size_t i = 0; i < textureFilenames.size(); ++i) {
 		if (!ResourceManager::loadTextureSubData(*tex, textureFilenames[i], static_cast<GLint>(i), width, height)) {
-			return false;
+			return nullptr;
 		}
 	}
 

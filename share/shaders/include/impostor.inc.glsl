@@ -91,21 +91,9 @@ Ray TransformRay(Ray ray, mat4 transform) {
 
 /**
  * Return the position and texture coordinates intersected by the ray in the i-th G-billboard of a spherical G-impostor
+ * Basic "PlaneHit" sampling scheme
  */
 SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius, uint n) {
-	/*/ Correct ray
-	vec3 hitPosition;
-	float correctionFactor = 0.9;
-	if (!intersectRaySphere(hitPosition, ray, p, radius * correctionFactor)) {
-		SphericalImpostorHit hit;
-		hit.position = vec3(-1.0);
-		hit.textureCoords = vec3(-1);
-		return hit; // No hit
-	}
-	ray.origin = hitPosition;
-	ray.direction = -ViewIndexToDirection(i, n);
-	//*/
-
 	mat4 bs_from_ws = InverseBakingViewMatrix(i, p, n);
 	Ray ray_bs = TransformRay(ray, bs_from_ws);
 
@@ -117,6 +105,46 @@ SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius
 	SphericalImpostorHit hit;
 	hit.position = ray.origin + l * ray.direction;
 	hit.textureCoords = vec3(clamp(uv_ts, vec2(0.0), vec2(1.0)), i);
+	return hit;
+}
+
+/**
+ * "SphereHit" sampling scheme
+ */
+SphericalImpostorHit IntersectRayBillboard_SphereHit(Ray ray, uint i, vec3 p, float radius, uint n, float hitSphereCorrectionFactor) {
+	vec3 hitPosition;
+	if (!intersectRaySphere(hitPosition, ray, p, radius * hitSphereCorrectionFactor)) {
+		SphericalImpostorHit hit;
+		hit.position = vec3(-1.0);
+		hit.textureCoords = vec3(-1);
+		return hit; // No hit
+	}
+	ray.origin = hitPosition;
+	ray.direction = -ViewIndexToDirection(i, n);
+	
+	return IntersectRayBillboard(ray, i, p, radius, n);
+}
+
+/**
+ * Mix of "PlaneHit" and "SphereHit" sampling schemes
+ */
+SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, vec3 p, float radius, uint n, float hitSphereCorrectionFactor) {
+	SphericalImpostorHit sphereHit = IntersectRayBillboard_SphereHit(ray, i, p, radius, n, hitSphereCorrectionFactor);
+	SphericalImpostorHit planeHit = IntersectRayBillboard(ray, i, p, radius, n);
+
+	// DEBUG
+	return sphereHit;
+
+	if (sphereHit.textureCoords.x < 0) {
+		return planeHit;
+	}
+
+	float distanceToCenter = length(ray.origin - p - dot(ray.origin - p, ray.direction) / dot(ray.direction,ray.direction) * ray.direction) / radius;
+	float t = smoothstep(hitSphereCorrectionFactor * .5, hitSphereCorrectionFactor, distanceToCenter);
+
+	SphericalImpostorHit hit;
+	hit.position = mix(sphereHit.position, planeHit.position, t);
+	hit.textureCoords = mix(sphereHit.textureCoords, planeHit.textureCoords, t);
 	return hit;
 }
 
@@ -156,10 +184,11 @@ GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, v
 	vec2 alpha;
 	DirectionToViewIndices(-ray.direction, n, i, alpha);
 
-	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.x, p, radius, n));
-	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.y, p, radius, n));
-	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.z, p, radius, n));
-	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.w, p, radius, n));
+	float fac = 0.65;
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.x, p, radius, n, fac));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.y, p, radius, n, fac));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.z, p, radius, n, fac));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.w, p, radius, n, fac));
 	
 	return LerpGFragment(
 		LerpGFragment(g1, g2, alpha.x),

@@ -1,4 +1,4 @@
-#include <limits>
+#include <climits>
 #include "GlTexture.h"
 
 const GLuint GlTexture::invalid = UINT_MAX;

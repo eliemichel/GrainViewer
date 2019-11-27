@@ -127,6 +127,10 @@ set(LIBS
 	tinypngout
 )
 
+if(CMAKE_COMPILER_IS_GNUCC)
+	list(APPEND LIBS stdc++fs)
+endif(CMAKE_COMPILER_IS_GNUCC)
+
 add_executable(SandViewer ${SRC})
 target_include_directories(SandViewer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(SandViewer LINK_PRIVATE ${LIBS})
