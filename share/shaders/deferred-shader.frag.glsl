@@ -1,12 +1,10 @@
 #version 450 core
-
 #include "sys:defines"
-//#define HDR
-//#define REINHART
-//#define DEBUG_HUD
-//#define SHOW_NORMAL
+
+#pragma variant WHITE_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_ALBEDO SHOW_POSITION
+#pragma variant HDR REINHART
+#define SHOW_NORMAL
 #define WHITE_BACKGROUND
-//#define OLD_BRDF
 
 #include "include/utils.inc.glsl"
 
@@ -136,6 +134,9 @@ void main() {
 #endif // SHOW_NORMAL
 #ifdef SHOW_ALBEDO
 	out_fragment.radiance.rgb = fragment.baseColor.rgb;
+#endif // SHOW_ALBEDO
+#ifdef SHOW_POSITION
+	out_fragment.radiance.rgb = fragment.ws_coord.rgb;
 #endif // SHOW_ALBEDO
 
 	out_fragment.normal = fragment.normal;

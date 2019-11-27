@@ -21,6 +21,8 @@ public:
 
 	const std::vector<std::shared_ptr<Light>> & lights() const { return m_lights; }
 
+	void clear();
+
 private:
 	std::vector<std::shared_ptr<Light>> m_lights;
 };

@@ -29,6 +29,11 @@ public:
 	GLuint depthTexture() const { return m_depthTexture; }
 	GLuint colorTexture(size_t i) const { return m_colorTextures[i]; }
 
+	GLuint raw() const { return m_framebufferId; }
+
+	GLsizei width() const { return m_width; }
+	GLsizei height() const { return m_height; }
+
 private:
 	void init();
 	void destroy();

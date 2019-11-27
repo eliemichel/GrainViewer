@@ -82,3 +82,4 @@ set_property(TARGET tinyexr PROPERTY FOLDER "External")
 
 # SOIL
 add_subdirectory(SOIL)
+add_subdirectory(tinypngout)

@@ -1,5 +1,8 @@
 #include <iostream>
 #include <fstream>
+#include <regex>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include <rapidjson/document.h>
 
@@ -30,7 +33,8 @@ static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeOb
 
 bool Scene::load(const std::string & filename)
 {
-	m_objects.clear();
+	clear();
+	m_filename = filename;
 
 	rapidjson::Document d;
 	bool valid;
@@ -76,6 +80,90 @@ bool Scene::load(const std::string & filename)
 		return false;
 	}
 
+	if (root.HasMember("cameras")) {
+		auto& cameras = root["cameras"];
+		if (!cameras.IsArray()) { ERR_LOG << "cameras field must be an array."; return false; }
+
+		m_viewportCameraIndex = 0;
+		for (rapidjson::SizeType i = 0; i < cameras.Size(); i++) {
+			auto& cameraJson = cameras[i];
+
+			auto camera = std::make_shared<TurntableCamera>();
+
+			if (cameraJson.HasMember("resolution")) {
+				auto& resolutionJson = cameraJson["resolution"];
+				if (resolutionJson.IsString()) {
+					std::string resolution = resolutionJson.GetString();
+					if (resolution != "auto") {
+						ERR_LOG << "Invalid resolution '" << resolution << "'. Resolution must either be an array of two int elements or the string 'auto'";
+					}
+					else {
+						camera->setFreezeResolution(false);
+					}
+				} else if (resolutionJson.IsArray()) {
+					if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
+						ERR_LOG << "Invalid resolution. Resolution must either be an array of two int elements or the string 'auto'";
+					} else {
+						int width = resolutionJson[0].GetInt();
+						int height = resolutionJson[1].GetInt();
+						camera->setResolution(width, height);
+						camera->setFreezeResolution(true);
+					}
+				} else {
+					ERR_LOG << "Invalid resolution '" << resolutionJson.GetString() << "'. Resolution must either be an array of two int elements or the string 'auto'";
+				}
+			}
+
+			if (cameraJson.HasMember("outputResolution")) {
+				auto& resolutionJson = cameraJson["outputResolution"];
+				if (resolutionJson.IsArray()) {
+					if (resolutionJson.IsString()) {
+						std::string resolution = resolutionJson.GetString();
+						if (resolution != "auto") {
+							ERR_LOG << "Invalid output resolution '" << resolution << "'. Output resolution must either be an array of two int elements or the string 'auto'";
+						}
+						else {
+							camera->outputSettings().autoOutputResolution = true;
+						}
+					}
+					else if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
+						ERR_LOG << "Invalid output resolution. Output resolution must either be an array of two int elements or the string 'auto'";
+					}
+					else {
+						auto& s = camera->outputSettings();
+						s.width = resolutionJson[0].GetInt();
+						s.height = resolutionJson[1].GetInt();
+						s.autoOutputResolution = false;
+					}
+				}
+				else {
+					ERR_LOG << "Invalid output resolution '" << resolutionJson.GetString() << "'. Output resolution must either be an array of two int elements or the string 'auto'";
+				}
+			}
+
+			if (cameraJson.HasMember("isRecordEnabled") && cameraJson["isRecordEnabled"].IsBool()) {
+				camera->outputSettings().isRecordEnabled = cameraJson["isRecordEnabled"].GetBool();
+			}
+
+			if (cameraJson.HasMember("outputFrameBase") && cameraJson["outputFrameBase"].IsString()) {
+				std::string outputFrameBase = cameraJson["outputFrameBase"].GetString();
+				outputFrameBase = std::regex_replace(
+					outputFrameBase,
+					std::regex("\\$BASEFILE"),
+					fs::path(m_filename).stem().string()
+				);
+				outputFrameBase = ResourceManager::resolveResourcePath(outputFrameBase);
+				camera->outputSettings().outputFrameBase = outputFrameBase;
+			}
+
+			m_cameras.push_back(camera);
+		}
+	}
+	else {
+		m_cameras.push_back(std::make_shared<TurntableCamera>());
+		m_viewportCameraIndex = 0;
+	}
+
 	if (root.HasMember("objects")) {
 		auto& objects = root["objects"];
 		if (!objects.IsArray()) { ERR_LOG << "objects field must be an array."; return false; }
@@ -118,6 +206,5 @@ bool Scene::load(const std::string & filename)
 
 	DEBUG_LOG << "Loading done.";
 
-	m_filename = filename;
 	return true;
 }

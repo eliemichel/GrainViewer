@@ -5,12 +5,16 @@
 // **************************************************
 
 #include <glad/glad.h>
+#include <fstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include "utils/strutils.h"
 #include "utils/fileutils.h"
 
 #include <SOIL.h>
 #include <tinyexr.h>
+#include <TinyPngOut.hpp>
 
 #include "GlTexture.h"
 #include "Logger.h"
@@ -226,6 +230,23 @@ static T * rotateImage(T *image, size_t width, size_t height, size_t nbChannels,
 		}
 	}
 	return rotated_image;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// File output
+///////////////////////////////////////////////////////////////////////////////
+
+bool ResourceManager::saveImage(const std::string & filename, int width, int height, const void *data)
+{
+	fs::create_directories(fs::path(filename).parent_path());
+	std::ofstream out(filename, std::ios::binary);
+	if (!out.is_open()) {
+		WARN_LOG << "Could not open file '" << filename << "'";
+		return false;
+	}
+	TinyPngOut pngout(static_cast<uint32_t>(width), static_cast<uint32_t>(height), out);
+	pngout.write(static_cast<const uint8_t*>(data), static_cast<size_t>(width * height));
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

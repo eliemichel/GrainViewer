@@ -209,6 +209,7 @@ void Gui::render() {
 	if (m_scene) {
 		m_scene->render();
 	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -222,13 +223,13 @@ void Gui::onResize(int width, int height) {
 		glfwGetFramebufferSize(window->glfw(), &fbWidth, &fbHeight);
 		glViewport(0, 0, fbWidth, fbHeight);
 		if (m_scene) {
-			m_scene->viewportCamera().setResolution(glm::vec2(fbWidth, fbHeight));
+			m_scene->setResolution(fbWidth, fbHeight);
 		}
 	}
 }
 
 void Gui::onMouseButton(int button, int action, int mods) {
-	if (m_imguiFocus || !m_scene) {
+	if (m_imguiFocus || !m_scene || !m_scene->viewportCamera()) {
 		return;
 	}
 
@@ -237,28 +238,28 @@ void Gui::onMouseButton(int button, int action, int mods) {
 	switch (button) {
 	case GLFW_MOUSE_BUTTON_LEFT:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera().startMouseRotation();
+			m_scene->viewportCamera()->startMouseRotation();
 		}
 		else {
-			m_scene->viewportCamera().stopMouseRotation();
+			m_scene->viewportCamera()->stopMouseRotation();
 		}
 		break;
 
 	case GLFW_MOUSE_BUTTON_MIDDLE:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera().startMouseZoom();
+			m_scene->viewportCamera()->startMouseZoom();
 		}
 		else {
-			m_scene->viewportCamera().stopMouseZoom();
+			m_scene->viewportCamera()->stopMouseZoom();
 		}
 		break;
 
 	case GLFW_MOUSE_BUTTON_RIGHT:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera().startMousePanning();
+			m_scene->viewportCamera()->startMousePanning();
 		}
 		else {
-			m_scene->viewportCamera().stopMousePanning();
+			m_scene->viewportCamera()->stopMousePanning();
 		}
 		break;
 	}
@@ -271,8 +272,8 @@ void Gui::onCursorPosition(double x, double y) {
 		return;
 	}
 
-	if (m_scene) {
-		m_scene->viewportCamera().updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+	if (m_scene && m_scene->viewportCamera()) {
+		m_scene->viewportCamera()->updateMousePosition(static_cast<float>(x), static_cast<float>(y));
 	}
 }
 
@@ -315,11 +316,15 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 			break;
 
 		case GLFW_KEY_A:
-			m_scene->viewportCamera().tiltLeft();
+			if (m_scene->viewportCamera()) {
+				m_scene->viewportCamera()->tiltLeft();
+			}
 			break;
 
 		case GLFW_KEY_E:
-			m_scene->viewportCamera().tiltRight();
+			if (m_scene->viewportCamera()) {
+				m_scene->viewportCamera()->tiltRight();
+			}
 			break;
 		}
 	}

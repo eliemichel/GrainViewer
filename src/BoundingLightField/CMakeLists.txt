@@ -121,6 +121,7 @@ set(LIBS
 	tinyobjloader
 	tinyexr
 	libSOIL
+	tinypngout
 )
 
 add_executable(BoundingLightField ${SRC})

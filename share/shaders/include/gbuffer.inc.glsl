@@ -20,13 +20,25 @@ struct GFragment {
 GFragment LerpGFragment(GFragment ga, GFragment gb, float t) {
 	GFragment g;
 	g.baseColor = mix(ga.baseColor, gb.baseColor, t);
-	g.normal = normalize(mix(ga.normal, gb.normal, t));
 	g.ws_coord = mix(ga.ws_coord, gb.ws_coord, t);
 	g.metallic = mix(ga.metallic, gb.metallic, t);
 	g.roughness = mix(ga.roughness, gb.roughness, t);
 	g.emission = mix(ga.emission, gb.emission, t);
 	g.alpha = mix(ga.alpha, gb.alpha, t);
 	g.material_id = ga.material_id; // cannot be interpolated
+
+	// Normal interpolation
+	float wa = (1 - t) * ga.alpha;
+	float wb = t * gb.alpha;
+
+	// Avoid trouble with NaNs in normals
+	if (wa == 0) ga.normal = vec3(0.0);
+	if (wb == 0) gb.normal = vec3(0.0);
+
+	g.normal = normalize(wa * ga.normal + wb * gb.normal);
+
+	// Naive interpolation
+	//g.normal = normalize(mix(ga.normal, gb.normal, t));
 	return g;
 }
 

@@ -91,3 +91,8 @@ void World::reloadShaders()
 
 void World::render(const Camera & camera) const
 {}
+
+void World::clear()
+{
+	m_lights.clear();
+}

@@ -70,6 +70,10 @@ public:
 	 */
 	static bool loadTextureSubData(GlTexture & texture, const fs::path & filepath, GLint zoffset, GLsizei refWidth, GLsizei refHeight, Rotation rotation = ROTATION0);
 
+public:
+	// File output
+	static bool saveImage(const std::string & filename, int width, int height, const void *data);
+
 private:
 	static std::unique_ptr<GlTexture> loadTextureSOIL(const fs::path & filepath, GLsizei levels);
 	static std::unique_ptr<GlTexture> loadTextureTinyExr(const fs::path & filepath, GLsizei levels);

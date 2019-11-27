@@ -31,7 +31,7 @@ Ray fragmentRay(in vec4 fragCoord, in mat4 projectionMatrix) {
 }
 
 
-vec3 intersectRaySphere(in Ray ray, in vec3 center, in float radius) {
+bool intersectRaySphere(out vec3 hitPosition, in Ray ray, in vec3 center, in float radius) {
     vec3 o = center - ray.origin;
     float d2 = dot(ray.direction, ray.direction);
     float r2 = radius * radius;
@@ -39,12 +39,16 @@ vec3 intersectRaySphere(in Ray ray, in vec3 center, in float radius) {
     float dp = dot(ray.direction, o);
     float delta = dp * dp / d2 - l2 + r2;
 
-    if (delta < 0) {
-        discard;
+    if (delta >= 0) {
+        float lambda = dp / d2 - sqrt(delta / d2);
+        if (lambda < 0) lambda += 2. * sqrt(delta / d2);
+        if (lambda >= 0) {
+            hitPosition = ray.origin + lambda * ray.direction;
+            return true;
+        }
     }
 
-    float lambda = dp / d2 - sqrt(delta / d2);
-    return ray.origin + lambda * ray.direction;
+    return false;
 }
 
 

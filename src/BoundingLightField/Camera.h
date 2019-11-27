@@ -7,12 +7,27 @@
 #pragma once
 
 #include <glad/glad.h>
+
+#include <memory>
+#include <string>
+
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+class Framebuffer;
+
 class Camera {
+public:
+	struct OutputSettings {
+		bool autoOutputResolution = true;
+		int width;
+		int height;
+		std::string outputFrameBase;
+		bool isRecordEnabled = false;
+	};
+
 public:
 	Camera();
 	~Camera();
@@ -29,7 +44,13 @@ public:
 	inline glm::vec2 resolution() const { return m_resolution; }
 	void setResolution(glm::vec2 resolution);
 	inline void setResolution(int w, int h) { setResolution(glm::vec2(static_cast<float>(w), static_cast<float>(h))); }
+	void setFreezeResolution(bool freeze);
 	void setFov(float fov);
+
+	OutputSettings & outputSettings() { return m_outputSettings; }
+	const OutputSettings & outputSettings() const { return m_outputSettings; }
+
+	std::shared_ptr<Framebuffer> framebuffer() const { return m_framebuffer; }
 
 	inline void setViewMatrix(glm::mat4 matrix) { m_viewMatrix = matrix; }  // use with caution
 	inline void setProjectionMatrix(glm::mat4 matrix) { m_projectionMatrix = matrix; }
@@ -81,6 +102,12 @@ protected:
 	bool m_isMouseRotationStarted, m_isMouseZoomStarted, m_isMousePanningStarted;
 	bool m_isLastMouseUpToDate;
 	float m_lastMouseX, m_lastMouseY;
+
+	bool m_freezeResolution;
+
+	std::shared_ptr<Framebuffer> m_framebuffer;
+
+	OutputSettings m_outputSettings;
 
 	GLuint m_ubo;
 };

@@ -93,6 +93,19 @@ Ray TransformRay(Ray ray, mat4 transform) {
  * Return the position and texture coordinates intersected by the ray in the i-th G-billboard of a spherical G-impostor
  */
 SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius, uint n) {
+	/*/ Correct ray
+	vec3 hitPosition;
+	float correctionFactor = 0.9;
+	if (!intersectRaySphere(hitPosition, ray, p, radius * correctionFactor)) {
+		SphericalImpostorHit hit;
+		hit.position = vec3(-1.0);
+		hit.textureCoords = vec3(-1);
+		return hit; // No hit
+	}
+	ray.origin = hitPosition;
+	ray.direction = -ViewIndexToDirection(i, n);
+	//*/
+
 	mat4 bs_from_ws = InverseBakingViewMatrix(i, p, n);
 	Ray ray_bs = TransformRay(ray, bs_from_ws);
 
@@ -111,7 +124,14 @@ SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius
  * Sample the billboard textures to return a GFragment
  */
 GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) {
-	// Sample textures
+	// If invalid hit, return transparent fragment
+	if (hit.textureCoords.x < 0) {
+		GFragment g;
+		g.alpha = 0.0;
+		return g;
+	}
+
+	// Otherwise, sample textures
 	vec4 normalAlpha = texture(impostor.normalAlphaTexture, hit.textureCoords);
 	vec4 baseColor = texture(impostor.baseColorTexture, hit.textureCoords);
 	vec4 metallicRoughnes = texture(impostor.metallicRoughnesTexture, hit.textureCoords);
@@ -165,23 +185,13 @@ GFragment IntersectRaySphere(Ray ray, vec3 p, float radius) {
 	GFragment g;
 	g.material_id = forwardBaseColorMaterial;
 
-	vec3 o = p - ray.origin;
-    float d2 = dot(ray.direction, ray.direction);
-    float r2 = radius * radius;
-    float l2 = dot(o, o);
-    float dp = dot(ray.direction, o);
-    float delta = dp * dp / d2 - l2 + r2;
-
-    if (delta < 0) {
-    	g.alpha = 0.0;
-    } else {
-	    float lambda = dp / d2 - sqrt(delta / d2);
-	    if (lambda < 0) lambda += 2. * sqrt(delta / d2);
-	    if (lambda >= 0) {
-		    vec3 inter = ray.origin + lambda * ray.direction;
-		    g.baseColor.rgb = normalize(inter - p) * .5 + .5;
-		    g.alpha = 1.0;
-		}
+	vec3 hitPosition;
+	if (intersectRaySphere(hitPosition, ray, p, radius)) {
+		g.baseColor.rgb = normalize(hitPosition - p) * .5 + .5;
+		g.normal.rgb = normalize(hitPosition - p);
+		g.alpha = 1.0;
+	} else {
+		g.alpha = 0.0;
 	}
 
 	return g;

@@ -5,6 +5,19 @@
 
 #include "SandRendererDialog.h"
 
+void BeginDisable(bool disable) {
+	if (disable) {
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+}
+void EndDisable(bool disable) {
+	if (disable) {
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
+}
+
 void SandRendererDialog::draw()
 {
 	if (auto cont = m_cont.lock()) {
@@ -12,6 +25,7 @@ void SandRendererDialog::draw()
 			bool enabled = cont->isEnabled();
 			ImGui::Checkbox("Enabled", &enabled);
 			cont->setEnabled(enabled);
+			BeginDisable(!enabled);
 
 			SandRenderer::Properties & props = cont->properties();
 
@@ -21,24 +35,26 @@ void SandRendererDialog::draw()
 			
 			// Instance limit distance
 			static bool onlyInstances = false;
+			static bool onlyImpostors = false;
 			static float instanceLimit = 0.0f;
 			bool wasOnlyInstances = onlyInstances;
+			bool wasOnlyImpostors = onlyImpostors;
 			ImGui::Checkbox("Only Instances", &onlyInstances);
-			if (onlyInstances) {
-				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-			} else if (!wasOnlyInstances) {
+			ImGui::Checkbox("Only Impostors", &onlyImpostors);
+			if (!onlyInstances && !wasOnlyInstances && !onlyImpostors && !wasOnlyImpostors) {
 				instanceLimit = props.instanceLimit;
 			}
+
+			BeginDisable(onlyInstances || onlyImpostors);
 			ImGui::SliderFloat("Instance Limit Distance", &instanceLimit, 1.0f, 5.0f, "distance = %.2f");
-			if (onlyInstances) {
-				ImGui::PopItemFlag();
-				ImGui::PopStyleVar();
-			}
-			props.instanceLimit = onlyInstances ? std::numeric_limits<float>::infinity() : instanceLimit;
+			EndDisable(onlyInstances || onlyImpostors);
+
+			props.instanceLimit = onlyInstances ? std::numeric_limits<float>::infinity() : (onlyImpostors ? 0 : instanceLimit);
 
 			ImGui::Checkbox("Disable Impostors", &props.disableImpostors);
 			ImGui::Checkbox("Disable Instances", &props.disableInstances);
+
+			EndDisable(!enabled);
 		}
 	}
 }

@@ -30,6 +30,8 @@ uniform float roughness = 0.5;
 uniform float metallic = 0.0;
 
 void main() {
+	mat3 ws_from_gs_rot = transpose(mat3(gs_from_ws));
+
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
     Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
     Ray ray_gs = TransformRay(ray_ws, gs_from_ws);
@@ -49,10 +51,12 @@ void main() {
 	fragment = IntersectRayCube(ray_ws, position_ws, radius);
 #endif
 
-	fragment.normal = transpose(mat3(gs_from_ws)) * fragment.normal;
+	fragment.normal = ws_from_gs_rot * fragment.normal;
+	fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
 	fragment.material_id = pbrMaterial;
 
-	if (fragment.alpha < 0.5) discard;
+	if (fragment.alpha < 0.2) discard;
+	//if (dot(fragment.normal, ray_ws.direction) >= 0.0) discard;
 
 #ifdef PROCEDURAL_BASECOLOR
 	float r = randomGrainColorFactor(int(id));
