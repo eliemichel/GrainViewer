@@ -9,7 +9,7 @@ mat3 randomGrainOrientation(int id) {
     return mat3(vx, vy * cos(t) - vz * sin(t), vy * sin(t) + vz * cos(t));
 }
 
-mat4 randomGrainMatrix(int id, vec3 position_ws = vec3(0.0, 0.0, 0.0)) {
+mat4 randomGrainMatrix(int id, vec3 position_ws) {
 #ifdef NO_GRAIN_ROTATION
     mat3 rot = mat3(1.0);
 #else // NO_GRAIN_ROTATION

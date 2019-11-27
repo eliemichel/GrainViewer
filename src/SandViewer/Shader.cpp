@@ -41,7 +41,7 @@ bool Shader::load(const std::string &filename, const std::vector<std::string> & 
 	const GLchar *source = &buf[0];
     glShaderSource(m_shaderId, 1, &source, 0);
 
-#if _DEBUG
+#ifndef NDEBUG
 	m_preprocessor = preprocessor;
 #endif
 
@@ -64,17 +64,20 @@ bool Shader::check(const std::string & name) const {
 			ERR_LOG << "(Driver reported no error message)";
 		}
 		else {
-#ifdef _DEBUG
+#ifndef NDEBUG
 			// Example of error message:
 			// 0(158) : error C0000: syntax error, unexpected '/' at token "/"
 			// another example: (intel graphics)
 			// ERROR: 0:506: '=' : syntax error syntax error
+			// or
+			// 0:42(50): error: syntax error, unexpected '=', expecting ')'
 			std::regex errorPatternA(R"(^(\d+)\((\d+)\) (.*)$)");
 			std::regex errorPatternB(R"(^ERROR: (\d+):(\d+): (.*)$)");
+			std::regex errorPatternC(R"(^\d+:(\d+)\((\d+)\): error: (.*))");
 
 			int line = 0;
-			std::string msg = "";
 			std::string s(log);
+			std::string msg = s;
 			std::smatch match;
 			if (regex_search(s, match, errorPatternA)) {
 				line = stoi(match[2].str());
@@ -84,11 +87,15 @@ bool Shader::check(const std::string & name) const {
 				line = stoi(match[2].str());
 				msg = match[3].str();
 			}
+			else if (regex_search(s, match, errorPatternC)) {
+				line = stoi(match[1].str());
+				msg = match[3].str();
+			}
 			ERR_LOG << msg;
 			m_preprocessor.logTraceback(static_cast<size_t>(line));
-#else // _DEBUG
+#else // NDEBUG
 			ERR_LOG << log;
-#endif // _DEBUG
+#endif // NDEBUG
 		}
 
 		delete[] log;
