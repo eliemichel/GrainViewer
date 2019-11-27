@@ -32,7 +32,7 @@
 #include "Scene.h"
 
 int main(int argc, char *argv[]) {
-	const char *title = "Bounding Light Field -- Copyright (c) 2019 -- CG Group @ Telecom Paris";
+	const char *title = "Sand Viewer -- Copyright (c) 2019 -- Elie Michel / CG Group @ Telecom Paris";
 
 	std::string filename = "scene.json";
 	if (argc >= 2) {

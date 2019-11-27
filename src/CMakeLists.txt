@@ -24,4 +24,4 @@
 add_subdirectory(External)
 
 # Then we build our project
-add_subdirectory(BoundingLightField)
+add_subdirectory(SandViewer)
