@@ -20,6 +20,7 @@
 #include "World.h"
 #include "GlDeferredShader.h"
 
+class AnimationManager;
 class RuntimeObject;
 
 class Scene {
@@ -51,12 +52,15 @@ private:
 	int m_viewportCameraIndex;
 	std::vector<std::shared_ptr<Camera>> m_cameras;
 	std::vector<std::shared_ptr<RuntimeObject>> m_objects;
+	std::shared_ptr<AnimationManager> m_animationManager;
 	bool m_isDeferredShadingEnabled = true;
 
 	// Framebuffer used before writing image if the output resolution is different from camera resolution
 	std::unique_ptr<Framebuffer> m_outputFramebuffer;
 	int m_frameIndex;
 	std::vector<uint8_t> m_pixels;
+
+	float m_fps;
 
 	// Not really related to the scene, save window resolution
 	int m_width;

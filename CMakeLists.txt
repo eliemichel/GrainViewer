@@ -21,7 +21,7 @@
 # in the Software.
 
 cmake_minimum_required(VERSION 3.0)
-project(BoundingLightField)
+project(SandViewer)
 
 include(cmake/utils.cmake)
 

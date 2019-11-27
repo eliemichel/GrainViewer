@@ -13,6 +13,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/euler_angles.hpp>
 
 #include "Logger.h"
 #include "Camera.h"
@@ -129,4 +130,204 @@ void Camera::updateMousePosition(float x, float y)
 	m_lastMouseX = x;
 	m_lastMouseY = y;
 	m_isLastMouseUpToDate = true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Serialization
+///////////////////////////////////////////////////////////////////////////////
+
+#include <regex>
+#include <fstream>
+#include <filesystem>
+namespace fs = std::filesystem;
+#define _USE_MATH_DEFINES
+#include <math.h>
+
+#include "ResourceManager.h"
+#include "AnimationManager.h"
+
+void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
+{
+
+	if (json.HasMember("resolution")) {
+		auto& resolutionJson = json["resolution"];
+		if (resolutionJson.IsString()) {
+			std::string resolution = resolutionJson.GetString();
+			if (resolution != "auto") {
+				ERR_LOG << "Invalid resolution '" << resolution << "'. Resolution must either be an array of two int elements or the string 'auto'";
+			}
+			else {
+				setFreezeResolution(false);
+			}
+		}
+		else if (resolutionJson.IsArray()) {
+			if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
+				ERR_LOG << "Invalid resolution. Resolution must either be an array of two int elements or the string 'auto'";
+			}
+			else {
+				int width = resolutionJson[0].GetInt();
+				int height = resolutionJson[1].GetInt();
+				setResolution(width, height);
+				setFreezeResolution(true);
+			}
+		}
+		else {
+			ERR_LOG << "Invalid resolution '" << resolutionJson.GetString() << "'. Resolution must either be an array of two int elements or the string 'auto'";
+		}
+	}
+
+	if (json.HasMember("outputResolution")) {
+		auto& resolutionJson = json["outputResolution"];
+		if (resolutionJson.IsArray()) {
+			if (resolutionJson.IsString()) {
+				std::string resolution = resolutionJson.GetString();
+				if (resolution != "auto") {
+					ERR_LOG << "Invalid output resolution '" << resolution << "'. Output resolution must either be an array of two int elements or the string 'auto'";
+				}
+				else {
+					outputSettings().autoOutputResolution = true;
+				}
+			}
+			else if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
+				ERR_LOG << "Invalid output resolution. Output resolution must either be an array of two int elements or the string 'auto'";
+			}
+			else {
+				auto& s = outputSettings();
+				s.width = resolutionJson[0].GetInt();
+				s.height = resolutionJson[1].GetInt();
+				s.autoOutputResolution = false;
+			}
+		}
+		else {
+			ERR_LOG << "Invalid output resolution '" << resolutionJson.GetString() << "'. Output resolution must either be an array of two int elements or the string 'auto'";
+		}
+	}
+
+	if (json.HasMember("isRecordEnabled")) {
+		if (json["isRecordEnabled"].IsBool()) {
+			outputSettings().isRecordEnabled = json["isRecordEnabled"].GetBool();
+		} else if (json["isRecordEnabled"].IsObject() && animations) {
+			auto& anim = json["isRecordEnabled"];
+			if (anim.HasMember("start") && anim.HasMember("end") && anim["start"].IsInt() && anim["end"].IsInt()) {
+				int start = anim["start"].GetInt();
+				int end = anim["end"].GetInt();
+				animations->addAnimation([start, end, this](float time, int frame) {
+					outputSettings().isRecordEnabled = frame >= start && frame <= end;
+				});
+			}
+		}
+	}
+
+	if (json.HasMember("outputFrameBase") && json["outputFrameBase"].IsString()) {
+		std::string outputFrameBase = json["outputFrameBase"].GetString();
+		outputFrameBase = std::regex_replace(outputFrameBase, std::regex("\\$BASEFILE"), env.baseFile);
+		outputFrameBase = ResourceManager::resolveResourcePath(outputFrameBase);
+		outputSettings().outputFrameBase = outputFrameBase;
+	}
+
+	if (json.HasMember("orthographicScale") && json["orthographicScale"].IsFloat()) {
+		float orthographicScale = json["orthographicScale"].GetFloat();
+		setOrthographicScale(orthographicScale);
+	}
+
+	if (json.HasMember("projection") && json["projection"].IsString()) {
+		std::string projection = json["projection"].GetString();
+		if (projection == "orthographic") {
+			setProjectionType(Camera::OrthographicProjection);
+		}
+		else if (projection == "perspective") {
+			setProjectionType(Camera::PerspectiveProjection);
+		}
+		else {
+			ERR_LOG << "Invalid projection type: '" << projection << "'";
+		}
+	}
+
+	glm::vec3 pos = position();
+	glm::vec3 euler = glm::vec3(0.0f, 0.0f, 0.0f);
+
+	if (json.HasMember("position")) {
+		auto& p = json["position"];
+		bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
+		if (!valid) {
+			ERR_LOG << "camera position must be an array of 3 numbers";
+		} else {
+			pos = glm::vec3(p[0].GetFloat(), p[1].GetFloat(), p[2].GetFloat());
+		}
+	}
+
+	if (json.HasMember("rotationEuler")) {
+		auto& p = json["rotationEuler"];
+		bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
+		if (!valid) {
+			ERR_LOG << "camera rotation_euler must be an array of 3 numbers";
+		} else {
+			euler = glm::vec3(p[0].GetFloat() * M_PI / 180.0f, p[1].GetFloat() * M_PI / 180.0f, p[2].GetFloat() * M_PI / 180.0f);
+		}
+	}
+
+	glm::mat4 viewMatrix = glm::mat4(1.0f);
+	viewMatrix = glm::translate(viewMatrix, pos);
+	viewMatrix = viewMatrix * glm::eulerAngleXYZ(euler.x, euler.y, euler.z);
+	setViewMatrix(viewMatrix);
+
+	if (json.HasMember("viewMatrix")) {
+		auto& mat = json["viewMatrix"];
+		if (mat.IsArray()) {
+			bool valid = true;
+			for (int i = 0; i < 16 && valid; ++i) valid = valid && mat[i].IsNumber();
+			if (!valid) {
+				ERR_LOG << "viewMatrix must be either a 16-float array or an object";
+			} else {
+				float data[16];
+				for (int i = 0; i < 16; ++i) data[i] = mat[i].GetFloat();
+				glm::mat4 viewMatrix = glm::make_mat4(data);
+				setViewMatrix(viewMatrix);
+			}
+		}
+		else if (mat.IsObject()) {
+			bool valid = mat.HasMember("buffer") && mat.HasMember("startFrame") && mat["buffer"].IsString() && mat["startFrame"].IsNumber();
+			if (!valid) {
+				ERR_LOG << "viewMatrix object must provide 'buffer' (string) and 'startFrame' (number) fields";
+			}
+			else if (animations) {
+				std::string path = ResourceManager::resolveResourcePath(mat["buffer"].GetString());
+				LOG << "Loading camera movement from " << path << "...";
+
+				std::ifstream file(path, std::ios::binary | std::ios::ate);
+				if (!file.is_open()) {
+					ERR_LOG << "Could not open viewMatrix buffer file: " << path;
+				}
+				std::streamsize size = file.tellg() / sizeof(float);
+				file.seekg(0, std::ios::beg);
+				std::shared_ptr<float[]> buffer(new float[size]);
+				if (!file.read(reinterpret_cast<char*>(buffer.get()), size * sizeof(float))) {
+					ERR_LOG << "Could not read viewMatrix buffer from file: " << path;
+				}
+				if (size % 16 != 0) {
+					ERR_LOG << "viewMatrix buffer size must be a multiple of 16 (in file " << path << ")";
+				}
+
+				int startFrame = mat["startFrame"].GetInt();
+				int endFrame = startFrame + static_cast<int>(size) / 16 - 1;
+				animations->addAnimation([startFrame, endFrame, buffer, this](float time, int frame) {
+					if (frame >= startFrame && frame < endFrame) {
+						glm::mat4 viewMatrix = glm::make_mat4(buffer.get() + 16 * (frame - startFrame));
+						setViewMatrix(viewMatrix);
+						updateUbo();
+					}
+				});
+			}
+		}
+	}
+
+	if (json.HasMember("fov")) {
+		auto& fov = json["fov"];
+		if (!fov.IsNumber()) {
+			ERR_LOG << "camera fov must be a number";
+		}
+		else {
+			setFov(fov.GetFloat());
+		}
+	}
 }

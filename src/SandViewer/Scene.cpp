@@ -12,6 +12,7 @@
 #include "ResourceManager.h"
 #include "ShaderPool.h"
 #include "Logger.h"
+#include "AnimationManager.h"
 #include "utils/fileutils.h"
 
 #if _DEBUG
@@ -22,7 +23,9 @@ using namespace std;
 
 Scene::Scene()
 	: m_viewportCameraIndex(0)
+	, m_fps(25)
 {
+	m_animationManager = std::make_shared<AnimationManager>();
 	clear();
 }
 
@@ -47,6 +50,12 @@ void Scene::reloadShaders() {
 
 void Scene::update(float time) {
 	++m_frameIndex;
+	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
+		// If recording, slow down the game to ensure that it will play back correctly
+		time = m_frameIndex / m_fps;
+	}
+
+	m_animationManager->update(time, m_frameIndex);
 
 	if (viewportCamera()) {
 		viewportCamera()->update(time);
@@ -142,6 +151,7 @@ void Scene::clear()
 	m_objects.clear();
 	m_cameras.clear();
 	m_world.clear();
+	m_animationManager->clear();
 	m_frameIndex = -1;
 }
 
@@ -175,8 +185,8 @@ void Scene::recordFrame(const Camera & camera) const
 		else if (outputSettings.autoOutputResolution) {
 			// output default framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glReadPixels(0, 0, m_width, m_width, GL_RGB, GL_UNSIGNED_BYTE, const_cast<void*>(pixels));
-			ResourceManager::saveImage(filename, m_width, m_width, pixels);
+			glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, const_cast<void*>(pixels));
+			ResourceManager::saveImage(filename, m_width, m_height, pixels);
 		}
 		else if (m_outputFramebuffer) {
 			// output dedicated output framebuffer

@@ -69,9 +69,12 @@ set(SRC
 	main.cpp
 	bufferFillers.h
 	bufferFillers.cpp
+	AnimationManager.h
+	AnimationManager.cpp
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h
+	EnvironmentVariables.h
 	Framebuffer.h
 	Framebuffer.cpp
 	GlBuffer.h

@@ -1,11 +1,27 @@
 {"augen":{
 	"shaderRoot": "..\\..\\Data\\shaders-piper-beach3",
 
-	"context": {
-		"outputFrameBase": "..\\..\\Record\\shaders-piper-beach3\\beauty\\frame",
-		"isRecordEnabled": false,
-		"isGizmoEnabled": false
-	},
+	"cameras": [
+		{
+			"position": [0.7, -0.6, -5],
+			"rotationEuler": [90, 180, 0],
+			"fov": 24,
+			"//viewMatrix": {
+				"": "(must be column major)",
+				"buffer": "..\\..\\Anim\\heap-turnaround.bin",
+				"startFrame": 0
+			},
+
+			"projection": "orthographic",
+			"orthographicsSale": 2.0,
+
+
+			"outputFrameBase": "..\\..\\Record\\Augen2\\$BASEFILE\\beauty\\frame",
+			"//resolution": [256, 256],
+			"//outputResolution": [128, 128],
+			"//isRecordEnabled": true
+		}
+	],
 
 	"world": {
 		"type": "skybox",
@@ -53,8 +69,8 @@
 					"type": "TransformBehavior",
 					"modelMatrix": [
 						1, 0, 0, 0,
-						0, 0, 1, 0,
 						0, 1, 0, 0,
+						0, 0, 1, 0,
 						0, 0, 0, 1
 					]
 				},
@@ -64,38 +80,22 @@
 				},
 				{
 					"type": "SandRenderer",
-					"pointcloud": "..\\piper-beach3.bin",
+					"pointcloud": "..\\heap-positions.bin",
 					"models": [
-						{
-							"normalAlpha": "..\\..\\Output\\grain000\\ws_normal"
-						},
-						{
-							"normalAlpha": "..\\..\\Output\\grain000\\ws_normal"
-						},
 						{
 							"normalAlpha": "..\\..\\Output\\grain000\\ws_normal"
 						}
 					],
-					"colormap": "..\\colormap.png",
+					"colormap": "..\\colormap3.png",
 					"shader": "ImpostorCloud",
 					"cullingShader": "PointCloudCulling",
 					"instanceCloudShader": "InstanceCloud",
-					"grainRadius": 0.012,
-					"grainMeshScale": 2.3
+					"grainRadius": 0.044,
+					"grainMeshScale": 2.3,
+					"instanceLimit": 1.20
 				}
 			]
 		}
-	],
-
-	"camera": {
-		"position": [0.7, -0.6, -5],
-		"rotationEuler": [90, 180, 0],
-		"fov": 24,
-		"//viewMatrix": {
-			"": "(must be column major)",
-			"buffer": "..\\..\\Anim\\heap-turnaround.bin",
-			"startFrame": 0
-		}
-	}
+	]
 
 }}
