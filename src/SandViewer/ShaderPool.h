@@ -31,8 +31,8 @@ public:
 
 private:
 	ShaderPool() {}
-	ShaderPool& operator=(const ShaderPool&) {}
-	ShaderPool(const ShaderPool&) {}
+	ShaderPool& operator=(const ShaderPool&) = delete;
+	ShaderPool(const ShaderPool&) = delete;
 
 	void addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines);
 	void addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define);

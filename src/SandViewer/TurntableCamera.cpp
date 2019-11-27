@@ -34,11 +34,11 @@ void TurntableCamera::updateDeltaMouseRotation(float x1, float y1, float x2, flo
 	// rotate around camera X axis by dy
 	theta = dy * m_sensitivity;
 	vec3 xAxis = vec3(glm::row(m_viewMatrix, 0));
-	m_quat *= quat(cos(theta / 2.f), sin(theta / 2.f) * xAxis);
+	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * xAxis);
 
 	// rotate around world Z axis by dx
 	theta = dx * m_sensitivity;
-	m_quat *= quat(cos(theta / 2.f), sin(theta / 2.f) * vec3(0.f, 0.f, 1.f));
+	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * vec3(0.f, 0.f, 1.f));
 
 	updateViewMatrix();
 }
@@ -70,7 +70,7 @@ void TurntableCamera::updateDeltaMousePanning(float x1, float y1, float x2, floa
 
 void TurntableCamera::tilt(float theta) {
 	vec3 zAxis = vec3(glm::row(m_viewMatrix, 2));
-	m_quat *= quat(cos(theta / 2.f), sin(theta / 2.f) * zAxis);
+	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * zAxis);
 	updateViewMatrix();
 }
 

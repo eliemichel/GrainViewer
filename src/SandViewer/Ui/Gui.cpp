@@ -129,8 +129,8 @@ void Gui::beforeLoading()
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoTitleBar);
-	ImGui::Text("");
-	ImGui::Text("");
+	ImGui::Text(" ");
+	ImGui::Text(" ");
 	ImGui::Text("Loading scene...");
 	ImGui::End();
 	ImGui::Render();

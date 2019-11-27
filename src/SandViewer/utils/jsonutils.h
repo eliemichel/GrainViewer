@@ -22,19 +22,19 @@ typedef rapidjson::Writer<rapidjson::OStreamWrapper> JsonWriter;
 
 bool jrString(const rapidjson::Value& json, const std::string & key, std::string & target, const std::string & parentName);
 
-template<typename T> static inline bool _read(T & target, const rapidjson::Value& json) {
+template<typename T> inline bool _read(T & target, const rapidjson::Value& json) {
 	return json.IsObject() && target.readJson(json);
 }
-template<> static inline bool _read(float & target, const rapidjson::Value& json) {
+template<> inline bool _read(float & target, const rapidjson::Value& json) {
 	return json.IsNumber() && ((target = json.GetFloat()) || true);
 }
-template<> static inline bool _read(int & target, const rapidjson::Value& json) {
+template<> inline bool _read(int & target, const rapidjson::Value& json) {
 	return json.IsInt() && ((target = json.GetInt()) || true);
 }
-template<> static inline bool _read(bool & target, const rapidjson::Value& json) {
+template<> inline bool _read(bool & target, const rapidjson::Value& json) {
 	return json.IsBool() && ((target = json.GetBool()) || true);
 }
-template<> static inline bool _read(std::string & target, const rapidjson::Value& json) {
+template<> inline bool _read(std::string & target, const rapidjson::Value& json) {
 	if (!json.IsString()) return false;
 	target = json.GetString();
 	return true;
@@ -83,22 +83,22 @@ inline bool jrArray(const rapidjson::Value& json, const std::string & key, std::
 }
 
 
-template<typename T> static inline void _write(const T & v, JsonWriter & writer) {
+template<typename T> inline void _write(const T & v, JsonWriter & writer) {
 	v.writeJson(writer);
 }
-template<> static inline void _write(const float & v, JsonWriter & writer) {
+template<> inline void _write(const float & v, JsonWriter & writer) {
 	writer.Double(v);
 }
-template<> static inline void _write(const int & v, JsonWriter & writer) {
+template<> inline void _write(const int & v, JsonWriter & writer) {
 	writer.Int(v);
 }
-template<> static inline void _write(const bool & v, JsonWriter & writer) {
+template<> inline void _write(const bool & v, JsonWriter & writer) {
 	writer.Bool(v);
 }
-template<> static inline void _write(const std::string & v, JsonWriter & writer) {
+template<> inline void _write(const std::string & v, JsonWriter & writer) {
 	writer.String(v.c_str());
 }
-static inline void _write(const char* v, JsonWriter & writer) {
+inline void _write(const char* v, JsonWriter & writer) {
 	writer.String(v);
 }
 
