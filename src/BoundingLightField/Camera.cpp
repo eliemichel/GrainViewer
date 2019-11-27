@@ -24,6 +24,7 @@ Camera::Camera()
 	, m_isMousePanningStarted(false)
 	, m_isLastMouseUpToDate(false)
 	, m_fov(45.0f)
+	, m_orthographicScale(1.0f)
 	, m_freezeResolution(false)
 {
 	initUbo();
@@ -65,10 +66,19 @@ void Camera::setResolution(glm::vec2 resolution)
 	}
 
 	m_resolution = resolution;
-	if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
-		m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, 0.001f, 10000.f);
+	switch (m_projectionType) {
+	case PerspectiveProjection:
+		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
+			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, 0.001f, 10000.f);
+		}
+		break;
+	case OrthographicProjection:
+	{
+		float ratio = m_resolution.x > 0.0f ? m_resolution.y / m_resolution.x : 1.0f;
+		m_projectionMatrix = glm::ortho(-m_orthographicScale, m_orthographicScale, -m_orthographicScale * ratio, m_orthographicScale * ratio, 0.001f, 10000.f);
+		break;
 	}
-	//m_projectionMatrix = glm::ortho(-1.f, 1.f, -1.f, 1.f, 0.001f, 10000.f);
+	}
 	updateUbo();
 }
 
@@ -88,6 +98,18 @@ void Camera::setFreezeResolution(bool freeze)
 void Camera::setFov(float fov)
 {
 	m_fov = fov;
+	setResolution(m_resolution); // update projection matrix
+}
+
+void Camera::setOrthographicScale(float orthographicScale)
+{
+	m_orthographicScale = orthographicScale;
+	setResolution(m_resolution); // update projection matrix
+}
+
+void Camera::setProjectionType(ProjectionType projectionType)
+{
+	m_projectionType = projectionType;
 	setResolution(m_resolution); // update projection matrix
 }
 

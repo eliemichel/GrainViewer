@@ -20,6 +20,10 @@ class Framebuffer;
 
 class Camera {
 public:
+	enum ProjectionType {
+		PerspectiveProjection,
+		OrthographicProjection,
+	};
 	struct OutputSettings {
 		bool autoOutputResolution = true;
 		int width;
@@ -46,11 +50,15 @@ public:
 	inline void setResolution(int w, int h) { setResolution(glm::vec2(static_cast<float>(w), static_cast<float>(h))); }
 	void setFreezeResolution(bool freeze);
 	void setFov(float fov);
+	void setOrthographicScale(float orthographicScale);
+	float orthographicScale() const { return m_orthographicScale; }
 
 	OutputSettings & outputSettings() { return m_outputSettings; }
 	const OutputSettings & outputSettings() const { return m_outputSettings; }
 
 	std::shared_ptr<Framebuffer> framebuffer() const { return m_framebuffer; }
+
+	void setProjectionType(ProjectionType projectionType);
 
 	inline void setViewMatrix(glm::mat4 matrix) { m_viewMatrix = matrix; }  // use with caution
 	inline void setProjectionMatrix(glm::mat4 matrix) { m_projectionMatrix = matrix; }
@@ -98,6 +106,7 @@ protected:
 	glm::vec2 m_resolution;
 	glm::mat4 m_viewMatrix, m_projectionMatrix;
 	float m_fov;
+	float m_orthographicScale;
 
 	bool m_isMouseRotationStarted, m_isMouseZoomStarted, m_isMousePanningStarted;
 	bool m_isLastMouseUpToDate;
@@ -108,6 +117,7 @@ protected:
 	std::shared_ptr<Framebuffer> m_framebuffer;
 
 	OutputSettings m_outputSettings;
+	ProjectionType m_projectionType;
 
 	GLuint m_ubo;
 };

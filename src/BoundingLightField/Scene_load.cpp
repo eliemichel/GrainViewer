@@ -156,6 +156,22 @@ bool Scene::load(const std::string & filename)
 				camera->outputSettings().outputFrameBase = outputFrameBase;
 			}
 
+			if (cameraJson.HasMember("orthographicScale") && cameraJson["orthographicScale"].IsFloat()) {
+				float orthographicScale = cameraJson["orthographicScale"].GetFloat();
+				camera->setOrthographicScale(orthographicScale);
+			}
+
+			if (cameraJson.HasMember("projection") && cameraJson["projection"].IsString()) {
+				std::string projection = cameraJson["projection"].GetString();
+				if (projection == "orthographic") {
+					camera->setProjectionType(Camera::OrthographicProjection);
+				} else if (projection == "perspective") {
+					camera->setProjectionType(Camera::PerspectiveProjection);
+				} else {
+					ERR_LOG << "Invalid projection type: '" << projection << "'";
+				}
+			}
+
 			m_cameras.push_back(camera);
 		}
 	}

@@ -45,9 +45,15 @@ void TurntableCamera::updateDeltaMouseRotation(float x1, float y1, float x2, flo
 
 void TurntableCamera::updateDeltaMouseZoom(float x1, float y1, float x2, float y2) {
 	float dy = y2 - y1;
-	m_zoom *= (1.f + dy * m_zoomSensitivity);
+	float fac = 1.f + dy * m_zoomSensitivity;
+	m_zoom *= fac;
 	m_zoom = std::max(m_zoom, 0.0001f);
 	updateViewMatrix();
+
+	float s = orthographicScale();
+	s *= fac;
+	s = std::max(s, 0.0001f);
+	setOrthographicScale(s);
 }
 
 void TurntableCamera::updateDeltaMousePanning(float x1, float y1, float x2, float y2) {
