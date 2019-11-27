@@ -80,6 +80,7 @@ bool Scene::load(const std::string & filename)
 	if (!m_world.deserialize(root)) { // look at both root["world"] and root["lights"]
 		return false;
 	}
+	m_world.start();
 
 	if (root.HasMember("cameras")) {
 		auto& cameras = root["cameras"];

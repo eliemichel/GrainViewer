@@ -27,6 +27,7 @@ Camera::Camera()
 	, m_fov(45.0f)
 	, m_orthographicScale(1.0f)
 	, m_freezeResolution(false)
+	, m_projectionType(PerspectiveProjection)
 {
 	initUbo();
 	//updateUbo();  // included in setResolution
@@ -62,11 +63,10 @@ void Camera::updateUbo() {
 
 void Camera::setResolution(glm::vec2 resolution)
 {
-	if (m_freezeResolution) {
-		return;
+	if (!m_freezeResolution) {
+		m_resolution = resolution;
 	}
 
-	m_resolution = resolution;
 	switch (m_projectionType) {
 	case PerspectiveProjection:
 		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
@@ -80,6 +80,7 @@ void Camera::setResolution(glm::vec2 resolution)
 		break;
 	}
 	}
+
 	updateUbo();
 }
 
@@ -167,6 +168,7 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 			else {
 				int width = resolutionJson[0].GetInt();
 				int height = resolutionJson[1].GetInt();
+				LOG << "Freeze camera resolution to " << width << "x" << height;
 				setResolution(width, height);
 				setFreezeResolution(true);
 			}
@@ -243,33 +245,37 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 		}
 	}
 
-	glm::vec3 pos = position();
-	glm::vec3 euler = glm::vec3(0.0f, 0.0f, 0.0f);
+	if (json.HasMember("position") || json.HasMember("rotationEuler")) {
+		glm::vec3 pos = position();
+		glm::vec3 euler = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	if (json.HasMember("position")) {
-		auto& p = json["position"];
-		bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
-		if (!valid) {
-			ERR_LOG << "camera position must be an array of 3 numbers";
-		} else {
-			pos = glm::vec3(p[0].GetFloat(), p[1].GetFloat(), p[2].GetFloat());
+		if (json.HasMember("position")) {
+			auto& p = json["position"];
+			bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
+			if (!valid) {
+				ERR_LOG << "camera position must be an array of 3 numbers";
+			}
+			else {
+				pos = glm::vec3(p[0].GetFloat(), p[1].GetFloat(), p[2].GetFloat());
+			}
 		}
-	}
 
-	if (json.HasMember("rotationEuler")) {
-		auto& p = json["rotationEuler"];
-		bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
-		if (!valid) {
-			ERR_LOG << "camera rotation_euler must be an array of 3 numbers";
-		} else {
-			euler = glm::vec3(p[0].GetFloat() * M_PI / 180.0f, p[1].GetFloat() * M_PI / 180.0f, p[2].GetFloat() * M_PI / 180.0f);
+		if (json.HasMember("rotationEuler")) {
+			auto& p = json["rotationEuler"];
+			bool valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
+			if (!valid) {
+				ERR_LOG << "camera rotation_euler must be an array of 3 numbers";
+			}
+			else {
+				euler = glm::vec3(p[0].GetFloat() * M_PI / 180.0f, p[1].GetFloat() * M_PI / 180.0f, p[2].GetFloat() * M_PI / 180.0f);
+			}
 		}
-	}
 
-	glm::mat4 viewMatrix = glm::mat4(1.0f);
-	viewMatrix = glm::translate(viewMatrix, pos);
-	viewMatrix = viewMatrix * glm::eulerAngleXYZ(euler.x, euler.y, euler.z);
-	setViewMatrix(viewMatrix);
+		glm::mat4 viewMatrix = glm::mat4(1.0f);
+		viewMatrix = glm::translate(viewMatrix, pos);
+		viewMatrix = viewMatrix * glm::eulerAngleXYZ(euler.x, euler.y, euler.z);
+		setViewMatrix(viewMatrix);
+	}
 
 	if (json.HasMember("viewMatrix")) {
 		auto& mat = json["viewMatrix"];

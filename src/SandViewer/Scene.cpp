@@ -92,6 +92,7 @@ void Scene::render() const {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glViewport(0, 0, static_cast<GLsizei>(m_width), static_cast<GLsizei>(m_height));
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (!viewportCamera()) {
 		return;
@@ -103,8 +104,7 @@ void Scene::render() const {
 
 	if (m_isDeferredShadingEnabled) {
 		m_deferredShader.bindFramebuffer();
-	}
-	else if (camera.framebuffer()) {
+	} else if (camera.framebuffer()) {
 		camera.framebuffer()->bind();
 	} else {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -126,6 +126,8 @@ void Scene::render() const {
 		} else {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+		glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		m_deferredShader.render(camera, m_world, DefaultRendering);
 	}
 
