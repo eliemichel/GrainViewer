@@ -16,7 +16,12 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <rapidjson/document.h>
+
+#include "EnvironmentVariables.h"
+
 class Framebuffer;
+class AnimationManager;
 
 class Camera {
 public:
@@ -76,6 +81,8 @@ public:
 	inline void tiltRight() { tilt(0.1f); }
 
 	void updateMousePosition(float x, float y);
+
+	void deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations);
 
 protected:
 	/**

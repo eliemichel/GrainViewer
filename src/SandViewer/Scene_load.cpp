@@ -1,8 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <regex>
-#include <filesystem>
-namespace fs = std::filesystem;
 
 #include <rapidjson/document.h>
 
@@ -13,6 +10,7 @@ namespace fs = std::filesystem;
 #include "utils/fileutils.h"
 #include "Scene.h"
 #include "ShaderPool.h"
+#include "EnvironmentVariables.h"
 
 // TODO: Find a way to avoid this function
 #include "Behavior/MeshDataBehavior.h"
@@ -35,6 +33,9 @@ bool Scene::load(const std::string & filename)
 {
 	clear();
 	m_filename = filename;
+
+	EnvironmentVariables env;
+	env.baseFile = fs::path(m_filename).stem().string();
 
 	rapidjson::Document d;
 	bool valid;
@@ -79,6 +80,7 @@ bool Scene::load(const std::string & filename)
 	if (!m_world.deserialize(root)) { // look at both root["world"] and root["lights"]
 		return false;
 	}
+	m_world.start();
 
 	if (root.HasMember("cameras")) {
 		auto& cameras = root["cameras"];
@@ -89,89 +91,7 @@ bool Scene::load(const std::string & filename)
 			auto& cameraJson = cameras[i];
 
 			auto camera = std::make_shared<TurntableCamera>();
-
-			if (cameraJson.HasMember("resolution")) {
-				auto& resolutionJson = cameraJson["resolution"];
-				if (resolutionJson.IsString()) {
-					std::string resolution = resolutionJson.GetString();
-					if (resolution != "auto") {
-						ERR_LOG << "Invalid resolution '" << resolution << "'. Resolution must either be an array of two int elements or the string 'auto'";
-					}
-					else {
-						camera->setFreezeResolution(false);
-					}
-				} else if (resolutionJson.IsArray()) {
-					if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
-						ERR_LOG << "Invalid resolution. Resolution must either be an array of two int elements or the string 'auto'";
-					} else {
-						int width = resolutionJson[0].GetInt();
-						int height = resolutionJson[1].GetInt();
-						camera->setResolution(width, height);
-						camera->setFreezeResolution(true);
-					}
-				} else {
-					ERR_LOG << "Invalid resolution '" << resolutionJson.GetString() << "'. Resolution must either be an array of two int elements or the string 'auto'";
-				}
-			}
-
-			if (cameraJson.HasMember("outputResolution")) {
-				auto& resolutionJson = cameraJson["outputResolution"];
-				if (resolutionJson.IsArray()) {
-					if (resolutionJson.IsString()) {
-						std::string resolution = resolutionJson.GetString();
-						if (resolution != "auto") {
-							ERR_LOG << "Invalid output resolution '" << resolution << "'. Output resolution must either be an array of two int elements or the string 'auto'";
-						}
-						else {
-							camera->outputSettings().autoOutputResolution = true;
-						}
-					}
-					else if (resolutionJson.Size() != 2 || !resolutionJson[0].IsInt() || !resolutionJson[1].IsInt()) {
-						ERR_LOG << "Invalid output resolution. Output resolution must either be an array of two int elements or the string 'auto'";
-					}
-					else {
-						auto& s = camera->outputSettings();
-						s.width = resolutionJson[0].GetInt();
-						s.height = resolutionJson[1].GetInt();
-						s.autoOutputResolution = false;
-					}
-				}
-				else {
-					ERR_LOG << "Invalid output resolution '" << resolutionJson.GetString() << "'. Output resolution must either be an array of two int elements or the string 'auto'";
-				}
-			}
-
-			if (cameraJson.HasMember("isRecordEnabled") && cameraJson["isRecordEnabled"].IsBool()) {
-				camera->outputSettings().isRecordEnabled = cameraJson["isRecordEnabled"].GetBool();
-			}
-
-			if (cameraJson.HasMember("outputFrameBase") && cameraJson["outputFrameBase"].IsString()) {
-				std::string outputFrameBase = cameraJson["outputFrameBase"].GetString();
-				outputFrameBase = std::regex_replace(
-					outputFrameBase,
-					std::regex("\\$BASEFILE"),
-					fs::path(m_filename).stem().string()
-				);
-				outputFrameBase = ResourceManager::resolveResourcePath(outputFrameBase);
-				camera->outputSettings().outputFrameBase = outputFrameBase;
-			}
-
-			if (cameraJson.HasMember("orthographicScale") && cameraJson["orthographicScale"].IsFloat()) {
-				float orthographicScale = cameraJson["orthographicScale"].GetFloat();
-				camera->setOrthographicScale(orthographicScale);
-			}
-
-			if (cameraJson.HasMember("projection") && cameraJson["projection"].IsString()) {
-				std::string projection = cameraJson["projection"].GetString();
-				if (projection == "orthographic") {
-					camera->setProjectionType(Camera::OrthographicProjection);
-				} else if (projection == "perspective") {
-					camera->setProjectionType(Camera::PerspectiveProjection);
-				} else {
-					ERR_LOG << "Invalid projection type: '" << projection << "'";
-				}
-			}
-
+			camera->deserialize(cameraJson, env, m_animationManager);
 			m_cameras.push_back(camera);
 		}
 	}

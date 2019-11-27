@@ -1,9 +1,9 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant WHITE_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_ALBEDO SHOW_POSITION
+#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_ALBEDO SHOW_POSITION
 #pragma variant HDR REINHART
-#define SHOW_NORMAL
+//#define SHOW_POSITION
 #define WHITE_BACKGROUND
 
 #include "include/utils.inc.glsl"
@@ -138,6 +138,9 @@ void main() {
 #ifdef SHOW_POSITION
 	out_fragment.radiance.rgb = fragment.ws_coord.rgb;
 #endif // SHOW_ALBEDO
+#ifdef TRANSPARENT_BACKGROUND
+	out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
+#endif // TRANSPARENT_BACKGROUND
 
 	out_fragment.normal = fragment.normal;
 	// TODO: compute from ws_coord and remove this extra buffer

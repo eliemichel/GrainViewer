@@ -1,7 +1,8 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_CUBE
+#pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_CUBE SET_DEPTH
+//#define SET_DEPTH
 
 flat in uint id;
 in float radius;
@@ -11,6 +12,9 @@ in mat4 gs_from_ws;
 layout (location = 0) out vec4 gbuffer_color1;
 layout (location = 1) out uvec4 gbuffer_color2;
 layout (location = 2) out uvec4 gbuffer_color3;
+#ifdef SET_DEPTH
+layout (depth_less) out float gl_FragDepth;
+#endif // SET_DEPTH
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
@@ -21,6 +25,7 @@ uniform mat4 viewModelMatrix;
 #include "include/raytracing.inc.glsl"
 #include "include/impostor.inc.glsl"
 #include "include/random.inc.glsl"
+#include "include/depth.inc.glsl"
 #include "sand/random-grains.inc.glsl"
 
 uniform SphericalImpostor impostor[3];
@@ -66,5 +71,9 @@ void main() {
 	fragment.metallic = metallic;
 	fragment.roughness = roughness;
 
+#ifdef SET_DEPTH
+	vec3 p = (viewMatrix * vec4(fragment.ws_coord, 1.0)).xyz;
+	setFragmentDepth(p);
+#endif // SET_DEPTH
     packGFragment(fragment, gbuffer_color1, gbuffer_color2, gbuffer_color3);
 }

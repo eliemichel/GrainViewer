@@ -1,9 +1,11 @@
 #include "utils/jsonutils.h"
 
+#include "ShaderProgram.h"
 #include "ResourceManager.h"
 #include "World.h"
 #include "Light.h"
 #include "Logger.h"
+#include "ShaderPool.h"
 
 World::World()
 {}
@@ -15,39 +17,40 @@ bool World::deserialize(const rapidjson::Value & json)
 	// World globals
 	if (json.HasMember("world")) {
 		auto& world = json["world"];
+		jrOption(world, "shader", m_shaderName, m_shaderName);
 
 		valid = world.HasMember("type") && world["type"].IsString();
-		if (!valid) { ERR_LOG << "world requires a string field 'type'"; return false; }
-		std::string t = world["type"].GetString();
+		if (valid) {
+			std::string t = world["type"].GetString();
+			if (t == "cubemap" || t == "skybox") {  // "skybox" is for backward compat
+				valid = world.HasMember("dirname") && world["dirname"].IsString();
+				if (!valid) { ERR_LOG << "cubemap world requires a string field 'dirname'"; return false; }
 
-		if (t == "cubemap" || t == "skybox") {  // "skybox" is for backward compat
-			valid = world.HasMember("dirname") && world["dirname"].IsString();
-			if (!valid) { ERR_LOG << "cubemap world requires a string field 'dirname'"; return false; }
+				bool generateMipMaps, prefilterEnv;
+				jrOption(world, "generateMipMaps", generateMipMaps, false);
+				jrOption(world, "prefilterEnv", prefilterEnv, false);
 
-			bool generateMipMaps, prefilterEnv;
-			jrOption(world, "generateMipMaps", generateMipMaps, false);
-			jrOption(world, "prefilterEnv", prefilterEnv, false);
+				// Set skybox
+				//std::string path = ResourceManager::resolveResourcePath(world["dirname"].GetString());
+				//m_skybox.loadCubemap(path, generateMipMaps, prefilterEnv);
+				//m_skybox.reloadShaders();
+			}
+			else if (t == "envmap") {
+				valid = world.HasMember("envmap") && world["envmap"].IsString();
+				if (!valid) { ERR_LOG << "envmap world requires a string field 'envmap'"; return false; }
 
-			// Set skybox
-			//std::string path = ResourceManager::resolveResourcePath(world["dirname"].GetString());
-			//m_skybox.loadCubemap(path, generateMipMaps, prefilterEnv);
-			//m_skybox.reloadShaders();
-		}
-		else if (t == "envmap") {
-			valid = world.HasMember("envmap") && world["envmap"].IsString();
-			if (!valid) { ERR_LOG << "envmap world requires a string field 'envmap'"; return false; }
+				bool generateMipMaps, prefilterEnv;
+				jrOption(world, "generateMipMaps", generateMipMaps, false);
+				jrOption(world, "prefilterEnv", prefilterEnv, false);
 
-			bool generateMipMaps, prefilterEnv;
-			jrOption(world, "generateMipMaps", generateMipMaps, false);
-			jrOption(world, "prefilterEnv", prefilterEnv, false);
-
-			// Set skybox
-			//m_skybox.loadEnvmap(world["envmap"].GetString(), generateMipMaps, prefilterEnv);
-			//m_skybox.reloadShaders();
-		}
-		else {
-			ERR_LOG << "unknown world type: " << t;
-			return false;
+				// Set skybox
+				//m_skybox.loadEnvmap(world["envmap"].GetString(), generateMipMaps, prefilterEnv);
+				//m_skybox.reloadShaders();
+			}
+			else {
+				ERR_LOG << "unknown world type: " << t;
+				return false;
+			}
 		}
 	}
 
@@ -86,13 +89,95 @@ bool World::deserialize(const rapidjson::Value & json)
 	return true;
 }
 
+void World::start()
+{
+	initVao();
+	m_shader = ShaderPool::GetShader(m_shaderName);
+}
+
 void World::reloadShaders()
 {}
 
 void World::render(const Camera & camera) const
-{}
+{
+	if (!m_shader || !m_shader->isValid()) {
+		return;
+	}
+
+	glDepthMask(GL_FALSE);
+	glDepthFunc(GL_LEQUAL);
+
+	m_shader->use();
+	m_shader->bindUniformBlock("Camera", camera.ubo());
+
+	glBindVertexArray(m_vao);
+	glDrawArrays(GL_TRIANGLES, 0, 6 * 6);
+	glBindVertexArray(0);
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+}
 
 void World::clear()
 {
 	m_lights.clear();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Private methods
+///////////////////////////////////////////////////////////////////////////////
+
+void World::initVao() {
+	GLfloat attributes[] = {
+		-1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f, -1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+
+		-1.0f, -1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f, -1.0f,  1.0f,
+		-1.0f, -1.0f,  1.0f,
+
+		-1.0f,  1.0f, -1.0f,
+		1.0f,  1.0f, -1.0f,
+		1.0f,  1.0f,  1.0f,
+		1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f,  1.0f,
+		-1.0f,  1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f,  1.0f,
+		1.0f, -1.0f,  1.0f
+	};
+	glGenVertexArrays(1, &m_vao);
+	glBindVertexArray(m_vao);
+	glGenBuffers(1, &m_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(attributes), attributes, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+}
+
