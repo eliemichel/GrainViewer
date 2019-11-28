@@ -92,7 +92,7 @@ void APIENTRY openglCallbackFunction(GLenum source,
 		break;
 	}
 	cout << endl;
-	if (type != GL_DEBUG_TYPE_OTHER && id != 131218) {
+	if (type != GL_DEBUG_TYPE_OTHER && id != 131218 && id != 3) {
 		cout << "break point..." << endl;
 		exit(1);
 	}

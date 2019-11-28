@@ -14,7 +14,7 @@
 #include <map>
 #include <memory>
 
-#if _DEBUG
+#ifndef NDEBUG
 #include "ShaderPreprocessor.h"
 #endif
 
@@ -49,7 +49,7 @@ public:
 private:
     GLuint m_shaderId;
 
-#if _DEBUG
+#ifndef NDEBUG
 	// Keep shader source
 	ShaderPreprocessor m_preprocessor;
 #endif
