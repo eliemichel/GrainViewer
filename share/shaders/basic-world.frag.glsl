@@ -20,6 +20,7 @@ void main() {
 	//fragment.baseColor = vec3(color);
     fragment.ws_coord = vec3(direction * 1000.0);
     fragment.material_id = worldMaterial;
+    fragment.normal = direction;
 
     packGFragment(fragment, color1, color2, color3);
 }

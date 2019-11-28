@@ -1,6 +1,9 @@
 #version 450 core
 #include "sys:defines"
 
+// Completely disable culling, more efficiently than setting instanceLimit to zero
+#pragma variant ONLY_IMPOSTORS
+
 uniform uint nbPoints;
 uniform float instanceLimit = 1.05;
 
@@ -37,6 +40,11 @@ void main() {
 	vec3 p = vbo[i].position.xyz;
 	vec4 position_cs = viewModelMatrix * vec4(p.xyz, 1.0);
 
+#ifdef ONLY_IMPOSTORS
+	elements[i] = i;
+	pointers.nextInstanceElement = 0;
+	pointers.nextImpostorElement = 0;
+#else // ONLY_IMPOSTORS
 	if (length(position_cs) < instanceLimit) {
 		// will be drawn as an instance
 		int nid = atomicAdd(pointers.nextInstanceElement, 1);
@@ -46,4 +54,5 @@ void main() {
 		int nid = atomicAdd(pointers.nextImpostorElement, -1);
 		elements[nid] = i;
 	}
+#endif // ONLY_IMPOSTORS
 }

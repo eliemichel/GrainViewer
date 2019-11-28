@@ -2,6 +2,10 @@
 #include "sys:defines"
 
 #pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_CUBE SET_DEPTH
+#pragma variant SPHEREHIT_SAMPLING MIXEDHIT_SAMPLING
+// if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
+// NO_INTERPOLATION is defined only for default sampling (planeHit)
+
 //#define SET_DEPTH
 
 flat in uint id;
@@ -31,6 +35,7 @@ uniform mat4 viewModelMatrix;
 uniform SphericalImpostor impostor[3];
 uniform sampler2D colormapTexture;
 
+uniform float hitSphereCorrectionFactor = 0.65;
 uniform float roughness = 0.5;
 uniform float metallic = 0.0;
 
@@ -45,6 +50,10 @@ void main() {
 
 #ifdef NO_INTERPOLATION
 	GFragment fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_gs, position_gs, radius);
+#elif MIXEDHIT_SAMPLING
+	GFragment fragment = IntersectRaySphericalGBillboard_MixedHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
+#elif SPHEREHIT_SAMPLING
+	GFragment fragment = IntersectRaySphericalGBillboard_SphereHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
 #else
 	GFragment fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, radius);
 #endif

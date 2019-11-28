@@ -71,7 +71,7 @@ private:
 	bool m_isValid;
 
 private:
-	inline GLint uniformLocation(const std::string& name) const { return m_isValid ? glGetUniformLocation(m_programId, name.c_str()) : -1; }
+	inline GLint uniformLocation(const std::string& name) const { return m_isValid ? glGetUniformLocation(m_programId, name.c_str()) : GL_INVALID_INDEX; }
 	inline GLuint uniformBlockIndex(const std::string& name) const { return m_isValid ? glGetUniformBlockIndex(m_programId, name.c_str()) : GL_INVALID_INDEX; }
 	inline GLuint storageBlockIndex(const std::string& name) const { return m_isValid ? glGetProgramResourceIndex(m_programId, GL_SHADER_STORAGE_BLOCK, name.c_str()) : GL_INVALID_INDEX; }
 };

@@ -132,9 +132,6 @@ SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, vec3 p, flo
 	SphericalImpostorHit sphereHit = IntersectRayBillboard_SphereHit(ray, i, p, radius, n, hitSphereCorrectionFactor);
 	SphericalImpostorHit planeHit = IntersectRayBillboard(ray, i, p, radius, n);
 
-	// DEBUG
-	return sphereHit;
-
 	if (sphereHit.textureCoords.x < 0) {
 		return planeHit;
 	}
@@ -184,11 +181,44 @@ GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, v
 	vec2 alpha;
 	DirectionToViewIndices(-ray.direction, n, i, alpha);
 
-	float fac = 0.65;
-	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.x, p, radius, n, fac));
-	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.y, p, radius, n, fac));
-	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.z, p, radius, n, fac));
-	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.w, p, radius, n, fac));
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.x, p, radius, n));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.y, p, radius, n));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.z, p, radius, n));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.w, p, radius, n));
+	
+	return LerpGFragment(
+		LerpGFragment(g1, g2, alpha.x),
+		LerpGFragment(g3, g4, alpha.x),
+		alpha.y
+	);
+}
+GFragment IntersectRaySphericalGBillboard_SphereHit(SphericalImpostor impostor, Ray ray, vec3 p, float radius, float hitSphereCorrectionFactor) {
+	uint n = impostor.viewCount;
+	uvec4 i;
+	vec2 alpha;
+	DirectionToViewIndices(-ray.direction, n, i, alpha);
+
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.x, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.y, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.z, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.w, p, radius, n, hitSphereCorrectionFactor));
+	
+	return LerpGFragment(
+		LerpGFragment(g1, g2, alpha.x),
+		LerpGFragment(g3, g4, alpha.x),
+		alpha.y
+	);
+}
+GFragment IntersectRaySphericalGBillboard_MixedHit(SphericalImpostor impostor, Ray ray, vec3 p, float radius, float hitSphereCorrectionFactor) {
+	uint n = impostor.viewCount;
+	uvec4 i;
+	vec2 alpha;
+	DirectionToViewIndices(-ray.direction, n, i, alpha);
+
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.x, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.y, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.z, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.w, p, radius, n, hitSphereCorrectionFactor));
 	
 	return LerpGFragment(
 		LerpGFragment(g1, g2, alpha.x),

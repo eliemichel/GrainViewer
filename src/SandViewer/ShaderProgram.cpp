@@ -71,7 +71,7 @@ bool ShaderProgram::check(const std::string& name) const {
 
 void ShaderProgram::setUniform(const std::string& name, GLint value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glUniform1i(loc, value);
 	}
 	else {
@@ -83,7 +83,7 @@ void ShaderProgram::setUniform(const std::string& name, GLint value) const {
 }
 void ShaderProgram::setUniform(const std::string& name, GLuint value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glUniform1ui(loc, value);
 	}
 	else {
@@ -92,7 +92,7 @@ void ShaderProgram::setUniform(const std::string& name, GLuint value) const {
 }
 void ShaderProgram::setUniform(const std::string& name, GLfloat value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glProgramUniform1f(m_programId, loc, value);
 	}
 	else {
@@ -101,7 +101,7 @@ void ShaderProgram::setUniform(const std::string& name, GLfloat value) const {
 }
 void ShaderProgram::setUniform(const std::string& name, const glm::vec2& value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glProgramUniform2f(
 			m_programId,
 			loc,
@@ -114,7 +114,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::vec2& value) 
 }
 void ShaderProgram::setUniform(const std::string& name, const glm::vec3& value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glProgramUniform3f(
 			m_programId,
 			loc,
@@ -128,7 +128,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::vec3& value) 
 }
 void ShaderProgram::setUniform(const std::string& name, const glm::mat3& value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glProgramUniformMatrix3fv(m_programId, loc, 1, GL_FALSE, glm::value_ptr(value));
 	}
 	else {
@@ -137,7 +137,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::mat3& value) 
 }
 void ShaderProgram::setUniform(const std::string& name, const glm::mat4& value) const {
 	GLint loc = uniformLocation(name);
-	if (loc != -1) {
+	if (loc != GL_INVALID_INDEX) {
 		glProgramUniformMatrix4fv(m_programId, loc, 1, GL_FALSE, glm::value_ptr(value));
 	}
 	else {
