@@ -31,7 +31,7 @@ uniform float grainMeshScale = 4.5;
 
 void main() {
     uint pointId = elements[gl_InstanceID];
-    vec3 grainCenter_ws = (modelMatrix * vbo[pointId].position).xyz;
+    vec3 grainCenter_ws = (modelMatrix * vec4(vbo[pointId].position.xyz, 1.0)).xyz;
 
     mat3 ws_from_gs = transpose(mat3(randomGrainMatrix(int(pointId), grainCenter_ws)));
     
