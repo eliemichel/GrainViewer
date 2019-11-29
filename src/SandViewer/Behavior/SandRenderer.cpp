@@ -15,7 +15,7 @@
 void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
 	shader.use();
-	
+
 	shader.setUniform("cubemap", static_cast<GLint>(o++));
 
 	shader.setUniform("uFrameCount", static_cast<GLuint>(m_frameCount));
@@ -88,7 +88,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	if (!colormap.empty()) {
 		loadColormapTexture(ResourceManager::resolveResourcePath(colormap));
 	}
-	
+
 	// Shader
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	m_shadowMapShaderName = m_shaderName + "_SHADOW_MAP";
@@ -224,7 +224,7 @@ bool SandRenderer::load(const PointCloud & pointCloud) {
 
 bool SandRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory) {
 	auto tex = ResourceManager::loadTextureStack(textureDirectory);
-	
+
 	if (!tex) {
 		return false;
 	}
@@ -335,10 +335,12 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 	size_t o = 0;
 
-	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	m_colormapTexture->bind();
-	++o;
+		if (m_colormapTexture) {
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_colormapTexture->bind();
+			m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+			++o;
+		}
 
 	// TODO: Use UBO
 	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
@@ -351,36 +353,31 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 		std::ostringstream oss2;
 		oss2 << "impostor[" << k << "].normalAlphaTexture";
-		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
 		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 		m_normalAlphaTextures[k]->bind();
+		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
 		++o;
 
 		if (m_baseColorTextures.size() > k) {
 			std::ostringstream oss;
 			oss << "impostor[" << k << "].baseColorTexture";
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_baseColorTextures[k]->bind();
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 
 		if (m_metallicRoughnessTextures.size() > k) {
 			std::ostringstream oss;
 			oss << "impostor[" << k << "].metallicRoughnesTexture";
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_metallicRoughnessTextures[k]->bind();
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 	}
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-
-	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		m_colormapTexture->bind();
-	}
 
 	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
 	//skybox.bindEnvTexture();
@@ -408,10 +405,12 @@ void SandRenderer::renderInstancesDefault(const Camera & camera, const World & w
 	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_properties.grainMeshScale));
 
 	GLuint o = 0;
-	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	m_colormapTexture->bind();
-	++o;
+	if (m_colormapTexture) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		m_colormapTexture->bind();
+		m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
+		++o;
+	}
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 
