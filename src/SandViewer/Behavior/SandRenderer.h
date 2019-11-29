@@ -32,6 +32,7 @@ public:
 		float instanceLimit = 1.05f;
 		bool disableImpostors = false;
 		bool disableInstances = false;
+		bool doubleElementBuffer = false;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
@@ -65,13 +66,16 @@ private:
 	Properties m_properties;
 
 	std::string m_shaderName = "ImpostorCloud";
-	std::string m_shadowMapShaderName;
 	std::string m_cullingShaderName = "ImpostorCloudCulling";
 	std::string m_instanceCloudShaderName = "InstanceCloud";
+
+	std::string m_shadowMapShaderName;
+	std::string m_doubleElementBufferCullingShaderName;
 
 	std::shared_ptr<ShaderProgram> m_shader;
 	std::shared_ptr<ShaderProgram> m_shadowMapShader;
 	std::shared_ptr<ShaderProgram> m_cullingShader;
+	std::shared_ptr<ShaderProgram> m_doubleElementBufferCullingShader;
 	std::shared_ptr<ShaderProgram> m_instanceCloudShader;
 	bool m_isDeferredRendered;
 	size_t m_nbPoints;
@@ -81,7 +85,7 @@ private:
 	GLuint m_vbo;
 	std::unique_ptr<GlBuffer> m_commandBuffer;
 	std::unique_ptr<GlBuffer> m_cullingPointersSsbo;
-	std::unique_ptr<GlBuffer> m_elementBuffer;
+	std::vector < std::unique_ptr<GlBuffer>> m_elementBuffers;
 
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<MeshDataBehavior> m_grainMeshData;

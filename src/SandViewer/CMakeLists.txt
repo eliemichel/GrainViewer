@@ -45,6 +45,8 @@ set(SRC
 	Behavior/SandRenderer.cpp
 	Behavior/TransformBehavior.h
 	Behavior/TransformBehavior.cpp
+	Behavior/TestPrefixSumRenderer.h
+	Behavior/TestPrefixSumRenderer.cpp
 
 	utils/debug.h
 	utils/debug.cpp

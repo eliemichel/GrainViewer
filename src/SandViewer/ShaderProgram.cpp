@@ -182,6 +182,7 @@ std::vector<std::string> ShaderProgram::getUniformList() const {
 void ShaderProgram::copy(const ShaderProgram & other)
 {
 	m_shaderName = other.m_shaderName;
+	m_type = other.m_type;
 	for (const auto &def : other.m_defines) {
 		define(def);
 	}
