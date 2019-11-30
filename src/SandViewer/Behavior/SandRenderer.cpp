@@ -15,7 +15,7 @@
 void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
 	shader.use();
-	
+
 	shader.setUniform("cubemap", static_cast<GLint>(o++));
 
 	shader.setUniform("uFrameCount", static_cast<GLuint>(m_frameCount));
@@ -88,13 +88,15 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	if (!colormap.empty()) {
 		loadColormapTexture(ResourceManager::resolveResourcePath(colormap));
 	}
-	
+
 	// Shader
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	m_shadowMapShaderName = m_shaderName + "_SHADOW_MAP";
 	ShaderPool::AddShaderVariant(m_shadowMapShaderName, m_shaderName, "SHADOW_MAP");
 
 	jrOption(json, "cullingShader", m_cullingShaderName, m_cullingShaderName);
+	m_doubleElementBufferCullingShaderName = m_cullingShaderName + "_DOUBLE_ELEMENT_BUFFER";
+	ShaderPool::AddShaderVariant(m_doubleElementBufferCullingShaderName, m_cullingShaderName, "DOUBLE_ELEMENT_BUFFER");
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
@@ -104,7 +106,12 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	jrPropperty(instanceLimit);
 	jrPropperty(disableImpostors);
 	jrPropperty(disableInstances);
+	jrPropperty(doubleElementBuffer);
 #undef jrProperty
+
+	if (m_properties.doubleElementBuffer) {
+		WARN_LOG << "doubleElementBuffer if a work in progress feature that is not expected to work yet!";
+	}
 
 	return true;
 }
@@ -115,6 +122,7 @@ void SandRenderer::start()
 	m_shadowMapShader = ShaderPool::GetShader(m_shadowMapShaderName);
 	m_cullingShader = ShaderPool::GetShader(m_cullingShaderName);
 	m_instanceCloudShader = ShaderPool::GetShader(m_instanceCloudShaderName);
+	m_doubleElementBufferCullingShader = ShaderPool::GetShader(m_doubleElementBufferCullingShaderName);
 
 	if (!m_shader || !m_shadowMapShader) {
 		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
@@ -133,10 +141,14 @@ void SandRenderer::start()
 	m_cullingPointersSsbo->addBlock<PointersSsbo>();
 	m_cullingPointersSsbo->alloc();
 
-	m_elementBuffer = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
-	m_elementBuffer->addBlock<GLuint>(m_nbPoints);
-	m_elementBuffer->alloc();
-	m_elementBuffer->finalize(); // This buffer will never be mapped on CPU
+	size_t elementBufferCount = m_properties.doubleElementBuffer ? 2 : 1;
+	for (size_t i = 0; i < elementBufferCount; ++i) {
+		auto buff = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
+		buff->addBlock<GLuint>(m_nbPoints);
+		buff->alloc();
+		buff->finalize(); // This buffer will never be mapped on CPU
+		m_elementBuffers.push_back(std::move(buff));
+	}
 
 	m_grainMeshData = getComponent<MeshDataBehavior>();
 	m_transform = getComponent<TransformBehavior>();
@@ -224,7 +236,7 @@ bool SandRenderer::load(const PointCloud & pointCloud) {
 
 bool SandRenderer::loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory) {
 	auto tex = ResourceManager::loadTextureStack(textureDirectory);
-	
+
 	if (!tex) {
 		return false;
 	}
@@ -279,9 +291,12 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 	m_cullingShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 	m_cullingShader->setUniform("nbPoints", effectivePointCount);
 	m_cullingShader->setUniform("instanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-	m_cullingPointersSsbo->bindSsbo(2);
-	m_elementBuffer->bindSsbo(3);
+	GLuint ssboIndex = 1;
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ssboIndex++, m_vbo);
+	m_cullingPointersSsbo->bindSsbo(ssboIndex++);
+	for (auto& buff : m_elementBuffers) {
+		buff->bindSsbo(ssboIndex++);
+	}
 	glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
@@ -293,6 +308,8 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 			instanceCount = pointers->nextInstanceElement - 1;
 			impostorFirst = pointers->nextImpostorElement + 1;
 			impostorCount = effectivePointCount - impostorFirst;
+		} else if (pointers->nextImpostorElement == 0) {
+			impostorCount = 0;
 		}
 	});
 
@@ -323,6 +340,10 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & world) const
 {
 	glEnable(GL_PROGRAM_POINT_SIZE);
+	if (m_properties.doubleElementBuffer) {
+		glEnable(GL_PRIMITIVE_RESTART);
+		glPrimitiveRestartIndex(0xFFFFFFF0);
+	}
 
 	m_shader->use();
 
@@ -335,10 +356,12 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 	size_t o = 0;
 
-	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	m_colormapTexture->bind();
-	++o;
+		if (m_colormapTexture) {
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_colormapTexture->bind();
+			m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+			++o;
+		}
 
 	// TODO: Use UBO
 	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
@@ -351,43 +374,38 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 		std::ostringstream oss2;
 		oss2 << "impostor[" << k << "].normalAlphaTexture";
-		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
 		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 		m_normalAlphaTextures[k]->bind();
+		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
 		++o;
 
 		if (m_baseColorTextures.size() > k) {
 			std::ostringstream oss;
 			oss << "impostor[" << k << "].baseColorTexture";
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_baseColorTextures[k]->bind();
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 
 		if (m_metallicRoughnessTextures.size() > k) {
 			std::ostringstream oss;
 			oss << "impostor[" << k << "].metallicRoughnesTexture";
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_metallicRoughnessTextures[k]->bind();
+			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 	}
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 
-	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		m_colormapTexture->bind();
-	}
-
 	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
 	//skybox.bindEnvTexture();
 
 	glBindVertexArray(m_vao);
 	m_commandBuffer->bind();
-	m_elementBuffer->bind();
+	m_elementBuffers[0]->bind();
 	glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 }
@@ -396,6 +414,11 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 // Instances drawing
 void SandRenderer::renderInstancesDefault(const Camera & camera, const World & world) const
 {
+	if (m_properties.doubleElementBuffer) {
+		glEnable(GL_PRIMITIVE_RESTART);
+		glPrimitiveRestartIndex(0xFFFFFFF0);
+	}
+
 	m_instanceCloudShader->use();
 
 	// Set uniforms
@@ -408,17 +431,19 @@ void SandRenderer::renderInstancesDefault(const Camera & camera, const World & w
 	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_properties.grainMeshScale));
 
 	GLuint o = 0;
-	m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	m_colormapTexture->bind();
-	++o;
+	if (m_colormapTexture) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		m_colormapTexture->bind();
+		m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
+		++o;
+	}
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 
 	// Render
 	if (auto mesh = m_grainMeshData.lock()) {
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-		m_elementBuffer->bindSsbo(2);
+		m_elementBuffers[m_properties.doubleElementBuffer ? 1 : 0]->bindSsbo(2);
 		glBindVertexArray(mesh->vao());
 		m_commandBuffer->bind();
 		glDrawArraysIndirect(GL_TRIANGLES, static_cast<void*>(static_cast<DrawElementsIndirectCommand*>(nullptr) + 1));

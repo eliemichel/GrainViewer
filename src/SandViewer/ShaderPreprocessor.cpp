@@ -14,8 +14,8 @@
 
 using namespace std;
 
-constexpr char* BEGIN_INCLUDE_TOKEN = "// _AUGEN_BEGIN_INCLUDE";
-constexpr char* END_INCLUDE_TOKEN = "// _AUGEN_END_INCLUDE";
+constexpr const char* BEGIN_INCLUDE_TOKEN = "// _AUGEN_BEGIN_INCLUDE";
+constexpr const char* END_INCLUDE_TOKEN = "// _AUGEN_END_INCLUDE";
 
 bool ShaderPreprocessor::load(const string & filename, const vector<string> & defines, const std::map<std::string, std::string> & snippets) {
 	return loadShaderSourceAux(filename, defines, snippets, m_lines);

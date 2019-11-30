@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "Logger.h"
 #include "ShaderPool.h"
 
@@ -93,6 +95,7 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 		std::vector<std::string> defines;
 		std::string baseFile;
 		ShaderProgram::ShaderProgramType type = ShaderProgram::RenderShader;
+		std::ostringstream definesDebug;
 		if (it->value.IsString()) {
 			baseFile = it->value.GetString();
 		}
@@ -108,6 +111,8 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 						continue;
 					}
 					defines.push_back(def.GetString());
+					if (i > 0) definesDebug << ", ";
+					definesDebug << def.GetString();
 				}
 			}
 			if (it->value.HasMember("type") && it->value["type"].IsString()) {
@@ -127,7 +132,7 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 			ERR_LOG << "Shader entry must be either a string ofr an object. Ignoring shader '" << name << "'";
 		}
 		addShader(name, baseFile, type, defines);
-		LOG << " - shader '" << name << "' loaded";
+		LOG << " - shader '" << name << "' loaded with defines [" << definesDebug.str() << "]";
 	}
 	return true;
 }

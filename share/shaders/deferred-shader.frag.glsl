@@ -85,7 +85,7 @@ void main() {
 		break;
 
 	case forwardNormalMaterial:
-		out_fragment.radiance = normal2color(fragment.normal);
+		out_fragment.radiance = normal2color(fragment.normal, 1.0);
 		break;
 
 	case worldMaterial:

@@ -101,6 +101,7 @@ void Scene::render() const {
 
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
+	glDisable(GL_DITHER);
 
 	if (m_isDeferredShadingEnabled) {
 		m_deferredShader.bindFramebuffer();
