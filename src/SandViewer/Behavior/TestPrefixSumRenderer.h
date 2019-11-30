@@ -22,9 +22,11 @@ public:
 private:
 	std::string m_shaderName = "PrefixSum";
 	int m_pointCount;
+	int m_frame = 0;
 
 	std::shared_ptr<ShaderProgram> m_shader;
-	std::unique_ptr<GlBuffer> m_elementBuffer;
+	std::unique_ptr<GlBuffer> m_elementBuffer1;
+	std::unique_ptr<GlBuffer> m_elementBuffer2;
 };
 
 registerBehaviorType(TestPrefixSumRenderer)

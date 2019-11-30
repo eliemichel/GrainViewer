@@ -13,7 +13,7 @@
 				{
 					"type": "TestPrefixSumRenderer",
 					"shader": "PrefixSum",
-					"pointCount": 20
+					"pointCount": 16
 				}
 			]
 		}
