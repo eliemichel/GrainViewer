@@ -1,25 +1,31 @@
 #version 450 core
 #include "sys:defines"
 
-uniform float uTime;
-uniform uint uPointCount;
+#pragma variant FLOAT_ELEMENTS // default is UINT_ELEMENTS
+#ifdef FLOAT_ELEMENTS
+#define ELEMENT_TYPE float
+#else // FLOAT_ELEMENTS
+#define ELEMENT_TYPE uint
+#endif // FLOAT_ELEMENTS
+
+uniform uint uElementCount;
 uniform uint uIteration;
 
 layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 layout (std430, binding = 1) restrict readonly buffer previousElementsSsbo {
-	uint previousElements[];
+	ELEMENT_TYPE previousElements[];
 };
 layout (std430, binding = 2) restrict writeonly buffer elementsSsbo {
-	uint elements[];
+	ELEMENT_TYPE elements[];
 };
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
 	uint j = i;
-	if (i >= uPointCount) return;
+	if (i >= uElementCount) return;
 
-	uint halfSteps = uint(ceil(log((float(uPointCount))) / log(2.0)) - 1.0);
+	uint halfSteps = uint(ceil(log((float(uElementCount))) / log(2.0)) - 1.0);
 
 	uint lastIteration = 2 * halfSteps - 1;
 	if (uIteration > lastIteration) return;
@@ -28,7 +34,7 @@ void main() {
 		// Offset because we want cumulative sums of elements *strictly* before the current one
 		j += 1;
 		elements[0] = 0;
-		if (j >= uPointCount) return;
+		if (j >= uElementCount) return;
 	}
 
 	if (uIteration < halfSteps) {

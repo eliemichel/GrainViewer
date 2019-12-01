@@ -11,6 +11,14 @@ ShaderProgram::ShaderProgram(const std::string& shaderName)
 	, m_isValid(false)
 {}
 
+ShaderProgram::~ShaderProgram()
+{
+	if (m_isValid) {
+		glDeleteProgram(m_programId);
+	}
+	m_isValid = false;
+}
+
 void ShaderProgram::load() {
 	m_programId = glCreateProgram();
 
@@ -145,7 +153,7 @@ void ShaderProgram::setUniform(const std::string& name, const glm::mat4& value) 
 	}
 }
 
-bool ShaderProgram::bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding) {
+bool ShaderProgram::bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding) const {
 	GLuint index = uniformBlockIndex(uniformBlockName);
 	if (index == GL_INVALID_INDEX) {
 		// WARN_LOG << "Uniform Block not found with name " << uniformBlockName; // pb: this warning is repeated at each frame, enable verbosity onl right after loading

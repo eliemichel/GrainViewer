@@ -30,17 +30,25 @@ public:
 	static bool Deserialize(const rapidjson::Value & json);
 
 private:
-	ShaderPool() {}
+	ShaderPool();
 	ShaderPool& operator=(const ShaderPool&) = default;
 	ShaderPool(const ShaderPool&) = default;
 
 	void addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines);
 	void addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define);
-	std::shared_ptr<ShaderProgram> getShader(const std::string & shaderName) const;
+	std::shared_ptr<ShaderProgram> getShader(const std::string & shaderName);
 	void reloadShaders();
 	bool deserialize(const rapidjson::Value & json);
 
 private:
+	struct ShaderInfo {
+		std::string baseFile;
+		ShaderProgram::ShaderProgramType type;
+		std::vector<std::string> defines;
+	};
+
+private:
 	static ShaderPool s_instance;
 	std::map<std::string, std::shared_ptr<ShaderProgram>> m_shaders;
+	std::map<std::string, ShaderInfo> m_defaultShaders;
 };

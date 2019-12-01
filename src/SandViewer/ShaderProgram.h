@@ -13,6 +13,9 @@ public:
 	};
 public:
 	ShaderProgram(const std::string& shaderName = "");
+	~ShaderProgram();
+	ShaderProgram(ShaderProgram&) = delete;
+	ShaderProgram& operator=(ShaderProgram&) = delete;
 	ShaderProgram(ShaderProgram&&) = default;
 	ShaderProgram& operator=(ShaderProgram&&) = default;
 
@@ -56,7 +59,7 @@ public:
 	void setUniform(const std::string& name, const glm::mat3& value) const;
 	void setUniform(const std::string& name, const glm::mat4& value) const;
 
-	bool bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding = 1);
+	bool bindUniformBlock(const std::string& uniformBlockName, GLuint buffer, GLuint uniformBlockBinding = 1) const;
 
 	std::vector<std::string> getUniformList() const;
 

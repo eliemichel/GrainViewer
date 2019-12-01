@@ -65,8 +65,7 @@ void TestPrefixSumRenderer::render(const Camera & camera, const World & world, R
 		m_elementBuffer2->bindSsbo(i % 2 == 0 ? 2 : 1);
 		m_shader->setUniform("uIteration", static_cast<GLuint>(i));
 		glDispatchCompute(static_cast<GLuint>((m_pointCount + 127) / 128), 1, 1);
-		//glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
 
 	// 3. Display sorted buffer

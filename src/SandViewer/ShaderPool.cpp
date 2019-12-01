@@ -38,6 +38,14 @@ bool ShaderPool::Deserialize(const rapidjson::Value & json)
 // Private singleton methods
 ///////////////////////////////////////////////////////////////////////////////
 
+ShaderPool::ShaderPool()
+{
+	m_defaultShaders.insert({
+		"PrefixSum",
+		{ "prefix-sum", ShaderProgram::ComputeShader, {} }
+	});
+}
+
 void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)
 {
 	if (m_shaders.count(shaderName) > 0) {
@@ -71,9 +79,17 @@ void ShaderPool::addShaderVariant(const std::string & shaderName, const std::str
 	}
 }
 
-std::shared_ptr<ShaderProgram> ShaderPool::getShader(const std::string & shaderName) const
+std::shared_ptr<ShaderProgram> ShaderPool::getShader(const std::string & shaderName)
 {
-	return m_shaders.count(shaderName) > 0 ? m_shaders.at(shaderName) : nullptr;
+	if (m_shaders.count(shaderName) > 0) {
+		return m_shaders.at(shaderName);
+	} else if (m_defaultShaders.count(shaderName) > 0) {
+		auto& info = m_defaultShaders[shaderName];
+		addShader(shaderName, info.baseFile, info.type, info.defines);
+		return m_shaders.at(shaderName);
+	} else {
+		return nullptr;
+	}
 }
 
 void ShaderPool::reloadShaders()

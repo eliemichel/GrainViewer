@@ -94,9 +94,9 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	m_shadowMapShaderName = m_shaderName + "_SHADOW_MAP";
 	ShaderPool::AddShaderVariant(m_shadowMapShaderName, m_shaderName, "SHADOW_MAP");
 
-	jrOption(json, "cullingShader", m_cullingShaderName, m_cullingShaderName);
-	m_doubleElementBufferCullingShaderName = m_cullingShaderName + "_DOUBLE_ELEMENT_BUFFER";
-	ShaderPool::AddShaderVariant(m_doubleElementBufferCullingShaderName, m_cullingShaderName, "DOUBLE_ELEMENT_BUFFER");
+	std::string baseCullingShaderName;
+	jrOption(json, "cullingShader", baseCullingShaderName);
+	m_cullingShaderNames.push_back(baseCullingShaderName);
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
@@ -106,11 +106,45 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	jrPropperty(instanceLimit);
 	jrPropperty(disableImpostors);
 	jrPropperty(disableInstances);
-	jrPropperty(doubleElementBuffer);
 #undef jrProperty
 
-	if (m_properties.doubleElementBuffer) {
-		WARN_LOG << "doubleElementBuffer if a work in progress feature that is not expected to work yet!";
+	if (json.HasMember("cullingMechanism") && json["cullingMechanism"].IsString()) {
+		std::string s = json["cullingMechanism"].GetString();
+		if (s == "AtomicSum") {
+			m_cullingMechanism = AtomicSum;
+		} else if (s == "PrefixSum") {
+			m_cullingMechanism = PrefixSum;
+		} else if (s == "RestartPrimitive") {
+			m_cullingMechanism = RestartPrimitive;
+		} else {
+			ERR_LOG << "Invalid culling mechanism: " << s << " (valid values are AtomicSum, PrefixSum and RestartPrimitive)";
+		}
+	}
+
+	// Split compute shader into steps
+	if (m_cullingMechanism == RestartPrimitive) {
+		WARN_LOG << "RestartPrimitive culling mechanism is not working!";
+		m_cullingShaderNames[0] = baseCullingShaderName + "_DOUBLE_ELEMENT_BUFFER";
+		ShaderPool::AddShaderVariant(m_cullingShaderNames[0], baseCullingShaderName, "DOUBLE_ELEMENT_BUFFER");
+	} else if (m_cullingMechanism == PrefixSum) {
+		m_cullingShaderNames.resize(_PrefixSumCullingShadersCount);
+		m_cullingShaderNames[MarkImpostors] = baseCullingShaderName + "_STEP_MARK_IMPOSTORS";
+		ShaderPool::AddShaderVariant(m_cullingShaderNames[MarkImpostors], baseCullingShaderName, "STEP_MARK_IMPOSTORS");
+		m_cullingShaderNames[MarkInstances] = baseCullingShaderName + "_STEP_MARK_INSTANCES";
+		ShaderPool::AddShaderVariant(m_cullingShaderNames[MarkInstances], baseCullingShaderName, "STEP_MARK_INSTANCES");
+		m_cullingShaderNames[Group] = baseCullingShaderName + "_STEP_GROUP";
+		ShaderPool::AddShaderVariant(m_cullingShaderNames[Group], baseCullingShaderName, "STEP_GROUP");
+		m_cullingShaderNames[BuildCommandBuffer] = baseCullingShaderName + "_STEP_BUILD_COMMAND_BUFFER";
+		ShaderPool::AddShaderVariant(m_cullingShaderNames[BuildCommandBuffer], baseCullingShaderName, "STEP_BUILD_COMMAND_BUFFER");
+
+#define step(Step, STEP_DEFINE) \
+	m_cullingShaderNames[Step] = baseCullingShaderName + "_" + #STEP_DEFINE; \
+	ShaderPool::AddShaderVariant(m_cullingShaderNames[Step], baseCullingShaderName, #STEP_DEFINE);
+		step(MarkImpostors, STEP_MARK_IMPOSTORS);
+		step(MarkInstances, STEP_MARK_INSTANCES);
+		step(Group, STEP_GROUP);
+		step(BuildCommandBuffer, STEP_BUILD_COMMAND_BUFFER);
+#undef step
 	}
 
 	return true;
@@ -120,9 +154,11 @@ void SandRenderer::start()
 {
 	m_shader = ShaderPool::GetShader(m_shaderName);
 	m_shadowMapShader = ShaderPool::GetShader(m_shadowMapShaderName);
-	m_cullingShader = ShaderPool::GetShader(m_cullingShaderName);
+	for (const auto& name : m_cullingShaderNames) {
+		m_cullingShaders.push_back(ShaderPool::GetShader(name));
+	}
 	m_instanceCloudShader = ShaderPool::GetShader(m_instanceCloudShaderName);
-	m_doubleElementBufferCullingShader = ShaderPool::GetShader(m_doubleElementBufferCullingShaderName);
+	m_prefixSumShader = ShaderPool::GetShader(m_prefixSumShaderName);
 
 	if (!m_shader || !m_shadowMapShader) {
 		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
@@ -141,10 +177,15 @@ void SandRenderer::start()
 	m_cullingPointersSsbo->addBlock<PointersSsbo>();
 	m_cullingPointersSsbo->alloc();
 
-	size_t elementBufferCount = m_properties.doubleElementBuffer ? 2 : 1;
+	m_prefixSumInfoSsbo = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);
+	m_prefixSumInfoSsbo->addBlock<PrefixSumInfoSsbo>();
+	m_prefixSumInfoSsbo->alloc();
+
+	size_t elementBufferCount = m_cullingMechanism == AtomicSum ? 1 : (m_cullingMechanism == PrefixSum ? 3 : 2);
+	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
 	for (size_t i = 0; i < elementBufferCount; ++i) {
 		auto buff = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
-		buff->addBlock<GLuint>(m_nbPoints);
+		buff->addBlock<GLuint>(effectivePointCount);
 		buff->alloc();
 		buff->finalize(); // This buffer will never be mapped on CPU
 		m_elementBuffers.push_back(std::move(buff));
@@ -263,7 +304,11 @@ bool SandRenderer::loadColormapTexture(const std::string & filename)
 
 void SandRenderer::renderDefault(const Camera & camera, const World & world) const
 {
-	renderCulling(camera, world);
+	if (m_cullingMechanism == PrefixSum) {
+		renderCullingPrefixSum(camera, world);
+	} else {
+		renderCulling(camera, world);
+	}
 
 	if (!m_properties.disableImpostors) {
 		renderImpostorsDefault(camera, world);
@@ -285,12 +330,12 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 		pointers->nextImpostorElement = static_cast<GLuint>(effectivePointCount - 1);
 	});
 
-	m_cullingShader->use();
-	m_cullingShader->bindUniformBlock("Camera", camera.ubo());
-	m_cullingShader->setUniform("modelMatrix", modelMatrix());
-	m_cullingShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-	m_cullingShader->setUniform("nbPoints", effectivePointCount);
-	m_cullingShader->setUniform("instanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
+	m_cullingShaders[0]->use();
+	m_cullingShaders[0]->bindUniformBlock("Camera", camera.ubo());
+	m_cullingShaders[0]->setUniform("modelMatrix", modelMatrix());
+	m_cullingShaders[0]->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+	m_cullingShaders[0]->setUniform("nbPoints", effectivePointCount);
+	m_cullingShaders[0]->setUniform("instanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 	GLuint ssboIndex = 1;
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, ssboIndex++, m_vbo);
 	m_cullingPointersSsbo->bindSsbo(ssboIndex++);
@@ -312,6 +357,8 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 			impostorCount = 0;
 		}
 	});
+
+	prefixSum(*m_elementBuffers[0], *m_elementBuffers[1], effectivePointCount, *m_prefixSumShader);
 
 	// TODO: Write from compute shader
 	// a. impostors
@@ -335,12 +382,103 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 	});
 }
 
+void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & world) const
+{
+	int resultIndex;
+	if (!m_cullingShaders[MarkImpostors]) {
+		return;
+	}
+
+	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
+
+	// 1. Mark instances
+	{
+		const ShaderProgram & shader = *m_cullingShaders[MarkInstances];
+		shader.use();
+		shader.bindUniformBlock("Camera", camera.ubo());
+		shader.setUniform("modelMatrix", modelMatrix());
+		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+		shader.setUniform("uPointCount", effectivePointCount);
+		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
+		m_prefixSumInfoSsbo->bindSsbo(0);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+		m_elementBuffers[1]->bindSsbo(2);
+		glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	// 2. Prefix sum instances
+	resultIndex = prefixSum(*m_elementBuffers[1], *m_elementBuffers[2], effectivePointCount, *m_prefixSumShader);
+
+	// 3. Group instances
+	{
+		const ShaderProgram & shader = *m_cullingShaders[Group];
+		shader.use();
+		shader.setUniform("uPointCount", effectivePointCount);
+		shader.setUniform("uType", static_cast<GLuint>(0));
+		m_prefixSumInfoSsbo->bindSsbo(0);
+		m_elementBuffers[1+resultIndex]->bindSsbo(1);
+		m_elementBuffers[0]->bindSsbo(2);
+		glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	// 4. Mark impostors
+	{
+		const ShaderProgram & shader = *m_cullingShaders[MarkImpostors];
+		shader.use();
+		shader.bindUniformBlock("Camera", camera.ubo());
+		shader.setUniform("modelMatrix", modelMatrix());
+		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+		shader.setUniform("uPointCount", effectivePointCount);
+		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
+		m_prefixSumInfoSsbo->bindSsbo(0);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+		m_elementBuffers[1]->bindSsbo(2);
+		glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	// 5. Prefix sum impostors
+	resultIndex = prefixSum(*m_elementBuffers[1], *m_elementBuffers[2], effectivePointCount, *m_prefixSumShader);
+
+	// 6. Group impostors
+	{
+		const ShaderProgram & shader = *m_cullingShaders[Group];
+		shader.use();
+		shader.setUniform("uPointCount", effectivePointCount);
+		shader.setUniform("uType", static_cast<GLuint>(1));
+		m_prefixSumInfoSsbo->bindSsbo(0);
+		m_elementBuffers[1+resultIndex]->bindSsbo(1);
+		m_elementBuffers[0]->bindSsbo(2);
+		glDispatchCompute(static_cast<GLuint>((effectivePointCount + 127) / 128), 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+
+	// 7. Build command buffers
+	{
+		GLuint grainMeshPointCount = 0;
+		if (auto mesh = m_grainMeshData.lock()) {
+			grainMeshPointCount = mesh->pointCount();
+		}
+
+		const ShaderProgram & shader = *m_cullingShaders[BuildCommandBuffer];
+		shader.use();
+		shader.setUniform("uPointCount", effectivePointCount);
+		shader.setUniform("uGrainMeshPointCount", grainMeshPointCount);
+		m_prefixSumInfoSsbo->bindSsbo(0);
+		m_commandBuffer->bindSsbo(1);
+		glDispatchCompute(1, 1, 1);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////
 // Impostors drawing
 void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & world) const
 {
 	glEnable(GL_PROGRAM_POINT_SIZE);
-	if (m_properties.doubleElementBuffer) {
+	if (m_cullingMechanism == RestartPrimitive) {
 		glEnable(GL_PRIMITIVE_RESTART);
 		glPrimitiveRestartIndex(0xFFFFFFF0);
 	}
@@ -356,12 +494,12 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 	size_t o = 0;
 
-		if (m_colormapTexture) {
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_colormapTexture->bind();
-			m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
-			++o;
-		}
+	if (m_colormapTexture) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		m_colormapTexture->bind();
+		m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+		++o;
+	}
 
 	// TODO: Use UBO
 	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
@@ -414,7 +552,7 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 // Instances drawing
 void SandRenderer::renderInstancesDefault(const Camera & camera, const World & world) const
 {
-	if (m_properties.doubleElementBuffer) {
+	if (m_cullingMechanism == RestartPrimitive) {
 		glEnable(GL_PRIMITIVE_RESTART);
 		glPrimitiveRestartIndex(0xFFFFFFF0);
 	}
@@ -443,10 +581,35 @@ void SandRenderer::renderInstancesDefault(const Camera & camera, const World & w
 	// Render
 	if (auto mesh = m_grainMeshData.lock()) {
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
-		m_elementBuffers[m_properties.doubleElementBuffer ? 1 : 0]->bindSsbo(2);
+		m_elementBuffers[m_cullingMechanism == RestartPrimitive ? 1 : 0]->bindSsbo(2);
 		glBindVertexArray(mesh->vao());
 		m_commandBuffer->bind();
 		glDrawArraysIndirect(GL_TRIANGLES, static_cast<void*>(static_cast<DrawElementsIndirectCommand*>(nullptr) + 1));
 		glBindVertexArray(0);
 	}
 }
+
+/**
+ * Input buffer is buffer0, output buffer is buffer0 or buffer1, as specified
+ * by the returned value.
+ */
+int SandRenderer::prefixSum(const GlBuffer & buffer0, const GlBuffer & buffer1, int elementCount, const ShaderProgram & shader)
+{
+	if (!shader.isValid()) return -1;
+
+	int iterationCount = static_cast<int>(2 * (floor(log(elementCount) / log(2)) + 1));
+
+	shader.use();
+	shader.setUniform("uElementCount", static_cast<GLuint>(elementCount));
+	for (int i = 0; i < iterationCount; ++i) {
+		// Element buffers 1 and 2 are alternatively used as previous and current buffer
+		buffer0.bindSsbo(i % 2 == 0 ? 1 : 2);
+		buffer1.bindSsbo(i % 2 == 0 ? 2 : 1);
+		shader.setUniform("uIteration", static_cast<GLuint>(i));
+		glDispatchCompute(static_cast<GLuint>((elementCount + 127) / 128), 1, 1);
+		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	}
+
+	return iterationCount % 2;
+}
+
