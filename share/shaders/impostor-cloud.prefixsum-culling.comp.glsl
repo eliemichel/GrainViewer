@@ -61,18 +61,31 @@ layout (std430, binding = 2) restrict writeonly buffer impostorElementsSsbo {
 	uint renderAsImpostor[];
 };
 
+uniform sampler2D depthMap;
+uniform float uInnerOverOuterRadius = 1.0 / 1.0;
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
 	if (i >= uPointCount) return;
 
+	float radius_ps = 0.05; // TODO
+
 	vec3 p = point[i].position.xyz;
 	vec4 position_cs = viewModelMatrix * vec4(p.xyz, 1.0);
+	vec4 occlusion_position_cs = vec4(position_cs.xyz * uInnerOverOuterRadius, 1.0);
+	vec4 occlusion_position_ps = projectionMatrix * occlusion_position_cs;
+	occlusion_position_ps = occlusion_position_ps / occlusion_position_ps.w;
 
-	uint isImpostor = 0;
-	if (length(position_cs) >= uInstanceLimit) {
-		isImpostor = 1;
-	}
+	bool frustumCulled = abs(occlusion_position_ps.x) >= 1 + radius_ps || abs(occlusion_position_ps.y) >= 1 + radius_ps || occlusion_position_ps.z < 0;
+
+	occlusion_position_ps = occlusion_position_ps * 0.5 + 0.5;
+
+	//bool occlusionCulled = occlusion_position_ps.z > textureLod(depthMap, occlusion_position_ps.xy, 0).r / uInnerOverOuterRadius;
+	bool occlusionCulled = occlusion_position_ps.z > textureLod(depthMap, occlusion_position_ps.xy, 0).r;
+	bool distanceCulled = length(position_cs) < uInstanceLimit;
+
+	uint isImpostor = occlusionCulled || distanceCulled || frustumCulled ? 0 : 1;
+	//isImpostor = occlusionCulled ? 1 : 0;
 
 	renderAsImpostor[i] = isImpostor;
 

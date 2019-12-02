@@ -68,8 +68,8 @@
 					"type": "TransformBehavior",
 					"modelMatrix": [
 						1, 0, 0, 0,
-						0, 1, 0, 0,
 						0, 0, 1, 0,
+						0, 1, 0, 0,
 						0, 0, 0, 1
 					]
 				},
@@ -79,7 +79,7 @@
 				},
 				{
 					"type": "SandRenderer",
-					"pointcloud": "heap-positions.bin",
+					"pointcloud": "beach-positions.bin",
 					"models": [
 						{
 							"normalAlpha": "Impostors\\grain000-128v-128p\\normal"
@@ -88,13 +88,13 @@
 					"colormap": "colormap3.png",
 
 					"shader": "ImpostorCloud",
-					"instanceCloudShader": "InstanceCloud",
 					"cullingShader": "PointCloudCulling",
+					"instanceCloudShader": "InstanceCloud",
 					"occlusionCullingShader": "SandOcclusionCulling",
 
-					"grainRadius": 0.045,
+					"grainRadius": 0.013,
 					"grainMeshScale": 2.0,
-					"instanceLimit": 1.20,
+					"instanceLimit": 1.15,
 					"cullingMechanism": "PrefixSum"
 				}
 			]

@@ -11,6 +11,7 @@
 #include "bufferFillers.h"
 #include "MeshDataBehavior.h"
 #include "TransformBehavior.h"
+#include "Framebuffer.h"
 
 void SandRenderer::initShader(ShaderProgram & shader) {
 	size_t o = 0;
@@ -100,8 +101,11 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 	jrOption(json, "instanceCloudShader", m_instanceCloudShaderName, m_instanceCloudShaderName);
 
+	jrOption(json, "occlusionCullingShader", m_occlusionCullingShaderName, m_occlusionCullingShaderName);
+
 #define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
 	jrPropperty(grainRadius);
+	jrPropperty(grainInnerRadiusRatio);
 	jrPropperty(grainMeshScale);
 	jrPropperty(instanceLimit);
 	jrPropperty(disableImpostors);
@@ -159,6 +163,7 @@ void SandRenderer::start()
 	}
 	m_instanceCloudShader = ShaderPool::GetShader(m_instanceCloudShaderName);
 	m_prefixSumShader = ShaderPool::GetShader(m_prefixSumShaderName);
+	m_occlusionCullingShader = ShaderPool::GetShader(m_occlusionCullingShaderName);
 
 	if (!m_shader || !m_shadowMapShader) {
 		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
@@ -193,6 +198,9 @@ void SandRenderer::start()
 
 	m_grainMeshData = getComponent<MeshDataBehavior>();
 	m_transform = getComponent<TransformBehavior>();
+
+	// TODO: ensure this map always has the same resolution as the render
+	m_occlusionCullingMap = std::make_unique<Framebuffer>(1000, 600);
 
 	m_isDeferredRendered = true;
 }
@@ -358,8 +366,6 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 		}
 	});
 
-	prefixSum(*m_elementBuffers[0], *m_elementBuffers[1], effectivePointCount, *m_prefixSumShader);
-
 	// TODO: Write from compute shader
 	// a. impostors
 	m_commandBuffer->fillBlock<DrawElementsIndirectCommand>(0, [impostorCount, impostorFirst, this](DrawElementsIndirectCommand *cmd, size_t _) {
@@ -385,11 +391,41 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & world) const
 {
 	int resultIndex;
-	if (!m_cullingShaders[MarkImpostors]) {
+	if (!m_cullingShaders[MarkInstances] || !m_cullingShaders[MarkInstances]->isValid()
+		|| !m_cullingShaders[MarkImpostors] || !m_cullingShaders[MarkImpostors]->isValid()
+		|| !m_cullingShaders[BuildCommandBuffer] || !m_cullingShaders[BuildCommandBuffer]
+		|| !m_cullingShaders[Group]->isValid() || !m_occlusionCullingShader
+		|| !m_occlusionCullingShader->isValid()) {
 		return;
 	}
 
 	GLuint effectivePointCount = static_cast<GLuint>(m_nbPoints / m_frameCount);
+
+	// 0. Occlusion culling map (kind of shadow map)
+	if (m_properties.grainInnerRadiusRatio > 0) {
+		GLint drawFbo = 0, readFbo = 0;
+		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
+		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
+		m_occlusionCullingMap->bind();
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		const ShaderProgram & shader = *m_occlusionCullingShader;
+		shader.use();
+		shader.bindUniformBlock("Camera", camera.ubo());
+		shader.setUniform("modelMatrix", modelMatrix());
+		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+
+		shader.setUniform("uOuterOverInnerRadius", 1.0f / m_properties.grainInnerRadiusRatio);
+
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
+
+		glBindVertexArray(m_vao);
+		glDrawArrays(GL_POINTS, 0, effectivePointCount);
+		glBindVertexArray(0);
+
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
+	}
 
 	// 1. Mark instances
 	{
@@ -432,6 +468,10 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 		shader.setUniform("uPointCount", effectivePointCount);
 		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
+		shader.setUniform("uInnerOverOuterRadius", m_properties.grainInnerRadiusRatio);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->depthTexture());
+		shader.setUniform("depthMap", 0);
 		m_prefixSumInfoSsbo->bindSsbo(0);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 		m_elementBuffers[1]->bindSsbo(2);
@@ -471,6 +511,12 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		glDispatchCompute(1, 1, 1);
 		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	}
+
+	// 8. Collect info
+	m_prefixSumInfoSsbo->readBlock<PrefixSumInfoSsbo>(0, [this](PrefixSumInfoSsbo *ssbo, size_t _) {
+		m_renderInfo.instanceCount = ssbo->instanceCount;
+		m_renderInfo.impostorCount = ssbo->impostorCount;
+	});
 }
 
 ///////////////////////////////////////////////////////////////////////////

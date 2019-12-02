@@ -9,6 +9,7 @@
 class ShaderProgram;
 class MeshDataBehavior;
 class TransformBehavior;
+class Framebuffer;
 
 /**
  * Sand renderer mixes impostor cloud and instance cloud using a culling
@@ -65,6 +66,7 @@ public:
 	// Public properties
 	struct Properties {
 		float grainRadius = 0.007f;
+		float grainInnerRadiusRatio = 0.8f; // as a ratio of grainRadius
 		float grainMeshScale = 0.45f;
 		float instanceLimit = 1.05f;
 		bool disableImpostors = false;
@@ -72,6 +74,12 @@ public:
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
+
+	struct RenderInfo {
+		int instanceCount;
+		int impostorCount;
+	};
+	const RenderInfo & renderInfo() const { return m_renderInfo; }
 
 private:
 	glm::mat4 modelMatrix() const;
@@ -119,11 +127,13 @@ private:
 
 private:
 	Properties m_properties;
+	mutable RenderInfo m_renderInfo;
 
 	std::string m_shaderName = "ImpostorCloud";
 	std::vector<std::string> m_cullingShaderNames;
 	std::string m_instanceCloudShaderName = "InstanceCloud";
 	std::string m_prefixSumShaderName = "PrefixSum";
+	std::string m_occlusionCullingShaderName = "SandOcclusionCulling";
 
 	std::string m_shadowMapShaderName;
 
@@ -134,12 +144,14 @@ private:
 	std::vector<std::shared_ptr<ShaderProgram>> m_cullingShaders;
 	std::shared_ptr<ShaderProgram> m_instanceCloudShader;
 	std::shared_ptr<ShaderProgram> m_prefixSumShader;
+	std::shared_ptr<ShaderProgram> m_occlusionCullingShader;
+	std::unique_ptr<Framebuffer> m_occlusionCullingMap; // kind of shadow map
 	bool m_isDeferredRendered;
 	size_t m_nbPoints;
 	size_t m_frameCount;
 
 	GLuint m_vao;
-	GLuint m_vbo;
+	GLuint m_vbo; // TODO: replace this with GlBuffer
 	std::unique_ptr<GlBuffer> m_commandBuffer;
 	std::unique_ptr<GlBuffer> m_cullingPointersSsbo;
 	std::unique_ptr<GlBuffer> m_prefixSumInfoSsbo;

@@ -29,8 +29,9 @@ void SandRendererDialog::draw()
 
 			SandRenderer::Properties & props = cont->properties();
 
-			ImGui::SliderFloat("Grain Radius", &props.grainRadius, 0.00f, 0.1f, "radius = %.5f");
-			
+			ImGui::SliderFloat("Grain Radius", &props.grainRadius, 0.0f, 0.1f, "radius = %.5f");
+			ImGui::SliderFloat("Inner Radius", &props.grainInnerRadiusRatio, 0.0f, 1.0f, "ratio = %.5f");
+
 			ImGui::SliderFloat("Grain Mesh Scale", &props.grainMeshScale, 0.0f, 10.0f, "scale = %.3f");
 			
 			// Instance limit distance
@@ -53,6 +54,10 @@ void SandRendererDialog::draw()
 
 			ImGui::Checkbox("Disable Impostors", &props.disableImpostors);
 			ImGui::Checkbox("Disable Instances", &props.disableInstances);
+
+			const SandRenderer::RenderInfo & info = cont->renderInfo();
+			ImGui::LabelText("Impostors", "%d", info.impostorCount);
+			ImGui::LabelText("Instances", "%d", info.instanceCount);
 
 			EndDisable(!enabled);
 		}
