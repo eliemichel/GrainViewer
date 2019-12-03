@@ -19,6 +19,7 @@ uniform float grainRadius = 0.005;
 
 #include "include/utils.inc.glsl"
 #include "include/random.inc.glsl"
+#include "include/sprite.inc.glsl"
 #include "sand/random-grains.inc.glsl"
 
 void main() {
@@ -30,13 +31,7 @@ void main() {
 
     gl_Position = projectionMatrix * position_cs;
     
-    // Estimate projection of sphere on screen to determine sprite size
-    gl_PointSize = 1.0 * max(resolution.x, resolution.y) * projectionMatrix[1][1] * radius / gl_Position.w;
-    if (isOrthographic(projectionMatrix)) {
-        float a = projectionMatrix[0][0] * resolution.x;
-        float c = projectionMatrix[1][1] * resolution.y;
-        gl_PointSize = max(a * radius, c * radius);
-    }
+    gl_PointSize = SpriteSize(radius, gl_Position);
 
     gs_from_ws = randomGrainMatrix(int(id), position_ws);
 

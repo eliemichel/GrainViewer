@@ -61,8 +61,9 @@ layout (std430, binding = 2) restrict writeonly buffer impostorElementsSsbo {
 	uint renderAsImpostor[];
 };
 
-uniform sampler2D depthMap;
+uniform sampler2D occlusionMap;
 uniform float uInnerOverOuterRadius = 1.0 / 1.0;
+uniform float uInnerRadius;
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
@@ -72,17 +73,35 @@ void main() {
 
 	vec3 p = point[i].position.xyz;
 	vec4 position_cs = viewModelMatrix * vec4(p.xyz, 1.0);
-	vec4 occlusion_position_cs = vec4(position_cs.xyz * uInnerOverOuterRadius, 1.0);
+	vec4 occlusion_position_cs = vec4(position_cs.xyz, 1.0);
 	vec4 occlusion_position_ps = projectionMatrix * occlusion_position_cs;
-	occlusion_position_ps = occlusion_position_ps / occlusion_position_ps.w;
+	occlusion_position_ps = occlusion_position_ps / occlusion_position_ps.w * 0.5 + 0.5;
 
-	bool frustumCulled = abs(occlusion_position_ps.x) >= 1 + radius_ps || abs(occlusion_position_ps.y) >= 1 + radius_ps || occlusion_position_ps.z < 0;
+	//bool frustumCulled = abs(occlusion_position_ps.x) >= 1 + radius_ps || abs(occlusion_position_ps.y) >= 1 + radius_ps || occlusion_position_ps.z < 0;
+	bool frustumCulled = false;
 
-	occlusion_position_ps = occlusion_position_ps * 0.5 + 0.5;
+	//bool occlusionCulled = occlusion_position_ps.z > textureLod(occlusionMap, occlusion_position_ps.xy, 0).r / uInnerOverOuterRadius;
+	//bool occlusionCulled = occlusion_position_ps.z > textureLod(occlusionMap, occlusion_position_ps.xy, 0).r;
+	bool occlusionCulled = false;
+	vec3 closestCone_cs = textureLod(occlusionMap, occlusion_position_ps.xy, 0).xyz / uInnerOverOuterRadius;
 
-	//bool occlusionCulled = occlusion_position_ps.z > textureLod(depthMap, occlusion_position_ps.xy, 0).r / uInnerOverOuterRadius;
-	bool occlusionCulled = occlusion_position_ps.z > textureLod(depthMap, occlusion_position_ps.xy, 0).r;
+	float cosAlpha = dot(normalize(closestCone_cs), normalize(position_cs.xyz - closestCone_cs));
+	if (cosAlpha < 0) {
+		occlusionCulled = false;
+	} else {
+		float sinBeta = uInnerRadius / length(closestCone_cs);
+		float sin2Alpha = 1. - cosAlpha * cosAlpha;
+		float sin2Beta = sinBeta * sinBeta;
+		float cos2Alpha = cosAlpha * cosAlpha;
+		float cos2Beta = 1. - sinBeta * sinBeta;
+		occlusionCulled = cos2Alpha < cos2Beta;
+		occlusionCulled = sin2Alpha > sin2Beta;
+	}
+
+
+
 	bool distanceCulled = length(position_cs) < uInstanceLimit;
+	distanceCulled = false;
 
 	uint isImpostor = occlusionCulled || distanceCulled || frustumCulled ? 0 : 1;
 	//isImpostor = occlusionCulled ? 1 : 0;

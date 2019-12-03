@@ -1,12 +1,12 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_CUBE SET_DEPTH
+#pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_INNER_SPHERE DEBUG_CUBE SET_DEPTH
 #pragma variant SPHEREHIT_SAMPLING MIXEDHIT_SAMPLING
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
 
-//#define SET_DEPTH
+#define DEBUG_INNER_SPHERE
 
 flat in uint id;
 in float radius;
@@ -34,6 +34,7 @@ uniform mat4 viewModelMatrix;
 
 uniform SphericalImpostor impostor[3];
 uniform sampler2D colormapTexture;
+uniform float uInnerRadius;
 
 uniform float hitSphereCorrectionFactor = 0.65;
 uniform float roughness = 0.5;
@@ -60,6 +61,9 @@ void main() {
 	
 #ifdef DEBUG_SPHERE
 	fragment = IntersectRaySphere(ray_ws, position_ws, radius);
+#endif
+#ifdef DEBUG_INNER_SPHERE
+	fragment = IntersectRaySphere(ray_ws, position_ws, uInnerRadius);
 #endif
 #ifdef DEBUG_CUBE
 	fragment = IntersectRayCube(ray_ws, position_ws, radius);

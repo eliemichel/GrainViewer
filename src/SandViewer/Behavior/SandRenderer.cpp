@@ -200,7 +200,8 @@ void SandRenderer::start()
 	m_transform = getComponent<TransformBehavior>();
 
 	// TODO: ensure this map always has the same resolution as the render
-	m_occlusionCullingMap = std::make_unique<Framebuffer>(1000, 600);
+	const std::vector<ColorLayerInfo>& colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
+	m_occlusionCullingMap = std::make_unique<Framebuffer>(1000, 600, colorLayerInfos);
 
 	m_isDeferredRendered = true;
 }
@@ -250,8 +251,7 @@ void SandRenderer::reloadShaders()
 glm::mat4 SandRenderer::modelMatrix() const {
 	if (auto transform = m_transform.lock()) {
 		return transform->modelMatrix();
-	}
-	else {
+	} else {
 		return glm::mat4(1.0f);
 	}
 }
@@ -407,7 +407,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
 		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
 		m_occlusionCullingMap->bind();
-		glClear(GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		const ShaderProgram & shader = *m_occlusionCullingShader;
 		shader.use();
@@ -416,6 +416,9 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 
 		shader.setUniform("uOuterOverInnerRadius", 1.0f / m_properties.grainInnerRadiusRatio);
+		shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+
+		glEnable(GL_PROGRAM_POINT_SIZE);
 
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 
@@ -469,9 +472,10 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		shader.setUniform("uPointCount", effectivePointCount);
 		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 		shader.setUniform("uInnerOverOuterRadius", m_properties.grainInnerRadiusRatio);
+		shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->depthTexture());
-		shader.setUniform("depthMap", 0);
+		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+		shader.setUniform("occlusionMap", 0);
 		m_prefixSumInfoSsbo->bindSsbo(0);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 		m_elementBuffers[1]->bindSsbo(2);
@@ -537,6 +541,7 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 	m_shader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
 	m_shader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
+	m_shader->setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
 
 	size_t o = 0;
 
