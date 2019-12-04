@@ -27,7 +27,15 @@ public:
 
 	static void ReloadShaders();
 
+	/**
+	 * Load shaders from JSON file
+	 */
 	static bool Deserialize(const rapidjson::Value & json);
+
+	/**
+	 * Remove all shaders from pool (invalidates all weak pointers to it
+	 */
+	static void Clear();
 
 private:
 	ShaderPool();
@@ -39,6 +47,7 @@ private:
 	std::shared_ptr<ShaderProgram> getShader(const std::string & shaderName);
 	void reloadShaders();
 	bool deserialize(const rapidjson::Value & json);
+	void clear();
 
 private:
 	struct ShaderInfo {

@@ -71,6 +71,9 @@ public:
 		float instanceLimit = 1.05f;
 		bool disableImpostors = false;
 		bool disableInstances = false;
+		bool enableOcclusionCulling = true;
+		bool enableDistanceCulling = true;
+		bool enableFrustumCulling = true;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }

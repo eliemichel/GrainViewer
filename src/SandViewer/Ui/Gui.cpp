@@ -19,6 +19,7 @@
 #include "Scene.h"
 #include "Dialog.h"
 #include "RuntimeObject.h"
+#include "ShaderPool.h"
 
 using namespace std;
 
@@ -307,6 +308,7 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 		case GLFW_KEY_R:
 			if (mods & GLFW_MOD_CONTROL) {
 				beforeLoading();
+				ShaderPool::Clear();
 				m_scene->load(m_scene->filename());
 				afterLoading();
 			}

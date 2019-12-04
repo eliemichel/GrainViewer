@@ -55,6 +55,10 @@ void SandRendererDialog::draw()
 			ImGui::Checkbox("Disable Impostors", &props.disableImpostors);
 			ImGui::Checkbox("Disable Instances", &props.disableInstances);
 
+			ImGui::Checkbox("Occlusion Culling", &props.enableOcclusionCulling);
+			ImGui::Checkbox("Frustum Culling", &props.enableFrustumCulling);
+			ImGui::Checkbox("Distance Culling", &props.enableDistanceCulling);
+
 			const SandRenderer::RenderInfo & info = cont->renderInfo();
 			ImGui::LabelText("Impostors", "%d", info.impostorCount);
 			ImGui::LabelText("Instances", "%d", info.instanceCount);

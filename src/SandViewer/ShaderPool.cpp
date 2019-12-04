@@ -34,6 +34,10 @@ bool ShaderPool::Deserialize(const rapidjson::Value & json)
 	return s_instance.deserialize(json);
 }
 
+void ShaderPool::Clear() {
+	s_instance.clear();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Private singleton methods
 ///////////////////////////////////////////////////////////////////////////////
@@ -151,4 +155,9 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 		LOG << " - shader '" << name << "' loaded with defines [" << definesDebug.str() << "]";
 	}
 	return true;
+}
+
+void ShaderPool::clear()
+{
+	m_shaders.clear();
 }

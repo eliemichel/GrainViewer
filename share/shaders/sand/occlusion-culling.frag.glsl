@@ -14,6 +14,7 @@ layout (location = 0) out vec4 color;
 void main() {
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	vec3 hitPosition;
+	// The *.5 has no explaination, but it empirically increases occlusion culling
 	if (!intersectRaySphere(hitPosition, ray_cs, position_cs.xyz, radius * .5)) {
 		discard;
 	}

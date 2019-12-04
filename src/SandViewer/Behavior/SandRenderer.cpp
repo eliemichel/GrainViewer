@@ -407,6 +407,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFbo);
 		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFbo);
 		m_occlusionCullingMap->bind();
+		glClearColor(0, 0, 0, 1);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
 		const ShaderProgram & shader = *m_occlusionCullingShader;
@@ -471,8 +472,12 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 		shader.setUniform("uPointCount", effectivePointCount);
 		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
-		shader.setUniform("uInnerOverOuterRadius", m_properties.grainInnerRadiusRatio);
+		shader.setUniform("uOuterOverInnerRadius", 1.f / m_properties.grainInnerRadiusRatio);
 		shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+		shader.setUniform("uOuterRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+		shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
+		shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
+		shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
 		shader.setUniform("occlusionMap", 0);
@@ -544,6 +549,11 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 	m_shader->setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
 
 	size_t o = 0;
+
+	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+	glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+	m_shader->setUniform("occlusionMap", static_cast<GLint>(o));
+	++o;
 
 	if (m_colormapTexture) {
 		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));

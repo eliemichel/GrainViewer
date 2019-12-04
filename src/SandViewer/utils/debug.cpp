@@ -49,7 +49,7 @@ void APIENTRY openglCallbackFunction(GLenum source,
 	const GLchar* message,
 	const void* userParam) {
 
-	if (id == 131185 || id == 131154) {
+	if (id == 131185 || id == 131154 || id == 131186) {
 		return;
 	}
 

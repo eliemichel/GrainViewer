@@ -41,10 +41,14 @@ layout (std430, binding = 0) buffer prefixSumInfoSsbo {
 
 uniform uint uPointCount;
 uniform float uInstanceLimit = 1.05;
+uniform bool uEnableOcclusionCulling = true;
+uniform bool uEnableDistanceCulling = true;
+uniform bool uEnableFrustumCulling = true;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "include/uniform/camera.inc.glsl"
+#include "include/frustum.inc.glsl"
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STEP_MARK_IMPOSTORS
@@ -62,8 +66,9 @@ layout (std430, binding = 2) restrict writeonly buffer impostorElementsSsbo {
 };
 
 uniform sampler2D occlusionMap;
-uniform float uInnerOverOuterRadius = 1.0 / 1.0;
+uniform float uOuterOverInnerRadius;
 uniform float uInnerRadius;
+uniform float uOuterRadius;
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
@@ -73,35 +78,41 @@ void main() {
 
 	vec3 p = point[i].position.xyz;
 	vec4 position_cs = viewModelMatrix * vec4(p.xyz, 1.0);
-	vec4 occlusion_position_cs = vec4(position_cs.xyz, 1.0);
-	vec4 occlusion_position_ps = projectionMatrix * occlusion_position_cs;
-	occlusion_position_ps = occlusion_position_ps / occlusion_position_ps.w * 0.5 + 0.5;
 
-	//bool frustumCulled = abs(occlusion_position_ps.x) >= 1 + radius_ps || abs(occlusion_position_ps.y) >= 1 + radius_ps || occlusion_position_ps.z < 0;
+	/////////////////////////////////////////
+	// Frustum culling
 	bool frustumCulled = false;
-
-	//bool occlusionCulled = occlusion_position_ps.z > textureLod(occlusionMap, occlusion_position_ps.xy, 0).r / uInnerOverOuterRadius;
-	//bool occlusionCulled = occlusion_position_ps.z > textureLod(occlusionMap, occlusion_position_ps.xy, 0).r;
-	bool occlusionCulled = false;
-	vec3 closestCone_cs = textureLod(occlusionMap, occlusion_position_ps.xy, 0).xyz / uInnerOverOuterRadius;
-
-	float cosAlpha = dot(normalize(closestCone_cs), normalize(position_cs.xyz - closestCone_cs));
-	if (cosAlpha < 0) {
-		occlusionCulled = false;
-	} else {
-		float sinBeta = uInnerRadius / length(closestCone_cs);
-		float sin2Alpha = 1. - cosAlpha * cosAlpha;
-		float sin2Beta = sinBeta * sinBeta;
-		float cos2Alpha = cosAlpha * cosAlpha;
-		float cos2Beta = 1. - sinBeta * sinBeta;
-		occlusionCulled = cos2Alpha < cos2Beta;
-		occlusionCulled = sin2Alpha > sin2Beta;
+	if (uEnableFrustumCulling) {
+		// unexplained multiplication factor...
+		float fac = 4.0;
+		frustumCulled = SphereFrustumCulling(projectionMatrix, position_cs.xyz, fac*uOuterRadius);
 	}
 
+	/////////////////////////////////////////
+	// Occlusion culling
+	bool occlusionCulled = false;
+	if (uEnableOcclusionCulling) {
+		vec4 position_ps = projectionMatrix * vec4(position_cs.xyz, 1.0);
+		position_ps = position_ps / position_ps.w * 0.5 + 0.5;
+		position_ps.xy = clamp(position_ps.xy, vec2(0.0), vec2(1.0));
+		vec3 closestCone_cs = textureLod(occlusionMap, position_ps.xy, 0).xyz * uOuterOverInnerRadius;
+		float cosAlpha = dot(normalize(closestCone_cs), normalize(position_cs.xyz - closestCone_cs));
+		if (cosAlpha < 0 || closestCone_cs == vec3(0.0)) {
+			occlusionCulled = false;
+		} else {
+			float sinBeta = uInnerRadius / length(closestCone_cs);
+			float sin2Alpha = 1. - cosAlpha * cosAlpha;
+			float sin2Beta = sinBeta * sinBeta;
+			occlusionCulled = sin2Alpha < sin2Beta;
+		}
+	}
 
-
-	bool distanceCulled = length(position_cs) < uInstanceLimit;
-	distanceCulled = false;
+	/////////////////////////////////////////
+	// Distance culling
+	bool distanceCulled = false;
+	if (uEnableDistanceCulling) {
+		distanceCulled = length(position_cs) < uInstanceLimit;
+	}
 
 	uint isImpostor = occlusionCulled || distanceCulled || frustumCulled ? 0 : 1;
 	//isImpostor = occlusionCulled ? 1 : 0;
@@ -220,3 +231,15 @@ void main() {
 }
 
 #endif // STEP_BUILD_COMMAND_BUFFER
+
+///////////////////////////////////////////////////////////////////////////////
+#ifndef STEP_MARK_IMPOSTORS
+#ifndef STEP_MARK_INSTANCES
+#ifndef STEP_GROUP
+#ifndef STEP_BUILD_COMMAND_BUFFER
+// Mock step to prevent the compiler from complaining when loading the shader the first time
+void main() {}
+#endif
+#endif
+#endif
+#endif

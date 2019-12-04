@@ -4,7 +4,7 @@
  * See http://www8.cs.umu.se/kurser/5DV051/HT12/lab/plane_extraction.pdf for explaination
  */
 void ExtractFrustumPlanes(const mat4 projectionMatrix, out vec4 planes[6]) {
-	mat4 m = projectionMatrix; //transpose(projectionMatrix);
+	mat4 m = transpose(projectionMatrix);
 	planes[0] = m[3] + m[0];
 	planes[1] = m[3] - m[0]; 
 	planes[2] = m[3] + m[1];
@@ -19,9 +19,9 @@ void ExtractFrustumPlanes(const mat4 projectionMatrix, out vec4 planes[6]) {
 bool SphereFrustumCulling(const mat4 projectionMatrix, vec3 p, float radius) {
 	vec4 planes[6];
 	ExtractFrustumPlanes(projectionMatrix, planes);
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 5; i++) {
 		float dist = dot(vec4(p, 1.0), planes[i]);
-		if (dist < radius) return true; // sphere culled
+		if (dist < -radius) return true; // sphere culled
 	}
 	return false;
 }

@@ -1,7 +1,7 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_ALBEDO SHOW_POSITION
+#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION
 #pragma variant HDR REINHART
 //#define SHOW_POSITION
 #define WHITE_BACKGROUND
@@ -132,12 +132,12 @@ void main() {
 #ifdef SHOW_NORMAL
 	out_fragment.radiance.rgb = fragment.normal.xyz * .5 + .5;
 #endif // SHOW_NORMAL
-#ifdef SHOW_ALBEDO
+#ifdef SHOW_BASECOLOR
 	out_fragment.radiance.rgb = fragment.baseColor.rgb;
-#endif // SHOW_ALBEDO
+#endif // SHOW_BASECOLOR
 #ifdef SHOW_POSITION
 	out_fragment.radiance.rgb = fragment.ws_coord.rgb;
-#endif // SHOW_ALBEDO
+#endif // SHOW_POSITION
 #ifdef TRANSPARENT_BACKGROUND
 	out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
 #endif // TRANSPARENT_BACKGROUND

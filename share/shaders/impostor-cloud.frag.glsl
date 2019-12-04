@@ -6,8 +6,6 @@
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
 
-#define DEBUG_INNER_SPHERE
-
 flat in uint id;
 in float radius;
 in vec3 position_ws;
@@ -39,6 +37,9 @@ uniform float uInnerRadius;
 uniform float hitSphereCorrectionFactor = 0.65;
 uniform float roughness = 0.5;
 uniform float metallic = 0.0;
+
+// DEBUG
+uniform sampler2D occlusionMap;
 
 void main() {
 	mat3 ws_from_gs_rot = transpose(mat3(gs_from_ws));
