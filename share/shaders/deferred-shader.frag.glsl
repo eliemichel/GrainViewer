@@ -61,17 +61,18 @@ void main() {
 		surface.baseColor = fragment.baseColor;
 		surface.metallic = fragment.metallic;
 		surface.roughness = fragment.roughness;
-		surface.reflectance = 0.5;
+		surface.reflectance = 1.0;
 		
 		for (int k = 0 ; k < 3 ; ++k) {
 			float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
 			float shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
 			
 			vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
+			vec3 f = vec3(0.0);
 #ifdef OLD_BRDF
-			vec3 f = bsdfPbrMetallicRoughness(toCam, toLight, fragment.normal, surface.baseColor, surface.roughness, surface.metallic);
+			f = bsdfPbrMetallicRoughness(toCam, toLight, fragment.normal, surface.baseColor, surface.roughness, surface.metallic);
 #else // OLD_BRDF
-			vec3 f = brdf(toCam, fragment.normal, toLight, surface);
+			f = brdf(toCam, fragment.normal, toLight, surface);
 #endif // OLD_BRDF
 			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0);// * (1.0 - shadow * 0.8);
 		}

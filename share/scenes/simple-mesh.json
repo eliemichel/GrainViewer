@@ -1,0 +1,61 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 24,
+		}
+	],
+
+	"deferredShader": {
+		"defines": []
+	},
+
+	"lights": [
+		{
+			"position": [5, 3, 4],
+			"color": [1, 1, 1]
+		},
+		{
+			"position": [-8, 2, 4],
+			"color": [1, 0.9, 0.9]
+		},
+		{
+			"position": [2, -5, -3],
+			"color": [0.8, 0.8, 1]
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world",
+		"Mesh": "basic-mesh",
+	},
+
+	"world": {
+		"shader": "World"
+	},
+
+	"objects": [
+		{
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1, 0, 0, 0,
+						0, 1, 0, 0,
+						0, 0, 1, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "grain000_midhighpoly.obj"
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		}
+	]
+}}

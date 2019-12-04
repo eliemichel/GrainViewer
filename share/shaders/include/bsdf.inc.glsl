@@ -1,6 +1,7 @@
 //////////////////////////////////////////////////////
 // Microfacet distributions and utility functions
-// Variant defines: BURLEY_DIFFUSE, FAST_GGX, ANISOTROPIC
+// Largely from https://google.github.io/filament/Filament.html
+#pragma variant BURLEY_DIFFUSE, FAST_GGX, ANISOTROPIC, UNCORRELATED_GGX
 
 struct SurfaceAttributes {
     vec3 baseColor;
@@ -32,6 +33,13 @@ float D_GGX_Anisotropic(float NoH, const vec3 h, const vec3 t, const vec3 b, flo
     highp float v2 = dot(v, v);
     float w2 = a2 / v2;
     return a2 * w2 * w2 * (1.0 / PI);
+}
+
+float V_SmithGGX(float NoV, float NoL, float roughness) {
+    float a = roughness;
+    float GGXL = NoL / (NoL * (1.0 - a) + a);
+    float GGXV = NoV / (NoV * (1.0 - a) + a);
+    return GGXL * GGXV;
 }
 
 float V_SmithGGXCorrelated(float NoV, float NoL, float roughness) {
@@ -76,12 +84,28 @@ float Fd_Burley(float NoV, float NoL, float LoH, float roughness) {
     return lightScatter * viewScatter * (1.0 / PI);
 }
 
+float DistributionGGX(vec3 N, vec3 H, float a) {
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+    
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = pi * denom * denom;
+    
+    return a2 / denom;
+}
+
+
 #ifdef ANISOTROPIC
 vec3 brdf(const vec3 v, const vec3 n, const vec3 l, const vec3 t, const vec3 b, const SurfaceAttributes surface)
 #else
 vec3 brdf(const vec3 v, const vec3 n, const vec3 l, SurfaceAttributes surface)
 #endif
 {
+    if (dot(l, n) < 0.0) {
+        return vec3(0.0);
+    }
+
     vec3 diffuseColor = (1.0 - surface.metallic) * surface.baseColor.rgb;
     vec3 f0 = 0.16 * surface.reflectance * surface.reflectance * (1.0 - surface.metallic) + surface.baseColor * surface.metallic;
     vec3 h = normalize(v + l);
@@ -105,11 +129,15 @@ vec3 brdf(const vec3 v, const vec3 n, const vec3 l, SurfaceAttributes surface)
     float V = V_SmithGGXCorrelated_Anisotropic(at, ab, ToV, BoV, ToL, BoL, NoV, NoL);
 #else
     float D = D_GGX(alpha, NoH, n, h);
-  #ifdef FAST_GGX
-    float V = V_SmithGGXCorrelatedFast(NoV, NoL, alpha);
-  #else
-    float V = V_SmithGGXCorrelated(NoV, NoL, alpha);
-  #endif
+  #ifdef UNCORRELATED_GGX
+    float V = V_SmithGGX(NoV, NoL, alpha);
+  #else // UNCORRELATED_GGX
+    #ifdef FAST_GGX
+      float V = V_SmithGGXCorrelatedFast(NoV, NoL, alpha);
+    #else
+      float V = V_SmithGGXCorrelated(NoV, NoL, alpha);
+    #endif
+  #endif // UNCORRELATED_GGX
 #endif
 
     vec3 F = F_Schlick(LoH, f0);
@@ -120,6 +148,6 @@ vec3 brdf(const vec3 v, const vec3 n, const vec3 l, SurfaceAttributes surface)
     vec3 Fd = Fd_Lambert() * diffuseColor;
 #endif
 
-    return Fs + Fd;
+    return (Fs + Fd) * NoL;
 }
 
