@@ -7,6 +7,7 @@ struct PointLight {
 	vec3 position_ws;
 	vec3 color;
 	int isRich;
+	int hasShadowMap;
 	mat4 matrix;
 };
 
@@ -84,6 +85,10 @@ float richShadowAt(const in PointLight light, vec3 position_ws, float shadowBias
 
 
 float shadowAt(const in PointLight light, vec3 position_ws, float shadowBias) {
+	if (light.hasShadowMap == 0) {
+		return 0.0;
+	}
+
 	if (light.isRich == 1) {
 		return richShadowAt(light, position_ws, shadowBias);
 	}

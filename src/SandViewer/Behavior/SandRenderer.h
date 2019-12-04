@@ -97,11 +97,10 @@ private:
 	bool loadImpostorTexture(std::vector<std::unique_ptr<GlTexture>> & textures, const std::string & textureDirectory);
 	bool loadColormapTexture(const std::string & filename);
 
-	void renderDefault(const Camera & camera, const World & world) const;
 	void renderCulling(const Camera & camera, const World & world) const;
 	void renderCullingPrefixSum(const Camera & camera, const World & world) const;
-	void renderImpostorsDefault(const Camera & camera, const World & world) const;
-	void renderInstancesDefault(const Camera & camera, const World & world) const;
+	void renderImpostors(const Camera & camera, const World & world, RenderType target) const;
+	void renderInstances(const Camera & camera, const World & world, RenderType target) const;
 
 private:
 	struct PointersSsbo {
@@ -132,18 +131,18 @@ private:
 	Properties m_properties;
 	mutable RenderInfo m_renderInfo;
 
-	std::string m_shaderName = "ImpostorCloud";
+	std::string m_impostorShaderName = "ImpostorCloud";
 	std::vector<std::string> m_cullingShaderNames;
 	std::string m_instanceCloudShaderName = "InstanceCloud";
 	std::string m_prefixSumShaderName = "PrefixSum";
 	std::string m_occlusionCullingShaderName = "SandOcclusionCulling";
 
-	std::string m_shadowMapShaderName;
+	std::string m_shadowMapImpostorShaderName;
 
 	CullingMechanism m_cullingMechanism = AtomicSum;
 
-	std::shared_ptr<ShaderProgram> m_shader;
-	std::shared_ptr<ShaderProgram> m_shadowMapShader;
+	std::shared_ptr<ShaderProgram> m_impostorShader;
+	std::shared_ptr<ShaderProgram> m_shadowMapImpostorShader;
 	std::vector<std::shared_ptr<ShaderProgram>> m_cullingShaders;
 	std::shared_ptr<ShaderProgram> m_instanceCloudShader;
 	std::shared_ptr<ShaderProgram> m_prefixSumShader;

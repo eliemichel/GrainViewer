@@ -24,21 +24,26 @@
 	],
 
 	"deferredShader": {
-		"defines": [ "SHOW_NORMAL" ]
+		"defines": [ "__SHOW_BASECOLOR" ]
 	},
 
 	"lights": [
 		{
 			"position": [5, 3, 4],
-			"color": [1, 1, 1]
+			"color": [1, 1, 1],
+			"shadowMapSize": 1024,
+			"hasShadowMap": true,
+			"shadowMapFov": 45.0
 		},
 		{
 			"position": [-8, 2, 4],
-			"color": [1, 0.9, 0.9]
+			"color": [1, 0.8, 0.8],
+			"shadowMapSize": 1024
 		},
 		{
-			"position": [2, -5, -3],
-			"color": [0.8, 0.8, 1]
+			"position": [2, -5, 1],
+			"color": [0.5, 0.55, 0.7],
+			"shadowMapSize": 1024
 		}
 	],
 
@@ -95,7 +100,8 @@
 					"grainRadius": 0.045,
 					"grainMeshScale": 2.0,
 					"instanceLimit": 1.20,
-					"cullingMechanism": "PrefixSum"
+					"cullingMechanism": "PrefixSum",
+					"grainInnerRadiusRatio": 0.95
 				}
 			]
 		}

@@ -91,9 +91,9 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	}
 
 	// Shader
-	jrOption(json, "shader", m_shaderName, m_shaderName);
-	m_shadowMapShaderName = m_shaderName + "_SHADOW_MAP";
-	ShaderPool::AddShaderVariant(m_shadowMapShaderName, m_shaderName, "SHADOW_MAP");
+	jrOption(json, "shader", m_impostorShaderName, m_impostorShaderName);
+	m_shadowMapImpostorShaderName = m_impostorShaderName + "_SHADOW_MAP";
+	ShaderPool::AddShaderVariant(m_shadowMapImpostorShaderName, m_impostorShaderName, "SHADOW_MAP");
 
 	std::string baseCullingShaderName;
 	jrOption(json, "cullingShader", baseCullingShaderName);
@@ -132,15 +132,6 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 		ShaderPool::AddShaderVariant(m_cullingShaderNames[0], baseCullingShaderName, "DOUBLE_ELEMENT_BUFFER");
 	} else if (m_cullingMechanism == PrefixSum) {
 		m_cullingShaderNames.resize(_PrefixSumCullingShadersCount);
-		m_cullingShaderNames[MarkImpostors] = baseCullingShaderName + "_STEP_MARK_IMPOSTORS";
-		ShaderPool::AddShaderVariant(m_cullingShaderNames[MarkImpostors], baseCullingShaderName, "STEP_MARK_IMPOSTORS");
-		m_cullingShaderNames[MarkInstances] = baseCullingShaderName + "_STEP_MARK_INSTANCES";
-		ShaderPool::AddShaderVariant(m_cullingShaderNames[MarkInstances], baseCullingShaderName, "STEP_MARK_INSTANCES");
-		m_cullingShaderNames[Group] = baseCullingShaderName + "_STEP_GROUP";
-		ShaderPool::AddShaderVariant(m_cullingShaderNames[Group], baseCullingShaderName, "STEP_GROUP");
-		m_cullingShaderNames[BuildCommandBuffer] = baseCullingShaderName + "_STEP_BUILD_COMMAND_BUFFER";
-		ShaderPool::AddShaderVariant(m_cullingShaderNames[BuildCommandBuffer], baseCullingShaderName, "STEP_BUILD_COMMAND_BUFFER");
-
 #define step(Step, STEP_DEFINE) \
 	m_cullingShaderNames[Step] = baseCullingShaderName + "_" + #STEP_DEFINE; \
 	ShaderPool::AddShaderVariant(m_cullingShaderNames[Step], baseCullingShaderName, #STEP_DEFINE);
@@ -156,22 +147,14 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 void SandRenderer::start()
 {
-	m_shader = ShaderPool::GetShader(m_shaderName);
-	m_shadowMapShader = ShaderPool::GetShader(m_shadowMapShaderName);
+	m_impostorShader = ShaderPool::GetShader(m_impostorShaderName);
+	m_shadowMapImpostorShader = ShaderPool::GetShader(m_shadowMapImpostorShaderName);
 	for (const auto& name : m_cullingShaderNames) {
 		m_cullingShaders.push_back(ShaderPool::GetShader(name));
 	}
 	m_instanceCloudShader = ShaderPool::GetShader(m_instanceCloudShaderName);
 	m_prefixSumShader = ShaderPool::GetShader(m_prefixSumShaderName);
 	m_occlusionCullingShader = ShaderPool::GetShader(m_occlusionCullingShaderName);
-
-	if (!m_shader || !m_shadowMapShader) {
-		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders (shader = " << m_shaderName << ").";
-		// Legacy behavior
-		m_shader = std::make_shared<ShaderProgram>(m_shaderName);
-		m_shadowMapShader = std::make_unique<ShaderProgram>(m_shaderName);
-		m_shadowMapShader->define("SHADOW_MAP");
-	}
 
 	m_commandBuffer = std::make_unique<GlBuffer>(GL_DRAW_INDIRECT_BUFFER);
 	m_commandBuffer->addBlock<DrawElementsIndirectCommand>();
@@ -221,27 +204,32 @@ void SandRenderer::onDestroy()
 
 void SandRenderer::update(float time)
 {
-	updateShader(*m_shader, time);
-	updateShader(*m_shadowMapShader, time);
+	updateShader(*m_impostorShader, time);
+	updateShader(*m_shadowMapImpostorShader, time);
 }
 
 void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
-	switch (target) {
-	case DefaultRendering:
-		renderDefault(camera, world);
-		break;
-	case ShadowMapRendering:
-	default:
-		// TODO
-		break;
+	if (m_cullingMechanism == PrefixSum) {
+		renderCullingPrefixSum(camera, world);
+	} else {
+		WARN_LOG << "Non-prefix-sum based culling is depreciated";
+		renderCulling(camera, world);
+	}
+
+	if (!m_properties.disableImpostors) {
+		renderImpostors(camera, world, target);
+	}
+
+	if (!m_properties.disableInstances) {
+		renderInstances(camera, world, target);
 	}
 }
 
 void SandRenderer::reloadShaders()
 {
-	initShader(*m_shader);
-	initShader(*m_shadowMapShader);
+	initShader(*m_impostorShader);
+	initShader(*m_shadowMapImpostorShader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -309,23 +297,6 @@ bool SandRenderer::loadColormapTexture(const std::string & filename)
 ///////////////////////////////////////////////////////////////////////////////
 // Rendering
 ///////////////////////////////////////////////////////////////////////////////
-
-void SandRenderer::renderDefault(const Camera & camera, const World & world) const
-{
-	if (m_cullingMechanism == PrefixSum) {
-		renderCullingPrefixSum(camera, world);
-	} else {
-		renderCulling(camera, world);
-	}
-
-	if (!m_properties.disableImpostors) {
-		renderImpostorsDefault(camera, world);
-	}
-
-	if (!m_properties.disableInstances) {
-		renderInstancesDefault(camera, world);
-	}
-}
 
 ///////////////////////////////////////////////////////////////////////////
 // Culling
@@ -530,7 +501,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 ///////////////////////////////////////////////////////////////////////////
 // Impostors drawing
-void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & world) const
+void SandRenderer::renderImpostors(const Camera & camera, const World & world, RenderType target) const
 {
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	if (m_cullingMechanism == RestartPrimitive) {
@@ -538,27 +509,28 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 		glPrimitiveRestartIndex(0xFFFFFFF0);
 	}
 
-	m_shader->use();
+	const ShaderProgram & shader = target == ShadowMapRendering ? *m_shadowMapImpostorShader : *m_impostorShader;
+	shader.use();
 
 	// Set uniforms
-	m_shader->bindUniformBlock("Camera", camera.ubo());
-	m_shader->setUniform("modelMatrix", modelMatrix());
-	m_shader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-	m_shader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-	m_shader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
-	m_shader->setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
+	shader.bindUniformBlock("Camera", camera.ubo());
+	shader.setUniform("modelMatrix", modelMatrix());
+	shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+	shader.setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+	shader.setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
+	shader.setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
 
 	size_t o = 0;
 
 	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 	glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
-	m_shader->setUniform("occlusionMap", static_cast<GLint>(o));
+	shader.setUniform("occlusionMap", static_cast<GLint>(o));
 	++o;
 
 	if (m_colormapTexture) {
 		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 		m_colormapTexture->bind();
-		m_shader->setUniform("colormapTexture", static_cast<GLint>(o));
+		shader.setUniform("colormapTexture", static_cast<GLint>(o));
 		++o;
 	}
 
@@ -569,13 +541,13 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 		std::ostringstream oss1;
 		oss1 << "impostor[" << k << "].viewCount";
-		m_shader->setUniform(oss1.str(), viewCount);
+		shader.setUniform(oss1.str(), viewCount);
 
 		std::ostringstream oss2;
 		oss2 << "impostor[" << k << "].normalAlphaTexture";
 		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 		m_normalAlphaTextures[k]->bind();
-		m_shader->setUniform(oss2.str(), static_cast<GLint>(o));
+		shader.setUniform(oss2.str(), static_cast<GLint>(o));
 		++o;
 
 		if (m_baseColorTextures.size() > k) {
@@ -583,7 +555,7 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 			oss << "impostor[" << k << "].baseColorTexture";
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_baseColorTextures[k]->bind();
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
+			shader.setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 
@@ -592,7 +564,7 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 			oss << "impostor[" << k << "].metallicRoughnesTexture";
 			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
 			m_metallicRoughnessTextures[k]->bind();
-			m_shader->setUniform(oss.str(), static_cast<GLint>(o));
+			shader.setUniform(oss.str(), static_cast<GLint>(o));
 			++o;
 		}
 	}
@@ -611,7 +583,7 @@ void SandRenderer::renderImpostorsDefault(const Camera & camera, const World & w
 
 ///////////////////////////////////////////////////////////////////////////
 // Instances drawing
-void SandRenderer::renderInstancesDefault(const Camera & camera, const World & world) const
+void SandRenderer::renderInstances(const Camera & camera, const World & world, RenderType target) const
 {
 	if (m_cullingMechanism == RestartPrimitive) {
 		glEnable(GL_PRIMITIVE_RESTART);

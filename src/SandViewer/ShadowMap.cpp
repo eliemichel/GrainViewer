@@ -23,3 +23,8 @@ void ShadowMap::setLookAt(const glm::vec3 & position, const glm::vec3 & lookAt) 
 	//m_camera.setProjectionMatrix(glm::ortho<float>(-3.0, 3.0, -3.0, 3.0, 0.0, 3.0));
 	m_camera.setProjectionMatrix(glm::perspective<float>(glm::radians(35.f), 1.f, 0.1f, 20.f));
 }
+
+void ShadowMap::setFov(float fov)
+{
+	m_camera.setFov(fov);
+}

@@ -3,6 +3,7 @@
 
 #pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_INNER_SPHERE DEBUG_CUBE SET_DEPTH
 #pragma variant SPHEREHIT_SAMPLING MIXEDHIT_SAMPLING
+#pragma hidden_variant SHADOW_MAP
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
 
@@ -42,6 +43,21 @@ uniform float metallic = 0.0;
 uniform sampler2D occlusionMap;
 
 void main() {
+#ifdef SHADOW_MAP
+#ifndef SET_DEPTH
+	// Early quit for shadow maps unless we alter fragment depth
+	{
+		Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+		vec4 position_cs = viewModelMatrix * vec4(position_ws, 1.0);
+		vec3 hitPosition;
+		if (!intersectRaySphere(hitPosition, ray_cs, position_cs.xyz, uInnerRadius)) {
+			discard;
+		}
+	}
+	return;
+#endif
+#endif
+
 	mat3 ws_from_gs_rot = transpose(mat3(gs_from_ws));
 
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);

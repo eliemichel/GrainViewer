@@ -20,6 +20,7 @@
 #include "Dialog.h"
 #include "RuntimeObject.h"
 #include "ShaderPool.h"
+#include "Ui/SceneDialog.h"
 
 using namespace std;
 
@@ -157,6 +158,10 @@ void Gui::setupDialogs()
 {
 	m_dialogs.clear();
 	if (m_scene) {
+		auto sceneDialog = std::make_shared<SceneDialog>();
+		sceneDialog->setController(m_scene);
+		m_dialogs.push_back(sceneDialog);
+
 		for (const auto& obj : m_scene->objects()) {
 			IBehaviorHolder::ConstBehaviorIterator it, end;
 			for (it = obj->cbeginBehaviors(), end = obj->cendBehaviors(); it != end;  ++it) {

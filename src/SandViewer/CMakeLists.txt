@@ -59,6 +59,8 @@ set(SRC
 	utils/strutils.cpp
 	utils/jsonutils.h
 	utils/jsonutils.cpp
+	utils/guiutils.h
+	utils/guiutils.cpp
 
 	Ui/Dialog.h
 	Ui/Gui.h
@@ -67,6 +69,8 @@ set(SRC
 	Ui/Window.cpp
 	Ui/SandRendererDialog.h
 	Ui/SandRendererDialog.cpp
+	Ui/SceneDialog.h
+	Ui/SceneDialog.cpp
 
 	main.cpp
 	bufferFillers.h

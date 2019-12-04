@@ -5,6 +5,7 @@
 #pragma variant HDR REINHART
 //#define SHOW_POSITION
 #define WHITE_BACKGROUND
+#define HDR
 
 #include "include/utils.inc.glsl"
 
@@ -29,6 +30,7 @@ uniform float time;
 
 uniform PointLight light[3];
 uniform float lightPowerScale = 1.0;
+uniform bool isShadowMapEnabled = true;
 
 #include "include/gbuffer.inc.glsl"
 
@@ -64,8 +66,12 @@ void main() {
 		surface.reflectance = 1.0;
 		
 		for (int k = 0 ; k < 3 ; ++k) {
-			float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
-			float shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
+			float shadow = 0;
+			if (isShadowMapEnabled) {
+				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
+				shadowBias = 0.000002; // hardcoded hack
+				shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
+			}
 			
 			vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
 			vec3 f = vec3(0.0);
@@ -74,7 +80,7 @@ void main() {
 #else // OLD_BRDF
 			f = brdf(toCam, fragment.normal, toLight, surface);
 #endif // OLD_BRDF
-			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0);// * (1.0 - shadow * 0.8);
+			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0) * (1. - shadow);
 		}
 		out_fragment.radiance += vec4(fragment.emission, 0.0);
 		break;
@@ -114,19 +120,17 @@ void main() {
 #ifdef REINHART
 	out_fragment.radiance = out_fragment.radiance / (out_fragment.radiance + 1.0);
 #else
-	const float exposure = 0.7;
+	const float exposure = 3.5;
 	out_fragment.radiance = 1.0 - exp(-out_fragment.radiance * exposure);
 #endif
-	const float gamma = 1.2;
+	const float gamma = 0.8;
 	out_fragment.radiance = pow(out_fragment.radiance, vec4(1.0 / gamma));
-	out_fragment.radiance *= 2.1;
 #endif
 
 	// Minimap Shadow Depth
-	if (gl_FragCoord.x < 512 && gl_FragCoord.y < 512) {
-		//float depth = texelFetch(light[0].shadowMap, ivec2(gl_FragCoord.xy * 2.0), 0).r;
-		//depth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
-		//out_fragment.radiance = texelFetch(iblBsdfLut, ivec2(gl_FragCoord.xy), 0);
+	if (false && gl_FragCoord.x < 512 && gl_FragCoord.y < 512) {
+		float depth = texelFetch(light[0].shadowMap, ivec2(gl_FragCoord.xy * 2.0), 0).r;
+		out_fragment.radiance = vec4(vec3(depth), 1.0);
 	}
 	//*/
 

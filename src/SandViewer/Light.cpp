@@ -7,11 +7,12 @@
 #include "Light.h"
 #include "ShadowMap.h"
 
-Light::Light(const glm::vec3 & position, const glm::vec3 & color, size_t shadowMapSize, bool isRich)
+Light::Light(const glm::vec3 & position, const glm::vec3 & color, size_t shadowMapSize, bool isRich, bool hasShadowMap)
 	: m_lightPosition(position)
 	, m_lookAt(0.0, 0.0, 0.0)
 	, m_lightColor(color)
 	, m_isRich(isRich)
+	, m_hasShadowMap(hasShadowMap)
 {
 	m_shadowMap = std::make_unique<ShadowMap>(position, glm::vec3(0.f), shadowMapSize);
 }
@@ -21,8 +22,8 @@ void Light::setPosition(const glm::vec3 & position) {
 	m_shadowMap->setLookAt(position, m_lookAt);
 }
 
-TurningLight::TurningLight(const glm::vec3 & position, const glm::vec3 & color, size_t shadowMapSize, bool isRich)
-	: Light(position, color, shadowMapSize, isRich)
+TurningLight::TurningLight(const glm::vec3 & position, const glm::vec3 & color, size_t shadowMapSize, bool isRich, bool hasShadowMap)
+	: Light(position, color, shadowMapSize, isRich, hasShadowMap)
 	, m_initialPosition(position)
 {}
 

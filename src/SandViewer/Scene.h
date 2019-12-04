@@ -42,6 +42,8 @@ public:
 	std::shared_ptr<Camera> viewportCamera() const;
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
 
+	World & world() { return m_world; }
+
 private:
 	void recordFrame(const Camera & camera) const;
 

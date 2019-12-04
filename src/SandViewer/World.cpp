@@ -6,6 +6,9 @@
 #include "Light.h"
 #include "Logger.h"
 #include "ShaderPool.h"
+#include "ShadowMap.h"
+#include "RuntimeObject.h"
+#include "RenderType.h"
 
 World::World()
 {}
@@ -76,12 +79,17 @@ bool World::deserialize(const rapidjson::Value & json)
 
 			bool isShadowMapRich;
 			jrOption(l, "isShadowMapRich", isShadowMapRich, false);
+			bool hasShadowMap;
+			jrOption(l, "hasShadowMap", hasShadowMap, true);
 
 			int shadowMapSize;
-			jrOption(l, "shadowMapSize", shadowMapSize, 2048);
+			jrOption(l, "shadowMapSize", shadowMapSize, 1024);
+			float shadowMapFov;
+			jrOption(l, "shadowMapFov", shadowMapFov, 45.0f);
 
 			// Add light
-			auto light = std::make_shared<Light>(pos, col, shadowMapSize, isShadowMapRich);
+			auto light = std::make_shared<Light>(pos, col, shadowMapSize, isShadowMapRich, hasShadowMap);
+			light->shadowMap().setFov(shadowMapFov);
 			m_lights.push_back(light);
 		}
 	}
@@ -115,6 +123,24 @@ void World::render(const Camera & camera) const
 	glBindVertexArray(0);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
+}
+
+void World::renderShadowMaps(const Camera & camera, const std::vector<std::shared_ptr<RuntimeObject>> & objects) const
+{
+	if (!isShadowMapEnabled()) {
+		return;
+	}
+	for (const auto& light : m_lights) {
+		light->shadowMap().bind();
+		const glm::vec2 & sres = light->shadowMap().camera().resolution();
+		glViewport(0, 0, static_cast<GLsizei>(sres.x), static_cast<GLsizei>(sres.y));
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		for (const auto& obj : objects) {
+			obj->render(light->shadowMap().camera(), *this, ShadowMapRendering);
+		}
+	}
+
 }
 
 void World::clear()

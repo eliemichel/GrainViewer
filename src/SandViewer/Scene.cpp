@@ -103,6 +103,8 @@ void Scene::render() const {
 	glDisable(GL_BLEND);
 	glDisable(GL_DITHER);
 
+	m_world.renderShadowMaps(camera, m_objects);
+
 	if (m_isDeferredShadingEnabled) {
 		m_deferredShader.bindFramebuffer();
 	} else if (camera.framebuffer()) {

@@ -95,6 +95,9 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 		ostringstream oss4;
 		oss4 << "light[" << k << "].isRich";
 		m_shader.setUniform(oss4.str(), lights[k]->isRich() ? 1 : 0);
+		ostringstream oss45;
+		oss45 << "light[" << k << "].hasShadowMap";
+		m_shader.setUniform(oss45.str(), lights[k]->hasShadowMap() ? 1 : 0);
 		ostringstream oss5;
 		oss5 << "light[" << k << "].shadowMap";
 		m_shader.setUniform(oss5.str(), static_cast<GLint>(o));
@@ -110,6 +113,8 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 			++o;
 		}
 	}
+
+	m_shader.setUniform("isShadowMapEnabled", world.isShadowMapEnabled());
 
 	glBindVertexArray(m_vao);
 	glDrawArrays(GL_POINTS, 0, 1);
