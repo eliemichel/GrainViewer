@@ -24,26 +24,32 @@
 	],
 
 	"deferredShader": {
-		"defines": [ "SHOW_NORMAL" ]
+		"defines": [  ]
 	},
 
 	"lights": [
 		{
-			"position": [5, 3, 4],
-			"color": [1, 1, 1]
+			"position": [0, 10, 1],
+			"color": [3, 3, 3],
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
 		},
 		{
-			"position": [-8, 2, 4],
-			"color": [1, 0.9, 0.9]
-		},
-		{
-			"position": [2, -5, -3],
-			"color": [0.8, 0.8, 1]
+			"position": [0, 1, 10],
+			"color": [0.45, 0.5, 0.6],
+			"hasShadowMap": false,
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
 		}
 	],
 
 	"shaders": {
 		"World": "basic-world",
+		"Mesh": "basic-mesh",
 		"ImpostorCloud": {
 			"baseFile": "impostor-cloud",
 			"defines": [ "PROCEDURAL_BASECOLOR" ]
@@ -96,6 +102,15 @@
 					"grainMeshScale": 2.0,
 					"instanceLimit": 1.15,
 					"cullingMechanism": "PrefixSum"
+				}
+			]
+		},
+		{
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "LightGizmo",
+					"light": 1
 				}
 			]
 		}

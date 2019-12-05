@@ -47,6 +47,8 @@ set(SRC
 	Behavior/TransformBehavior.cpp
 	Behavior/TestPrefixSumRenderer.h
 	Behavior/TestPrefixSumRenderer.cpp
+	Behavior/LightGizmo.h
+	Behavior/LightGizmo.cpp
 
 	utils/debug.h
 	utils/debug.cpp
@@ -71,6 +73,8 @@ set(SRC
 	Ui/SandRendererDialog.cpp
 	Ui/SceneDialog.h
 	Ui/SceneDialog.cpp
+	Ui/LightGizmoDialog.h
+	Ui/LightGizmoDialog.cpp
 
 	main.cpp
 	bufferFillers.h

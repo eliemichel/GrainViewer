@@ -19,6 +19,7 @@ void SceneDialog::draw()
 			/*
 			int i = 0;
 			for (auto& l : world.lights()) {
+				ImGui::PushID(i);
 				if (ImGui::CollapsingHeader(("Light " + std::to_string(i++)).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
 					BeginDisable(!shadowMaps);
 					bool shadowMap = l->hasShadowMap();
@@ -32,6 +33,7 @@ void SceneDialog::draw()
 
 					ImGui::ColorEdit3("Color", glm::value_ptr(l->color()));
 				}
+				ImGui::PopID();
 			}
 			*/
 		}

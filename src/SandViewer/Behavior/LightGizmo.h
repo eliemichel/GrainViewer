@@ -1,14 +1,15 @@
 #pragma once
 
 #include <memory>
+#include <glad/glad.h>
 
 #include "Behavior.h"
 #include "ShaderProgram.h"
 
-class MeshDataRenderer;
-class TransformBehavior;
+class ShaderProgram;
+class GlBuffer;
 
-class MeshRenderer : public Behavior {
+class LightGizmo : public Behavior {
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value& json) override;
@@ -16,14 +17,12 @@ public:
 	void render(const Camera& camera, const World& world, RenderType target) const override;
 
 private:
-	glm::mat4 modelMatrix() const;
-
-private:
-	std::string m_shaderName;
-	std::weak_ptr<MeshDataBehavior> m_meshData;
-	std::weak_ptr<TransformBehavior> m_transform;
+	std::string m_shaderName = "LightGizmo";
+	int m_lightIndex = 0;
 	std::shared_ptr<ShaderProgram> m_shader;
+	std::unique_ptr<GlBuffer> m_vertexBuffer;
+	GLuint m_vao;
 };
 
-registerBehaviorType(MeshRenderer)
+registerBehaviorType(LightGizmo)
 

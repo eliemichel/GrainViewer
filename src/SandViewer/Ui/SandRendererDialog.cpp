@@ -13,6 +13,7 @@ void SandRendererDialog::draw()
 			bool enabled = cont->isEnabled();
 			ImGui::Checkbox("Enabled", &enabled);
 			cont->setEnabled(enabled);
+
 			BeginDisable(!enabled);
 
 			SandRenderer::Properties & props = cont->properties();

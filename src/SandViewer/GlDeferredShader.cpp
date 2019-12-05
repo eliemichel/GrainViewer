@@ -80,7 +80,7 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	glBindTexture(GL_TEXTURE_2D, m_framebuffer.depthTexture());
 	o += 4;
 
-	// TODO: Use UBO
+	// TODO: Use UBO, move to World
 	auto lights = world.lights();
 	for (size_t k = 0; k < lights.size(); ++k) {
 		ostringstream oss1;

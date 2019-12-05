@@ -1,6 +1,11 @@
 #version 450 core
 #include "sys:defines"
 
+/**
+ * /!\ This version is a bit outdated, it does not perform occlusion culling
+ * for instance. Prefer using the prefixsum-culling version.
+ */
+
 // Completely disable culling, more efficiently than setting instanceLimit to zero
 #pragma variant ONLY_IMPOSTORS
 // Instead of sorting elements with costy atomic operations, use two elements

@@ -26,6 +26,7 @@ using namespace std;
 
 // TODO: Find a way to avoid this function
 #include "SandRendererDialog.h"
+#include "LightGizmoDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleType(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -34,6 +35,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
 	handleType(SandRenderer);
+	handleType(LightGizmo);
 	return nullptr;
 #undef handleType
 }
@@ -204,8 +206,11 @@ void Gui::updateImGui() {
 			ImGuiWindowFlags_NoMove |
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
+		int dialogId = 0;
 		for (auto d : m_dialogs) {
+			ImGui::PushID(dialogId++);
 			d->draw();
+			ImGui::PopID();
 		}
 		ImGui::End();
 	}

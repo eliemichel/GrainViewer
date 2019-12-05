@@ -19,6 +19,7 @@
 #include "Behavior/SandRenderer.h"
 #include "Behavior/TransformBehavior.h"
 #include "Behavior/TestPrefixSumRenderer.h"
+#include "Behavior/LightGizmo.h"
 static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 #define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
@@ -27,7 +28,8 @@ static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeOb
 	handleType(ImpostorCloudRenderer);
 	handleType(SandRenderer);
 	handleType(TransformBehavior);
-	handleType(TestPrefixSumRenderer)
+	handleType(TestPrefixSumRenderer);
+	handleType(LightGizmo);
 #undef handleType
 }
 

@@ -445,7 +445,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 		shader.setUniform("uOuterOverInnerRadius", 1.f / m_properties.grainInnerRadiusRatio);
 		shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
-		shader.setUniform("uOuterRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+		shader.setUniform("uOuterRadius", m_properties.grainRadius);
 		shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
 		shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
 		shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
@@ -516,7 +516,6 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 	shader.bindUniformBlock("Camera", camera.ubo());
 	shader.setUniform("modelMatrix", modelMatrix());
 	shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-	shader.setUniform("invViewMatrix", inverse(camera.viewMatrix()));
 	shader.setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
 	shader.setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
 

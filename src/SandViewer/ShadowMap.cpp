@@ -20,11 +20,20 @@ ShadowMap::ShadowMap(const glm::vec3 & lightPosition, const glm::vec3 & lightLoo
 
 void ShadowMap::setLookAt(const glm::vec3 & position, const glm::vec3 & lookAt) {
 	m_camera.setViewMatrix(glm::lookAt(position, lookAt, glm::vec3(0, 0, 1)));
-	//m_camera.setProjectionMatrix(glm::ortho<float>(-3.0, 3.0, -3.0, 3.0, 0.0, 3.0));
-	m_camera.setProjectionMatrix(glm::perspective<float>(glm::radians(35.f), 1.f, 0.1f, 20.f));
+	updateProjectionMatrix();
 }
 
-void ShadowMap::setFov(float fov)
+void ShadowMap::setProjection(float fov, float near, float far)
 {
-	m_camera.setFov(fov);
+	m_fov = fov;
+	m_near = near;
+	m_far = far;
+	updateProjectionMatrix();
+}
+
+void ShadowMap::updateProjectionMatrix()
+{
+	//m_camera.setProjectionMatrix(glm::ortho<float>(-3.0, 3.0, -3.0, 3.0, 0.0, 3.0));
+	m_camera.setProjectionMatrix(glm::perspective<float>(glm::radians(m_fov), 1.f, m_near, m_far));
+	m_camera.updateUbo();
 }

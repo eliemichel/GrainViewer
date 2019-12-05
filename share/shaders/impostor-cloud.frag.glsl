@@ -43,34 +43,35 @@ uniform float metallic = 0.0;
 uniform sampler2D occlusionMap;
 
 void main() {
+	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
+	vec3 innerSphereHitPosition_ws;
+	bool intersectInnerSphere = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, uInnerRadius);
+
 #ifdef SHADOW_MAP
 #ifndef SET_DEPTH
 	// Early quit for shadow maps unless we alter fragment depth
-	{
-		Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-		vec4 position_cs = viewModelMatrix * vec4(position_ws, 1.0);
-		vec3 hitPosition;
-		if (!intersectRaySphere(hitPosition, ray_cs, position_cs.xyz, uInnerRadius)) {
-			discard;
-		}
+	if (!intersectInnerSphere) {
+		discard;
 	}
 	return;
 #endif
 #endif
 
+	vec3 outerSphereHitPosition_ws;
+	intersectRaySphere(outerSphereHitPosition_ws, ray_ws, position_ws.xyz, radius);
+
 	mat3 ws_from_gs_rot = transpose(mat3(gs_from_ws));
 
-	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-    Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
     Ray ray_gs = TransformRay(ray_ws, gs_from_ws);
 
     vec3 position_gs = (gs_from_ws * vec4(position_ws, 1.0)).xyz;
 
 #ifdef NO_INTERPOLATION
 	GFragment fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_gs, position_gs, radius);
-#elif MIXEDHIT_SAMPLING
+#elif defined(MIXEDHIT_SAMPLING)
 	GFragment fragment = IntersectRaySphericalGBillboard_MixedHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
-#elif SPHEREHIT_SAMPLING
+#elif defined(SPHEREHIT_SAMPLING)
 	GFragment fragment = IntersectRaySphericalGBillboard_SphereHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
 #else
 	GFragment fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, radius);
@@ -87,7 +88,8 @@ void main() {
 #endif
 
 	fragment.normal = ws_from_gs_rot * fragment.normal;
-	fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
+	//fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
+	fragment.ws_coord = innerSphereHitPosition_ws;
 	fragment.material_id = pbrMaterial;
 
 	if (fragment.alpha < 0.2) discard;

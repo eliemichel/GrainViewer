@@ -48,6 +48,10 @@ ShaderPool::ShaderPool()
 		"PrefixSum",
 		{ "prefix-sum", ShaderProgram::ComputeShader, {} }
 	});
+	m_defaultShaders.insert({
+		"LightGizmo",
+		{ "light-gizmo", ShaderProgram::RenderShader,{} }
+	});
 }
 
 void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)

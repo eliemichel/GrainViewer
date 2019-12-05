@@ -61,6 +61,8 @@ void Scene::update(float time) {
 		viewportCamera()->update(time);
 	}
 
+	m_world.update(time);
+
 	for (auto obj : m_objects) {
 		obj->update(time);
 	}

@@ -95,7 +95,11 @@ float shadowAt(const in PointLight light, vec3 position_ws, float shadowBias) {
 
 	float shadow = 0.0;
 	vec4 shadowCoord = light.matrix * vec4(position_ws, 1.0);
-	shadowCoord = shadowCoord / shadowCoord.w * 0.5 + 0.5;
+	shadowCoord = shadowCoord / shadowCoord.w;
+	if (abs(shadowCoord.x) >= 1.0 || abs(shadowCoord.y) >= 1.0) {
+		return 1.0;
+	}
+	shadowCoord = shadowCoord * 0.5 + 0.5;
 
 	// PCF
 	vec2 texelSize = 1.0 / textureSize(light.shadowMap, 0);

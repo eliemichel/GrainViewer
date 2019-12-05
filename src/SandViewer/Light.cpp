@@ -14,7 +14,8 @@ Light::Light(const glm::vec3 & position, const glm::vec3 & color, size_t shadowM
 	, m_isRich(isRich)
 	, m_hasShadowMap(hasShadowMap)
 {
-	m_shadowMap = std::make_unique<ShadowMap>(position, glm::vec3(0.f), shadowMapSize);
+	const std::vector<ColorLayerInfo> & colorLayerInfos = { { GL_RGBA32UI, GL_COLOR_ATTACHMENT0 } }; // debug
+	m_shadowMap = std::make_unique<ShadowMap>(position, glm::vec3(0.f), shadowMapSize, colorLayerInfos);
 }
 
 void Light::setPosition(const glm::vec3 & position) {

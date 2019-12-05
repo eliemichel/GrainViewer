@@ -20,6 +20,7 @@ public:
 	World();
 	bool deserialize(const rapidjson::Value & json);
 	void start();
+	void update(float time);
 	void reloadShaders();
 	void render(const Camera & camera) const;
 	void renderShadowMaps(const Camera & camera, const std::vector<std::shared_ptr<RuntimeObject>> & objects) const;
