@@ -74,6 +74,7 @@ public:
 		bool enableOcclusionCulling = true;
 		bool enableDistanceCulling = true;
 		bool enableFrustumCulling = true;
+		bool renderAdditive;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
@@ -117,8 +118,7 @@ private:
 	};
 	enum PrefixSumCullingShaders {
 		BaseShader,
-		MarkImpostors,
-		MarkInstances,
+		MarkCulling,
 		Group,
 		BuildCommandBuffer,
 		_PrefixSumCullingShadersCount
@@ -147,7 +147,7 @@ private:
 	std::shared_ptr<ShaderProgram> m_instanceCloudShader;
 	std::shared_ptr<ShaderProgram> m_prefixSumShader;
 	std::shared_ptr<ShaderProgram> m_occlusionCullingShader;
-	std::unique_ptr<Framebuffer> m_occlusionCullingMap; // kind of shadow map
+	mutable std::shared_ptr<Framebuffer> m_occlusionCullingMap; // kind of shadow map
 	bool m_isDeferredRendered;
 	size_t m_nbPoints;
 	size_t m_frameCount;

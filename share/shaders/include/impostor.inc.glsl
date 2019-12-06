@@ -80,16 +80,6 @@ mat4 InverseBakingViewMatrix(uint i, vec3 p, uint n) {
 }
 
 /**
- * Apply an affine transformation matrix to a ray
- */
-Ray TransformRay(Ray ray, mat4 transform) {
-	Ray transformed_ray;
-	transformed_ray.origin = (transform * vec4(ray.origin, 1)).xyz;
-	transformed_ray.direction = mat3(transform) * ray.direction;
-	return transformed_ray;
-}
-
-/**
  * Return the position and texture coordinates intersected by the ray in the i-th G-billboard of a spherical G-impostor
  * Basic "PlaneHit" sampling scheme
  */
@@ -158,8 +148,12 @@ GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) 
 
 	// Otherwise, sample textures
 	vec4 normalAlpha = texture(impostor.normalAlphaTexture, hit.textureCoords);
-	vec4 baseColor = texture(impostor.baseColorTexture, hit.textureCoords);
-	vec4 metallicRoughnes = texture(impostor.metallicRoughnesTexture, hit.textureCoords);
+	vec4 baseColor = vec4(0.0);
+	vec4 metallicRoughnes = vec4(0.0);
+	if (normalAlpha.a > 0) {
+		baseColor = texture(impostor.baseColorTexture, hit.textureCoords);
+		metallicRoughnes = texture(impostor.metallicRoughnesTexture, hit.textureCoords);
+	}
 
 	GFragment g;
 	g.baseColor = baseColor.rgb;

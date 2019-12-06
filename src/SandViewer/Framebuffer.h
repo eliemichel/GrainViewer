@@ -34,6 +34,11 @@ public:
 	GLsizei width() const { return m_width; }
 	GLsizei height() const { return m_height; }
 
+	/**
+	 * Use this with caution, it reallocates video memory
+	 */
+	void setResolution(size_t width, size_t height);
+
 private:
 	void init();
 	void destroy();

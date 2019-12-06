@@ -19,3 +19,15 @@ bool isOrthographic(mat4 projectionMatrix) {
 vec3 cameraPosition(mat4 viewMatrix) {
 	return transpose(mat3(viewMatrix)) * vec3(viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
 }
+
+float getNearDistance(mat4 projectionMatrix) {
+	return isOrthographic(projectionMatrix)
+		? (projectionMatrix[3][2] - 1) / projectionMatrix[2][2]
+		: projectionMatrix[3][2] / (projectionMatrix[2][2] - 1);
+}
+
+float getFarDistance(mat4 projectionMatrix) {
+	return isOrthographic(projectionMatrix)
+		? (projectionMatrix[3][2] - 1) / projectionMatrix[2][2]
+		: projectionMatrix[3][2] / (projectionMatrix[2][2] + 1);
+}

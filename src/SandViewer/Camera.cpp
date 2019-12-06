@@ -81,6 +81,17 @@ void Camera::setResolution(glm::vec2 resolution)
 	}
 	}
 
+	// Resize extra framebuffers
+	size_t width = static_cast<size_t>(m_resolution.x);
+	size_t height = static_cast<size_t>(m_resolution.y);
+	if (m_extraFramebuffers.size() < 1) {
+		const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
+		m_extraFramebuffers.push_back(std::make_shared<Framebuffer>(width, height, colorLayerInfos));
+	}
+	else {
+		m_extraFramebuffers[0]->setResolution(width, height);
+	}
+
 	updateUbo();
 }
 
@@ -336,4 +347,19 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 			setFov(fov.GetFloat());
 		}
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Framebuffer pool
+///////////////////////////////////////////////////////////////////////////////
+
+std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer() const
+{
+	// TODO
+	return m_extraFramebuffers[0];
+}
+
+void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
+{
+	// TODO
 }

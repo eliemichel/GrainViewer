@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -84,6 +85,16 @@ public:
 
 	void deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations);
 
+	/**
+	 * Get a framebuffer that has the same resolution as the camera, to be used
+	 * as intermediate step in render. Once you're done with it, release the
+	 * framebuffer with releaseExtraFramebuffer(). It is safe to call this
+	 * every frame.
+	 * TODO: implement a proper dynamic framebuffer pool mechanism
+	 */
+	std::shared_ptr<Framebuffer> getExtraFramebuffer() const;
+	void releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const;
+
 protected:
 	/**
 	* Called when mouse moves and rotation has started
@@ -121,7 +132,10 @@ protected:
 
 	bool m_freezeResolution;
 
+	// Used only with m_freezeResolution
 	std::shared_ptr<Framebuffer> m_framebuffer;
+
+	std::vector<std::shared_ptr<Framebuffer>> m_extraFramebuffers;
 
 	OutputSettings m_outputSettings;
 	ProjectionType m_projectionType;

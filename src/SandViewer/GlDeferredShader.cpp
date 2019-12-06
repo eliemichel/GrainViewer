@@ -120,3 +120,8 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	glDrawArrays(GL_POINTS, 0, 1);
 	glBindVertexArray(0);
 }
+
+void GlDeferredShader::setResolution(int width, int height)
+{
+	m_framebuffer.setResolution(width, height);
+}

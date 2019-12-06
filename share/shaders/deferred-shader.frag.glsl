@@ -1,7 +1,8 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION
+#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF
+#pragma variant SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION SHOW_RAW_BUFFER1
 #pragma variant HDR REINHART
 //#define SHOW_POSITION
 #define WHITE_BACKGROUND
@@ -147,6 +148,10 @@ void main() {
 #ifdef TRANSPARENT_BACKGROUND
 	out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
 #endif // TRANSPARENT_BACKGROUND
+#ifdef SHOW_RAW_BUFFER1
+	out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
+	out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
+#endif // SHOW_BASECOLOR
 
 	out_fragment.normal = fragment.normal;
 	// TODO: compute from ws_coord and remove this extra buffer

@@ -73,3 +73,11 @@ void Framebuffer::bind() const {
 	glBindFramebuffer(GL_FRAMEBUFFER, m_framebufferId);
 }
 
+void Framebuffer::setResolution(size_t width, size_t height)
+{
+	m_width = static_cast<GLsizei>(width);
+	m_height = static_cast<GLsizei>(height);
+	destroy();
+	init();
+}
+

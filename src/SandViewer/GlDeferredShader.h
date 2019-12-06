@@ -32,6 +32,8 @@ public:
 
 	void render(const Camera & camera, const World & world, RenderType target) const;
 
+	void setResolution(int width, int height);
+
 private:
 	ShaderProgram m_shader;
 	Framebuffer m_framebuffer;

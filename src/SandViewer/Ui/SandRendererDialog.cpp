@@ -48,6 +48,8 @@ void SandRendererDialog::draw()
 			ImGui::Checkbox("Frustum Culling", &props.enableFrustumCulling);
 			ImGui::Checkbox("Distance Culling", &props.enableDistanceCulling);
 
+			ImGui::Checkbox("Render Additive (for debug)", &props.renderAdditive);
+
 			const SandRenderer::RenderInfo & info = cont->renderInfo();
 			ImGui::LabelText("Impostors", "%d", info.impostorCount);
 			ImGui::LabelText("Instances", "%d", info.instanceCount);

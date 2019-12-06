@@ -36,6 +36,7 @@ void Scene::setResolution(int width, int height)
 	if (viewportCamera()) {
 		viewportCamera()->setResolution(width, height);
 	}
+	m_deferredShader.setResolution(width, height);
 }
 
 void Scene::reloadShaders() {
@@ -117,7 +118,7 @@ void Scene::render() const {
 
 	const glm::vec2 & res = camera.resolution();
 	glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	m_world.render(camera);

@@ -110,6 +110,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	jrPropperty(instanceLimit);
 	jrPropperty(disableImpostors);
 	jrPropperty(disableInstances);
+	jrPropperty(renderAdditive);
 #undef jrProperty
 
 	if (json.HasMember("cullingMechanism") && json["cullingMechanism"].IsString()) {
@@ -135,8 +136,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 #define step(Step, STEP_DEFINE) \
 	m_cullingShaderNames[Step] = baseCullingShaderName + "_" + #STEP_DEFINE; \
 	ShaderPool::AddShaderVariant(m_cullingShaderNames[Step], baseCullingShaderName, #STEP_DEFINE);
-		step(MarkImpostors, STEP_MARK_IMPOSTORS);
-		step(MarkInstances, STEP_MARK_INSTANCES);
+		step(MarkCulling, STEP_MARK_CULLING);
 		step(Group, STEP_GROUP);
 		step(BuildCommandBuffer, STEP_BUILD_COMMAND_BUFFER);
 #undef step
@@ -182,10 +182,6 @@ void SandRenderer::start()
 	m_grainMeshData = getComponent<MeshDataBehavior>();
 	m_transform = getComponent<TransformBehavior>();
 
-	// TODO: ensure this map always has the same resolution as the render
-	const std::vector<ColorLayerInfo>& colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
-	m_occlusionCullingMap = std::make_unique<Framebuffer>(1000, 600, colorLayerInfos);
-
 	m_isDeferredRendered = true;
 }
 
@@ -210,6 +206,8 @@ void SandRenderer::update(float time)
 
 void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
+	m_occlusionCullingMap = camera.getExtraFramebuffer();
+
 	if (m_cullingMechanism == PrefixSum) {
 		renderCullingPrefixSum(camera, world);
 	} else {
@@ -224,6 +222,9 @@ void SandRenderer::render(const Camera & camera, const World & world, RenderType
 	if (!m_properties.disableInstances) {
 		renderInstances(camera, world, target);
 	}
+
+	camera.releaseExtraFramebuffer(m_occlusionCullingMap);
+	m_occlusionCullingMap.reset();
 }
 
 void SandRenderer::reloadShaders()
@@ -362,8 +363,7 @@ void SandRenderer::renderCulling(const Camera & camera, const World & world) con
 void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & world) const
 {
 	int resultIndex;
-	if (!m_cullingShaders[MarkInstances] || !m_cullingShaders[MarkInstances]->isValid()
-		|| !m_cullingShaders[MarkImpostors] || !m_cullingShaders[MarkImpostors]->isValid()
+	if (!m_cullingShaders[MarkCulling] || !m_cullingShaders[MarkCulling]->isValid()
 		|| !m_cullingShaders[BuildCommandBuffer] || !m_cullingShaders[BuildCommandBuffer]
 		|| !m_cullingShaders[Group]->isValid() || !m_occlusionCullingShader
 		|| !m_occlusionCullingShader->isValid()) {
@@ -404,13 +404,23 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 	// 1. Mark instances
 	{
-		const ShaderProgram & shader = *m_cullingShaders[MarkInstances];
+		const ShaderProgram & shader = *m_cullingShaders[MarkCulling];
 		shader.use();
+		shader.setUniform("uType", static_cast<GLuint>(0));
 		shader.bindUniformBlock("Camera", camera.ubo());
 		shader.setUniform("modelMatrix", modelMatrix());
 		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
 		shader.setUniform("uPointCount", effectivePointCount);
 		shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
+		shader.setUniform("uOuterOverInnerRadius", 1.f / m_properties.grainInnerRadiusRatio);
+		shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+		shader.setUniform("uOuterRadius", m_properties.grainRadius);
+		shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
+		shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
+		shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+		shader.setUniform("occlusionMap", 0);
 		m_prefixSumInfoSsbo->bindSsbo(0);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, m_vbo);
 		m_elementBuffers[1]->bindSsbo(2);
@@ -436,8 +446,9 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 	// 4. Mark impostors
 	{
-		const ShaderProgram & shader = *m_cullingShaders[MarkImpostors];
+		const ShaderProgram & shader = *m_cullingShaders[MarkCulling];
 		shader.use();
+		shader.setUniform("uType", static_cast<GLuint>(1));
 		shader.bindUniformBlock("Camera", camera.ubo());
 		shader.setUniform("modelMatrix", modelMatrix());
 		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
@@ -507,6 +518,16 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 	if (m_cullingMechanism == RestartPrimitive) {
 		glEnable(GL_PRIMITIVE_RESTART);
 		glPrimitiveRestartIndex(0xFFFFFFF0);
+	}
+
+	if (m_properties.renderAdditive) {
+		glDisable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+	} else {
+		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	const ShaderProgram & shader = target == ShadowMapRendering ? *m_shadowMapImpostorShader : *m_impostorShader;
@@ -588,6 +609,10 @@ void SandRenderer::renderInstances(const Camera & camera, const World & world, R
 		glEnable(GL_PRIMITIVE_RESTART);
 		glPrimitiveRestartIndex(0xFFFFFFF0);
 	}
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_instanceCloudShader->use();
 

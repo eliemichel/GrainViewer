@@ -8,6 +8,19 @@ struct Ray {
     vec3 direction;
 };
 
+/**
+ * Apply an affine transformation matrix to a ray
+ */
+Ray TransformRay(Ray ray, mat4 transform) {
+    Ray transformed_ray;
+    transformed_ray.origin = (transform * vec4(ray.origin, 1)).xyz;
+    transformed_ray.direction = mat3(transform) * ray.direction;
+    return transformed_ray;
+}
+
+/**
+ * Get the ray corresponding to a pixel, in camera space
+ */
 Ray fragmentRay(in vec4 fragCoord, in mat4 projectionMatrix) {
     vec2 uv = fragCoord.xy / resolution.xy * 2.f - vec2(1.f);
     

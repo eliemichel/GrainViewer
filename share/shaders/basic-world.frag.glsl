@@ -17,7 +17,7 @@ void main() {
 	//vec4 color = texture(cubemap, direction);
 
 	GFragment fragment;
-	//fragment.baseColor = vec3(color);
+	fragment.baseColor = vec3(1.0, 0.0, 0.0);
     fragment.ws_coord = vec3(direction * 1000.0);
     fragment.material_id = worldMaterial;
     fragment.normal = direction;
