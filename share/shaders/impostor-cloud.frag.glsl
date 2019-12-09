@@ -6,6 +6,7 @@
 #pragma hidden_variant SHADOW_MAP
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
+// SET_DEPTH allows for self intersection but significantly degrades performances
 
 flat in uint id;
 in float radius;
@@ -46,18 +47,19 @@ void main() {
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
 	vec3 innerSphereHitPosition_ws;
-	bool intersectInnerSphere = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, uInnerRadius);
 
 #ifdef SHADOW_MAP
 #ifndef SET_DEPTH
 	// Early quit for shadow maps unless we alter fragment depth
-	if (!intersectInnerSphere) {
+	bool hit = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, radius * .9);
+	if (!hit) {
 		discard;
 	}
 	return;
 #endif
 #endif
 
+	bool intersectInnerSphere = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, uInnerRadius);
 	vec3 outerSphereHitPosition_ws;
 	intersectRaySphere(outerSphereHitPosition_ws, ray_ws, position_ws.xyz, radius);
 
@@ -89,7 +91,8 @@ void main() {
 
 	fragment.normal = ws_from_gs_rot * fragment.normal;
 	//fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
-	fragment.ws_coord = innerSphereHitPosition_ws;
+	//fragment.ws_coord = innerSphereHitPosition_ws;
+	fragment.ws_coord = outerSphereHitPosition_ws;
 	fragment.material_id = pbrMaterial;
 
 	if (fragment.alpha < 0.2) discard;

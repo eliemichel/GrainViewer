@@ -19,7 +19,7 @@ void SandRendererDialog::draw()
 			SandRenderer::Properties & props = cont->properties();
 
 			ImGui::SliderFloat("Grain Radius", &props.grainRadius, 0.0f, 0.1f, "radius = %.5f");
-			ImGui::SliderFloat("Inner Radius", &props.grainInnerRadiusRatio, 0.0f, 1.0f, "ratio = %.5f");
+			ImGui::SliderFloat("Inner Radius", &props.grainInnerRadiusRatio, 0.0f, .9999f, "ratio = %.5f");
 
 			ImGui::SliderFloat("Grain Mesh Scale", &props.grainMeshScale, 0.0f, 10.0f, "scale = %.3f");
 			

@@ -82,7 +82,7 @@ void PointCloudDataBehavior::start()
 		}
 	});
 
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 	m_pointBuffer->bind();
 	m_pointBuffer->enableAttributes();

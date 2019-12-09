@@ -58,7 +58,7 @@ void main() {
 		vec3 camPos_ws = vec3(inverseViewMatrix[3]);
 		vec3 toCam = normalize(camPos_ws - fragment.ws_coord);
 
-		out_fragment.radiance = vec4(0.0);
+		out_fragment.radiance = vec4(0.0, 0.0, 0.0, 1.0);
 
 		SurfaceAttributes surface;
 		surface.baseColor = fragment.baseColor;
@@ -71,8 +71,9 @@ void main() {
 			if (isShadowMapEnabled) {
 				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
 				shadowBias = 0.000002; // hardcoded hack
-				shadowBias = 0.0;
+				//shadowBias = 0.00001;
 				shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
+				shadow = clamp(shadow, 0.0, 1.0);
 			}
 			
 			vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
@@ -82,7 +83,7 @@ void main() {
 #else // OLD_BRDF
 			f = brdf(toCam, fragment.normal, toLight, surface);
 #endif // OLD_BRDF
-			out_fragment.radiance += vec4(f, 1.0) * vec4(light[k].color * lightPowerScale, 1.0) * (1. - shadow);
+			out_fragment.radiance.rgb += f * light[k].color * lightPowerScale * (1. - shadow);
 		}
 		out_fragment.radiance += vec4(fragment.emission, 0.0);
 		break;
@@ -129,7 +130,7 @@ void main() {
 	out_fragment.radiance = pow(out_fragment.radiance, vec4(1.0 / gamma));
 #endif
 
-	/*/ Minimap Shadow Depth
+	// Minimap Shadow Depth
 	if (gl_FragCoord.x < 256 && gl_FragCoord.y < 256) {
 		float depth = texelFetch(light[0].shadowMap, ivec2(gl_FragCoord.xy * 4.0), 0).r;
 		out_fragment.radiance = vec4(vec3(pow(1. - depth, 0.1)), 1.0);
@@ -154,6 +155,7 @@ void main() {
 #endif // SHOW_BASECOLOR
 
 	out_fragment.normal = fragment.normal;
+	out_fragment.radiance.a = 1.0;
 	// TODO: compute from ws_coord and remove this extra buffer
 	out_fragment.depth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
 	out_color = out_fragment.radiance;

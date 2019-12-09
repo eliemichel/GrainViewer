@@ -10,6 +10,7 @@ class ShaderProgram;
 class MeshDataBehavior;
 class TransformBehavior;
 class Framebuffer;
+class PointCloudDataBehavior;
 
 /**
  * Sand renderer mixes impostor cloud and instance cloud using a culling
@@ -26,7 +27,6 @@ public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
 	void start() override;
-	void onDestroy() override;
 	void update(float time) override;
 	void render(const Camera & camera, const World & world, RenderType target) const override;
 	void reloadShaders() override;
@@ -88,7 +88,6 @@ public:
 private:
 	glm::mat4 modelMatrix() const;
 
-	bool load(const PointCloud & pointCloud);
 	/**
 	* @param textureDirectory Directory containing 2*n*n textures
 	* corresponding to the views rendered by script make_octaedron.py with
@@ -149,11 +148,7 @@ private:
 	std::shared_ptr<ShaderProgram> m_occlusionCullingShader;
 	mutable std::shared_ptr<Framebuffer> m_occlusionCullingMap; // kind of shadow map
 	bool m_isDeferredRendered;
-	size_t m_nbPoints;
-	size_t m_frameCount;
-
-	GLuint m_vao;
-	GLuint m_vbo; // TODO: replace this with GlBuffer
+	
 	std::unique_ptr<GlBuffer> m_commandBuffer;
 	std::unique_ptr<GlBuffer> m_cullingPointersSsbo;
 	std::unique_ptr<GlBuffer> m_prefixSumInfoSsbo;
@@ -161,6 +156,7 @@ private:
 
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<MeshDataBehavior> m_grainMeshData;
+	std::weak_ptr<PointCloudDataBehavior> m_pointData;
 
 	std::vector<std::unique_ptr<GlTexture>> m_normalAlphaTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_baseColorTextures;
