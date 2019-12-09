@@ -14,7 +14,7 @@
 			"orthographicsSale": 2.0,
 
 			"outputFrameBase": "Record\\$BASEFILE\\beauty\\frame",
-			"//resolution": [256, 256],
+			"resolution": [256, 256],
 			"//outputResolution": [128, 128],
 			"//isRecordEnabled": {
 				"start": 0,
@@ -24,7 +24,7 @@
 	],
 
 	"deferredShader": {
-		"defines": [ "SHOW_RAW_BUFFER1" ]
+		"defines": [ ]
 	},
 
 	"lights": [
@@ -49,17 +49,10 @@
 
 	"shaders": {
 		"World": "basic-world",
-		"Mesh": "basic-mesh",
-		"ImpostorCloud": {
-			"baseFile": "impostor-cloud-debug",
-			"defines": [ "PROCEDURAL_BASECOLOR" ]
-		},
-		"InstanceCloud": "instance-cloud",
-		"PointCloudCulling": {
-			"baseFile": "impostor-cloud.prefixsum-culling",
-			"type": "compute"
-		},
-		"SandOcclusionCulling": "sand/occlusion-culling"
+		"FarSand": {
+			"baseFile": "far-sand",
+			"defines": [ "PROCEDURAL_BASECOLOR", "SHAPE_SPHERE" ]
+		}
 	},
 
 	"world": {
@@ -80,28 +73,14 @@
 					]
 				},
 				{
-					"type": "MeshDataBehavior",
-					"filename": "grain000_midhighpoly.obj"
+					"type": "PointCloudDataBehavior",
+					"filename": "beach-positions.bin"
 				},
 				{
-					"type": "SandRenderer",
-					"pointcloud": "beach-positions.bin",
-					"models": [
-						{
-							"normalAlpha": "Impostors\\grain000-128v-128p\\normal"
-						}
-					],
+					"type": "FarSandRenderer",
+					"shader": "FarSand",
 					"colormap": "colormap3.png",
-
-					"shader": "ImpostorCloud",
-					"cullingShader": "PointCloudCulling",
-					"instanceCloudShader": "InstanceCloud",
-					"occlusionCullingShader": "SandOcclusionCulling",
-
-					"grainRadius": 0.013,
-					"grainMeshScale": 2.0,
-					"instanceLimit": 1.15,
-					"cullingMechanism": "PrefixSum"
+					"radius": 0.008
 				}
 			]
 		}

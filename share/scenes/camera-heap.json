@@ -33,7 +33,7 @@
 			"color": [1, 1, 1],
 			"shadowMapSize": 1024,
 			"hasShadowMap": true,
-			"shadowMapFov": 45.0
+			"shadowMapFov": 50.0
 		},
 		{
 			"position": [-8, 2, 4],
@@ -51,7 +51,7 @@
 		"World": "basic-world",
 		"ImpostorCloud": {
 			"baseFile": "impostor-cloud",
-			"defines": [ "PROCEDURAL_BASECOLOR" ]
+			"defines": [ "SPHEREHIT_SAMPLING" ]
 		},
 		"InstanceCloud": "instance-cloud",
 		"PointCloudCulling": {
@@ -83,14 +83,13 @@
 					"filename": "grain000_midhighpoly.obj"
 				},
 				{
-					"type": "PointCloudDataBehavior",
-					"filename": "heap-positions.bin"
-				},
-				{
 					"type": "SandRenderer",
+					"pointcloud": "heap-positions.bin",
 					"models": [
 						{
-							"normalAlpha": "Impostors\\grain000-128v-128p\\normal"
+							"normalAlpha":       "Impostors\\VintageCamera-128v-128p\\normal",
+							"baseColor":         "Impostors\\VintageCamera-128v-128p\\baseColor",
+							"metallicRoughness": "Impostors\\VintageCamera-128v-128p\\metallicRoughness"
 						}
 					],
 					"colormap": "colormap3.png",
