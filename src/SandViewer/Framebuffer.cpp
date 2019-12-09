@@ -75,6 +75,8 @@ void Framebuffer::bind() const {
 
 void Framebuffer::setResolution(size_t width, size_t height)
 {
+	if (width == m_width && height == m_height) return;
+	DEBUG_LOG << "Resizing framebuffer";
 	m_width = static_cast<GLsizei>(width);
 	m_height = static_cast<GLsizei>(height);
 	destroy();

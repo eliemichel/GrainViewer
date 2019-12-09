@@ -49,6 +49,10 @@ set(SRC
 	Behavior/TestPrefixSumRenderer.cpp
 	Behavior/LightGizmo.h
 	Behavior/LightGizmo.cpp
+	Behavior/FarSandRenderer.h
+	Behavior/FarSandRenderer.cpp
+	Behavior/PointCloudDataBehavior.h
+	Behavior/PointCloudDataBehavior.cpp
 
 	utils/debug.h
 	utils/debug.cpp
@@ -71,6 +75,8 @@ set(SRC
 	Ui/Window.cpp
 	Ui/SandRendererDialog.h
 	Ui/SandRendererDialog.cpp
+	Ui/FarSandRendererDialog.h
+	Ui/FarSandRendererDialog.cpp
 	Ui/SceneDialog.h
 	Ui/SceneDialog.cpp
 	Ui/LightGizmoDialog.h

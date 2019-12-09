@@ -105,10 +105,11 @@ bool culling(vec3 position, float near, float far, float outerRadius, float inne
 		vec4 position_ps = projectionMatrix * vec4(position_cs.xyz, 1.0);
 		position_ps = position_ps / position_ps.w * 0.5 + 0.5;
 		position_ps.xy = clamp(position_ps.xy, vec2(0.0), vec2(1.0));
-		vec3 closestCone_cs = textureLod(occlusionMap, position_ps.xy, 0).xyz * outerOverInnerRadius;
+		vec3 otherGrain_cs = textureLod(occlusionMap, position_ps.xy, 0).xyz;
+		vec3 closestCone_cs = otherGrain_cs * outerOverInnerRadius;
 		float cosAlpha = dot(normalize(closestCone_cs), normalize(position_cs.xyz - closestCone_cs));
 		if (cosAlpha >= 0 && closestCone_cs != vec3(0.0)) {
-			float sinBeta = innerRadius / length(closestCone_cs);
+			float sinBeta = innerRadius / length(otherGrain_cs);
 			float sin2Alpha = 1. - cosAlpha * cosAlpha;
 			float sin2Beta = sinBeta * sinBeta;
 			if (sin2Alpha < sin2Beta) {

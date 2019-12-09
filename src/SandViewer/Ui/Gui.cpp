@@ -27,6 +27,7 @@ using namespace std;
 // TODO: Find a way to avoid this function
 #include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
+#include "FarSandRendererDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleType(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -36,6 +37,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	}
 	handleType(SandRenderer);
 	handleType(LightGizmo);
+	handleType(FarSandRenderer);
 	return nullptr;
 #undef handleType
 }
