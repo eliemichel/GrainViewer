@@ -49,6 +49,7 @@ void SandRendererDialog::draw()
 			ImGui::Checkbox("Distance Culling", &props.enableDistanceCulling);
 
 			ImGui::Checkbox("Render Additive (for debug)", &props.renderAdditive);
+			ImGui::Checkbox("Has Metallic Roughness Map", &props.hasMetallicRoughnessMap);
 
 			const SandRenderer::RenderInfo & info = cont->renderInfo();
 			ImGui::LabelText("Impostors", "%d", info.impostorCount);

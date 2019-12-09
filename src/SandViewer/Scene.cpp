@@ -54,6 +54,8 @@ void Scene::update(float time) {
 	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
 		// If recording, slow down the game to ensure that it will play back correctly
 		time = m_frameIndex / m_fps;
+	} else {
+		m_frameIndex = time * m_fps;
 	}
 
 	m_animationManager->update(time, m_frameIndex);

@@ -26,6 +26,6 @@ void main() {
 	normal_cs = mat3(viewModelMatrix) * normal;
 	tangent_ws = tangent;
 	uv_ts = uv;
-	matId = materialId;
+	matId = 0;//materialId;
 }
 

@@ -13,13 +13,13 @@ uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "include/uniform/camera.inc.glsl"
 
-uniform float grainRadius;
+uniform float uOuterRadius;
 
 #include "include/utils.inc.glsl"
 #include "include/sprite.inc.glsl"
 
 void main() {
-	radius = grainRadius;
+	radius = uOuterRadius;
 
     position_ws = (modelMatrix * gl_in[0].gl_Position).xyz;
     vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);

@@ -39,6 +39,7 @@ layout (std430, binding = 0) buffer prefixSumInfoSsbo {
 	PrefixSumInfoSsbo info;
 };
 
+uniform uint uPointCountPerFrame;
 uniform uint uPointCount;
 
 // 0: instances
@@ -51,6 +52,7 @@ uniform mat4 viewModelMatrix;
 
 #include "include/utils.inc.glsl"
 #include "include/frustum.inc.glsl"
+#include "include/anim.inc.glsl"
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STEP_MARK_CULLING
@@ -70,6 +72,10 @@ uniform sampler2D occlusionMap;
 uniform float uOuterOverInnerRadius;
 uniform float uInnerRadius;
 uniform float uOuterRadius;
+
+uniform uint uFrameCount;
+uniform float uFps = 25.0;
+uniform float uTime;
 
 layout(std430, binding = 1) restrict readonly buffer pointSsbo {
 	PointCloundVboEntry point[];
@@ -123,9 +129,10 @@ bool culling(vec3 position, float near, float far, float outerRadius, float inne
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
-	if (i >= uPointCount) return;
+	if (i >= uPointCountPerFrame) return;
 
-	vec3 position = point[i].position.xyz;
+	uint pointId = AnimatedPointId(i, uFrameCount, uPointCount, uTime, uFps);
+	vec3 position = point[pointId].position.xyz;
 
 	float near = getNearDistance(projectionMatrix);
 	float far = getFarDistance(projectionMatrix);
@@ -142,7 +149,7 @@ void main() {
 
 	// The last value is saved in an extra buffer because after prefix sum this
 	// last value (is the only one that) cannot be retrieved
-	if (i == uPointCount - 1) {
+	if (i == uPointCountPerFrame - 1) {
 		info.isLastPointActive[uType] = isCulled ? 0 : 1;
 	}
 }
@@ -172,13 +179,13 @@ layout (std430, binding = 2) restrict writeonly buffer elementsSsbo {
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
-	if (i >= uPointCount) return;
+	if (i >= uPointCountPerFrame) return;
 
 	uint offset = uType == 0 ? 0 : info.count[0];
 
 	uint s = prefixSum[i];
 	bool isActive;
-	if (i == uPointCount - 1) {
+	if (i == uPointCountPerFrame - 1) {
 		info.count[uType] = s;
 		isActive = info.isLastPointActive[uType] == 1;
 	} else {

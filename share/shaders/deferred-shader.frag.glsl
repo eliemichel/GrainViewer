@@ -70,10 +70,11 @@ void main() {
 			float shadow = 0;
 			if (isShadowMapEnabled) {
 				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
-				shadowBias = 0.000002; // hardcoded hack
-				//shadowBias = 0.00001;
+				//shadowBias = 0.000002; // hardcoded hack
+				//shadowBias = 0.00005;
 				shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
 				shadow = clamp(shadow, 0.0, 1.0);
+				shadow *= .8;
 			}
 			
 			vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
@@ -129,8 +130,9 @@ void main() {
 	const float gamma = 0.8;
 	out_fragment.radiance = pow(out_fragment.radiance, vec4(1.0 / gamma));
 #endif
+	out_fragment.radiance.rgb *= vec3(1.0, 1.0, 1.1);
 
-	// Minimap Shadow Depth
+	/*/ Minimap Shadow Depth
 	if (gl_FragCoord.x < 256 && gl_FragCoord.y < 256) {
 		float depth = texelFetch(light[0].shadowMap, ivec2(gl_FragCoord.xy * 4.0), 0).r;
 		out_fragment.radiance = vec4(vec3(pow(1. - depth, 0.1)), 1.0);

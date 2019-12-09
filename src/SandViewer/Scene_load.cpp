@@ -130,7 +130,7 @@ bool Scene::load(const std::string & filename)
 				std::shared_ptr<Behavior> b;
 				addBehavior(b, obj, type);
 				if (b) {
-					b->deserialize(behaviorJson);
+					b->deserialize(behaviorJson, env, m_animationManager);
 					if (behaviorJson.HasMember("enabled") && behaviorJson["enabled"].IsBool()) {
 						b->setEnabled(behaviorJson["enabled"].GetBool());
 					}

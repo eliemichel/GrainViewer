@@ -6,16 +6,17 @@
 
 #pragma once
 
-#include "Logger.h"
+#include <string>
+#include <vector>
+
+#include <glm/glm.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/writer.h>
 
-#include <string>
-#include <vector>
-
+#include "Logger.h"
 #include "utils/tplutils.h"
 
 typedef rapidjson::Writer<rapidjson::OStreamWrapper> JsonWriter;
@@ -37,6 +38,11 @@ template<> inline bool _read(bool & target, const rapidjson::Value& json) {
 template<> inline bool _read(std::string & target, const rapidjson::Value& json) {
 	if (!json.IsString()) return false;
 	target = json.GetString();
+	return true;
+}
+template<> inline bool _read(glm::vec3 & target, const rapidjson::Value& json) {
+	if (!json.IsArray() || json.Size() != 3) return false;
+	for (int k = 0 ; k < 3 ; ++k) target[k] = json[k].GetFloat();
 	return true;
 }
 
@@ -122,6 +128,8 @@ inline void jw(JsonWriter & writer, const std::string & key, const T & v) {
 // Utility preprocessor routines to be used with canonical variable names
 #define JREAD_DEFAULT(x, d) jrOption(json, #x, m_ ## x, d)
 #define JREAD(x) jrOption(json, #x, m_ ## x)
+#define JREADp(x) jrOption(json, #x, x)
 #define JREAD_ARRAY(x, d) jrArray(json, #x, m_ ## x, d)
 #define JREAD_LIST(x) jrArray(json, #x, m_ ## x)
 #define JWRITE(x) jw(writer, #x, m_ ## x)
+#define JWRITEp(x) jw(writer, #x, x)

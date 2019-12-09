@@ -14,23 +14,6 @@
 #include "Framebuffer.h"
 #include "PointCloudDataBehavior.h"
 
-void SandRenderer::initShader(ShaderProgram & shader) {
-	size_t o = 0;
-	shader.use();
-
-	shader.setUniform("cubemap", static_cast<GLint>(o++));
-
-	if (auto pointData = m_pointData.lock()) {
-		shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
-	}
-}
-
-void SandRenderer::updateShader(ShaderProgram & shader, float time) {
-	shader.use();
-	shader.setUniform("time", static_cast<GLfloat>(time));
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
 ///////////////////////////////////////////////////////////////////////////////
@@ -63,6 +46,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 		}
 		if (!m.metallicRoughness().empty()) {
 			loadImpostorTexture(m_metallicRoughnessTextures, ResourceManager::resolveResourcePath(m.metallicRoughness()));
+			m_properties.hasMetallicRoughnessMap = true;
 		}
 	}
 
@@ -179,8 +163,7 @@ void SandRenderer::start()
 
 void SandRenderer::update(float time)
 {
-	updateShader(*m_impostorShader, time);
-	updateShader(*m_shadowMapImpostorShader, time);
+	m_time = time;
 }
 
 void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const
@@ -204,12 +187,6 @@ void SandRenderer::render(const Camera & camera, const World & world, RenderType
 
 	camera.releaseExtraFramebuffer(m_occlusionCullingMap);
 	m_occlusionCullingMap.reset();
-}
-
-void SandRenderer::reloadShaders()
-{
-	initShader(*m_impostorShader);
-	initShader(*m_shadowMapImpostorShader);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -345,6 +322,9 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 			shader.setUniform("uOuterOverInnerRadius", 1.0f / m_properties.grainInnerRadiusRatio);
 			shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
+			shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+			shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+			shader.setUniform("uTime", static_cast<GLfloat>(m_time));
 
 			glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -366,11 +346,14 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 			shader.bindUniformBlock("Camera", camera.ubo());
 			shader.setUniform("modelMatrix", modelMatrix());
 			shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-			shader.setUniform("uPointCount", effectivePointCount);
+			shader.setUniform("uPointCountPerFrame", effectivePointCount);
 			shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 			shader.setUniform("uOuterOverInnerRadius", 1.f / m_properties.grainInnerRadiusRatio);
 			shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
 			shader.setUniform("uOuterRadius", m_properties.grainRadius);
+			shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+			shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+			shader.setUniform("uTime", static_cast<GLfloat>(m_time));
 			shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
 			shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
 			shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
@@ -408,11 +391,14 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 			shader.bindUniformBlock("Camera", camera.ubo());
 			shader.setUniform("modelMatrix", modelMatrix());
 			shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-			shader.setUniform("uPointCount", effectivePointCount);
+			shader.setUniform("uPointCountPerFrame", effectivePointCount);
 			shader.setUniform("uInstanceLimit", static_cast<GLfloat>(m_properties.instanceLimit));
 			shader.setUniform("uOuterOverInnerRadius", 1.f / m_properties.grainInnerRadiusRatio);
 			shader.setUniform("uInnerRadius", m_properties.grainInnerRadiusRatio * m_properties.grainRadius);
 			shader.setUniform("uOuterRadius", m_properties.grainRadius);
+			shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+			shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+			shader.setUniform("uTime", static_cast<GLfloat>(m_time));
 			shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
 			shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
 			shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
@@ -433,7 +419,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		{
 			const ShaderProgram & shader = *m_cullingShaders[Group];
 			shader.use();
-			shader.setUniform("uPointCount", effectivePointCount);
+			shader.setUniform("uPointCountPerFrame", effectivePointCount);
 			shader.setUniform("uType", static_cast<GLuint>(1));
 			m_prefixSumInfoSsbo->bindSsbo(0);
 			m_elementBuffers[1 + resultIndex]->bindSsbo(1);
@@ -451,7 +437,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 			const ShaderProgram & shader = *m_cullingShaders[BuildCommandBuffer];
 			shader.use();
-			shader.setUniform("uPointCount", effectivePointCount);
+			shader.setUniform("uPointCountPerFrame", effectivePointCount);
 			shader.setUniform("uGrainMeshPointCount", grainMeshPointCount);
 			m_prefixSumInfoSsbo->bindSsbo(0);
 			m_commandBuffer->bindSsbo(1);
@@ -460,10 +446,12 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		}
 
 		// 8. Collect info
-		m_prefixSumInfoSsbo->readBlock<PrefixSumInfoSsbo>(0, [this](PrefixSumInfoSsbo *ssbo, size_t _) {
-			m_renderInfo.instanceCount = ssbo->instanceCount;
-			m_renderInfo.impostorCount = ssbo->impostorCount;
-		});
+		if (m_prefixSumInfoSsbo) {
+			m_prefixSumInfoSsbo->readBlock<PrefixSumInfoSsbo>(0, [this](PrefixSumInfoSsbo *ssbo, size_t _) {
+				m_renderInfo.instanceCount = ssbo->instanceCount;
+				m_renderInfo.impostorCount = ssbo->impostorCount;
+			});
+		}
 	}
 }
 
@@ -471,81 +459,85 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 // Impostors drawing
 void SandRenderer::renderImpostors(const Camera & camera, const World & world, RenderType target) const
 {
-	glEnable(GL_PROGRAM_POINT_SIZE);
-	if (m_cullingMechanism == RestartPrimitive) {
-		glEnable(GL_PRIMITIVE_RESTART);
-		glPrimitiveRestartIndex(0xFFFFFFF0);
-	}
-
-	if (m_properties.renderAdditive) {
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-	} else {
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
-	}
-
-	const ShaderProgram & shader = target == ShadowMapRendering ? *m_shadowMapImpostorShader : *m_impostorShader;
-	shader.use();
-
-	// Set uniforms
-	shader.bindUniformBlock("Camera", camera.ubo());
-	shader.setUniform("modelMatrix", modelMatrix());
-	shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-	shader.setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
-	shader.setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
-
-	size_t o = 0;
-
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
-	shader.setUniform("occlusionMap", static_cast<GLint>(o));
-	++o;
-
-	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		m_colormapTexture->bind();
-		shader.setUniform("colormapTexture", static_cast<GLint>(o));
-		++o;
-	}
-
-	// TODO: Use UBO
-	for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
-		GLuint n = m_normalAlphaTextures[k]->depth();
-		GLuint viewCount = static_cast<GLuint>(sqrt(n / 2));
-
-		std::ostringstream oss1;
-		oss1 << "impostor[" << k << "].viewCount";
-		shader.setUniform(oss1.str(), viewCount);
-
-		std::ostringstream oss2;
-		oss2 << "impostor[" << k << "].normalAlphaTexture";
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		m_normalAlphaTextures[k]->bind();
-		shader.setUniform(oss2.str(), static_cast<GLint>(o));
-		++o;
-
-		if (m_baseColorTextures.size() > k) {
-			std::ostringstream oss;
-			oss << "impostor[" << k << "].baseColorTexture";
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_baseColorTextures[k]->bind();
-			shader.setUniform(oss.str(), static_cast<GLint>(o));
-			++o;
-		}
-
-		if (m_metallicRoughnessTextures.size() > k) {
-			std::ostringstream oss;
-			oss << "impostor[" << k << "].metallicRoughnesTexture";
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_metallicRoughnessTextures[k]->bind();
-			shader.setUniform(oss.str(), static_cast<GLint>(o));
-			++o;
-		}
-	}
-
 	if (auto pointData = m_pointData.lock()) {
+		glEnable(GL_PROGRAM_POINT_SIZE);
+		if (m_cullingMechanism == RestartPrimitive) {
+			glEnable(GL_PRIMITIVE_RESTART);
+			glPrimitiveRestartIndex(0xFFFFFFF0);
+		}
+
+		if (m_properties.renderAdditive) {
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE);
+		} else {
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+		}
+
+		const ShaderProgram & shader = target == ShadowMapRendering ? *m_shadowMapImpostorShader : *m_impostorShader;
+		shader.use();
+
+		// Set uniforms
+		shader.bindUniformBlock("Camera", camera.ubo());
+		shader.setUniform("modelMatrix", modelMatrix());
+		shader.setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+		shader.setUniform("uOuterRadius", static_cast<GLfloat>(m_properties.grainRadius));
+		shader.setUniform("uInnerRadius", static_cast<GLfloat>(m_properties.grainRadius * m_properties.grainInnerRadiusRatio));
+		shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+		shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+		shader.setUniform("uTime", static_cast<GLfloat>(m_time));
+		shader.setUniform("uHasMetallicRoughnessMap", m_properties.hasMetallicRoughnessMap);
+
+		size_t o = 0;
+
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+		shader.setUniform("occlusionMap", static_cast<GLint>(o));
+		++o;
+
+		if (m_colormapTexture) {
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_colormapTexture->bind();
+			shader.setUniform("colormapTexture", static_cast<GLint>(o));
+			++o;
+		}
+
+		// TODO: Use UBO
+		for (size_t k = 0; k < m_normalAlphaTextures.size(); ++k) {
+			GLuint n = m_normalAlphaTextures[k]->depth();
+			GLuint viewCount = static_cast<GLuint>(sqrt(n / 2));
+
+			std::ostringstream oss1;
+			oss1 << "impostor[" << k << "].viewCount";
+			shader.setUniform(oss1.str(), viewCount);
+
+			std::ostringstream oss2;
+			oss2 << "impostor[" << k << "].normalAlphaTexture";
+			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+			m_normalAlphaTextures[k]->bind();
+			shader.setUniform(oss2.str(), static_cast<GLint>(o));
+			++o;
+
+			if (m_baseColorTextures.size() > k) {
+				std::ostringstream oss;
+				oss << "impostor[" << k << "].baseColorTexture";
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+				m_baseColorTextures[k]->bind();
+				shader.setUniform(oss.str(), static_cast<GLint>(o));
+				++o;
+			}
+
+			if (m_metallicRoughnessTextures.size() > k) {
+				std::ostringstream oss;
+				oss << "impostor[" << k << "].metallicRoughnesTexture";
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+				m_metallicRoughnessTextures[k]->bind();
+				shader.setUniform(oss.str(), static_cast<GLint>(o));
+				++o;
+			}
+		}
+
 		glBindVertexArray(pointData->vao());
 		pointData->data().bindSsbo(1);
 		m_commandBuffer->bind();
@@ -559,36 +551,41 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 // Instances drawing
 void SandRenderer::renderInstances(const Camera & camera, const World & world, RenderType target) const
 {
-	if (m_cullingMechanism == RestartPrimitive) {
-		glEnable(GL_PRIMITIVE_RESTART);
-		glPrimitiveRestartIndex(0xFFFFFFF0);
-	}
-
-	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
-
-	m_instanceCloudShader->use();
-
-	// Set uniforms
-	m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
-	m_instanceCloudShader->setUniform("modelMatrix", modelMatrix());
-	m_instanceCloudShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
-	m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
-
-	m_instanceCloudShader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
-	m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_properties.grainMeshScale));
-
-	GLuint o = 0;
-	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		m_colormapTexture->bind();
-		m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
-		++o;
-	}
-
-	// Render
 	if (auto mesh = m_grainMeshData.lock()) {
 		if (auto pointData = m_pointData.lock()) {
+
+			if (m_cullingMechanism == RestartPrimitive) {
+				glEnable(GL_PRIMITIVE_RESTART);
+				glPrimitiveRestartIndex(0xFFFFFFF0);
+			}
+
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+
+			m_instanceCloudShader->use();
+
+			// Set uniforms
+			m_instanceCloudShader->bindUniformBlock("Camera", camera.ubo());
+			m_instanceCloudShader->setUniform("modelMatrix", modelMatrix());
+			m_instanceCloudShader->setUniform("viewModelMatrix", camera.viewMatrix() * modelMatrix());
+			m_instanceCloudShader->setUniform("invViewMatrix", inverse(camera.viewMatrix()));
+
+			m_instanceCloudShader->setUniform("grainRadius", static_cast<GLfloat>(m_properties.grainRadius));
+			m_instanceCloudShader->setUniform("grainMeshScale", static_cast<GLfloat>(m_properties.grainMeshScale));
+
+			m_instanceCloudShader->setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+			m_instanceCloudShader->setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+			m_instanceCloudShader->setUniform("uTime", static_cast<GLfloat>(m_time));
+
+			GLuint o = 0;
+			if (m_colormapTexture) {
+				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+				m_colormapTexture->bind();
+				m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
+				++o;
+			}
+
+			// Render
 			glBindVertexArray(mesh->vao());
 			pointData->data().bindSsbo(1);
 			m_elementBuffers[m_cullingMechanism == RestartPrimitive ? 1 : 0]->bindSsbo(2);

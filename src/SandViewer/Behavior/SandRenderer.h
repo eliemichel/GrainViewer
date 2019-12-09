@@ -20,16 +20,11 @@ class PointCloudDataBehavior;
  */
 class SandRenderer : public Behavior {
 public:
-	void initShader(ShaderProgram & shader);
-	void updateShader(ShaderProgram & shader, float time);
-
-public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
 	void start() override;
 	void update(float time) override;
 	void render(const Camera & camera, const World & world, RenderType target) const override;
-	void reloadShaders() override;
 
 public:
 	/**
@@ -74,6 +69,7 @@ public:
 		bool enableOcclusionCulling = true;
 		bool enableDistanceCulling = true;
 		bool enableFrustumCulling = true;
+		bool hasMetallicRoughnessMap = false;
 		bool renderAdditive;
 	};
 	Properties & properties() { return m_properties; }
@@ -162,6 +158,8 @@ private:
 	std::vector<std::unique_ptr<GlTexture>> m_baseColorTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_metallicRoughnessTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
+
+	float m_time;
 };
 
 registerBehaviorType(SandRenderer)

@@ -8,10 +8,11 @@ public:
 	const glm::mat4 & modelMatrix() const { return m_modelMatrix; }
 
 public:
-	bool deserialize(const rapidjson::Value & json) override;
+	bool deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations) override;
 
 private:
 	glm::mat4 m_modelMatrix;
+	glm::mat4 m_postTransform = glm::mat4(1);
 };
 
 registerBehaviorType(TransformBehavior)

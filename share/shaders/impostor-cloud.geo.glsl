@@ -15,7 +15,7 @@ uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "include/uniform/camera.inc.glsl"
 
-uniform float grainRadius = 0.005;
+uniform float uOuterRadius = 0.005;
 
 #include "include/utils.inc.glsl"
 #include "include/random.inc.glsl"
@@ -24,7 +24,7 @@ uniform float grainRadius = 0.005;
 
 void main() {
 	id = pointId[0];
-	radius = grainRadius;
+	radius = uOuterRadius;
 
     position_ws = (modelMatrix * gl_in[0].gl_Position).xyz;
     vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);

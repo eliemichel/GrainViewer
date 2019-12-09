@@ -7,8 +7,11 @@
 #include "RenderType.h"
 #include "Camera.h"
 #include "World.h"
+#include "EnvironmentVariables.h"
 #include "IBehaviorHolder.h"
 #include "utils/tplutils.h" // for ENABLE_TYPENAME
+
+class AnimationManager;
 
 #define registerBehaviorType(T) ENABLE_TYPENAME(T)
 
@@ -35,6 +38,7 @@ public:
 	 * Load component data from json file. Do NOT call OpenGL functions here, as this must be thread safe
 	 */
 	virtual bool deserialize(const rapidjson::Value & json) { return true; }
+	virtual bool deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations) { return deserialize(json); }
 
 	/**
 	 * Called on main loop start

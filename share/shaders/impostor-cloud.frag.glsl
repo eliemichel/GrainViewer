@@ -37,8 +37,10 @@ uniform sampler2D colormapTexture;
 uniform float uInnerRadius;
 
 uniform float hitSphereCorrectionFactor = 0.65;
-uniform float roughness = 0.5;
-uniform float metallic = 0.0;
+
+uniform bool uHasMetallicRoughnessMap = false;
+uniform float uDefaultRoughness = 0.5;
+uniform float uDefaultMetallic = 0.0;
 
 // DEBUG
 uniform sampler2D occlusionMap;
@@ -103,8 +105,10 @@ void main() {
     fragment.baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
 #endif
 
-	fragment.metallic = metallic;
-	fragment.roughness = roughness;
+	if (!uHasMetallicRoughnessMap) {
+		fragment.metallic = uDefaultMetallic;
+		fragment.roughness = uDefaultRoughness;
+	}
 
 #ifdef SET_DEPTH
 	vec3 p = (viewMatrix * vec4(fragment.ws_coord, 1.0)).xyz;
