@@ -10,14 +10,51 @@
 #include "utils/jsonutils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// Behavior implementation
+// Material
 ///////////////////////////////////////////////////////////////////////////////
+
+GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint id, GLuint firstTextureIndex) const
+{
+	GLuint o = firstTextureIndex;
+	const std::string prefix = "material[" + std::to_string(id) + "]";
+	if (baseColorMap) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		baseColorMap->bind();
+		shader.setUniform(prefix + ".baseColorMap", static_cast<GLint>(o));
+		++o;
+		shader.setUniform(prefix + ".hasBaseColorMap", true);
+	} else {
+		shader.setUniform(prefix + ".hasBaseColorMap", false);
+	}
+	if (normalMap) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		normalMap->bind();
+		shader.setUniform(prefix + ".normalMap", static_cast<GLint>(o));
+		++o;
+		shader.setUniform(prefix + ".hasNormalMap", true);
+	} else {
+		shader.setUniform(prefix + ".hasNormalMap", false);
+	}
+	if (metallicRoughnessMap) {
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		metallicRoughnessMap->bind();
+		shader.setUniform(prefix + ".metallicRoughnessMap", static_cast<GLint>(o));
+		++o;
+		shader.setUniform(prefix + ".hasMetallicRoughnessMap", true);
+	} else {
+		shader.setUniform(prefix + ".hasMetallicRoughnessMap", false);
+	}
+	shader.setUniform(prefix + ".baseColor", baseColor);
+	shader.setUniform(prefix + ".metallic", metallic);
+	shader.setUniform(prefix + ".roughness", roughness);
+	return o;
+}
 
 // private classes for serialization only
 class MaterialModel {
 public:
 	bool readJson(const rapidjson::Value & json) { JREADp(baseColor); JREADp(metallic); JREADp(roughness); JREADp(baseColorMap); JREADp(normalMap); JREADp(metallicRoughnessMap); return true; }
-	
+
 	glm::vec3 baseColor;
 	float metallic;
 	float roughness;
@@ -25,19 +62,10 @@ public:
 	std::string normalMap;
 	std::string metallicRoughnessMap;
 };
-bool MeshRenderer::deserialize(const rapidjson::Value& json)
+void MeshRenderer::Material::deserializeArray(const rapidjson::Value& json, const std::string & key, std::vector<MeshRenderer::Material> & output)
 {
-	if (json.HasMember("shader")) {
-		if (json["shader"].IsString()) {
-			m_shaderName = json["shader"].GetString();
-		} else {
-			ERR_LOG << "Field 'shader' of MeshRenderer must be a string";
-			return false;
-		}
-	}
-
 	std::vector<MaterialModel> materialsData;
-	jrArray<MaterialModel>(json, "materials", materialsData);
+	jrArray<MaterialModel>(json, key, materialsData);
 	for (const auto& m : materialsData) {
 		Material mat;
 		if (!m.baseColorMap.empty()) {
@@ -52,8 +80,26 @@ bool MeshRenderer::deserialize(const rapidjson::Value& json)
 		mat.baseColor = m.baseColor;
 		mat.metallic = static_cast<GLfloat>(m.metallic);
 		mat.roughness = static_cast<GLfloat>(m.roughness);
-		m_materials.push_back(std::move(mat));
+		output.push_back(std::move(mat));
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Behavior implementation
+///////////////////////////////////////////////////////////////////////////////
+
+bool MeshRenderer::deserialize(const rapidjson::Value& json)
+{
+	if (json.HasMember("shader")) {
+		if (json["shader"].IsString()) {
+			m_shaderName = json["shader"].GetString();
+		} else {
+			ERR_LOG << "Field 'shader' of MeshRenderer must be a string";
+			return false;
+		}
+	}
+
+	Material::deserializeArray(json, "materials", m_materials);
 
 	return true;
 }
@@ -81,43 +127,10 @@ void MeshRenderer::render(const Camera& camera, const World& world, RenderType t
 		m_shader->setUniform("modelMatrix", modelMatrix());
 		m_shader->setUniform("viewModelMatrix", viewModelMatrix);
 
-		size_t o = 0;
-		size_t matId = 0;
+		GLuint o = 0;
+		GLuint matId = 0;
 		for (const auto& mat : m_materials) {
-			const std::string prefix = "material[" + std::to_string(matId) + "]";
-			if (mat.baseColorMap) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				mat.baseColorMap->bind();
-				m_shader->setUniform(prefix + ".baseColorMap", static_cast<GLint>(o));
-				++o;
-				m_shader->setUniform(prefix + ".hasBaseColorMap", true);
-			}
-			else {
-				m_shader->setUniform(prefix + ".hasBaseColorMap", false);
-			}
-			if (mat.normalMap) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				mat.normalMap->bind();
-				m_shader->setUniform(prefix + ".normalMap", static_cast<GLint>(o));
-				++o;
-				m_shader->setUniform(prefix + ".hasNormalMap", true);
-			}
-			else {
-				m_shader->setUniform(prefix + ".hasNormalMap", false);
-			}
-			if (mat.metallicRoughnessMap) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				mat.metallicRoughnessMap->bind();
-				m_shader->setUniform(prefix + ".metallicRoughnessMap", static_cast<GLint>(o));
-				++o;
-				m_shader->setUniform(prefix + ".hasMetallicRoughnessMap", true);
-			}
-			else {
-				m_shader->setUniform(prefix + ".hasMetallicRoughnessMap", false);
-			}
-			m_shader->setUniform(prefix + ".baseColor", mat.baseColor);
-			m_shader->setUniform(prefix + ".metallic", mat.metallic);
-			m_shader->setUniform(prefix + ".roughness", mat.roughness);
+			o = mat.setUniforms(*m_shader, matId, o);
 			++matId;
 		}
 

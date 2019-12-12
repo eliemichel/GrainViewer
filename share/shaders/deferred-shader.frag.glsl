@@ -2,9 +2,9 @@
 #include "sys:defines"
 
 #pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF
-#pragma variant SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION SHOW_RAW_BUFFER1
+#pragma variant SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION SHOW_RAW_BUFFER1 SHOW_ROUGHNESS
 #pragma variant HDR REINHART
-//#define SHOW_POSITION
+//#define SHOW_ROUGHNESS
 #define WHITE_BACKGROUND
 #define HDR
 
@@ -139,6 +139,9 @@ void main() {
 	}
 	//*/
 
+#ifdef SHOW_ROUGHNESS
+	out_fragment.radiance.rgb = vec3(fragment.roughness);
+#endif // SHOW_ROUGHNESS
 #ifdef SHOW_NORMAL
 	out_fragment.radiance.rgb = fragment.normal.xyz * .5 + .5;
 #endif // SHOW_NORMAL

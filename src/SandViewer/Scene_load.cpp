@@ -146,6 +146,17 @@ bool Scene::load(const std::string & filename)
 		}
 	}
 
+	if (root.HasMember("scene")) {
+		auto& scene = root["scene"];
+		if (scene.HasMember("quitAfterFrame")) {
+			if (scene["quitAfterFrame"].IsInt()) {
+				m_quitAfterFrame = scene["quitAfterFrame"].GetInt();
+			} else {
+				WARN_LOG << "'quitAfterFrame' field of 'scene' must be an integer";
+			}
+		}
+	}
+
 	reloadShaders();
 
 	DEBUG_LOG << "Loading done.";

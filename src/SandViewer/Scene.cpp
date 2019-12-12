@@ -91,6 +91,8 @@ void Scene::update(float time) {
 			m_pixels.resize(3 * m_outputFramebuffer->width() * m_outputFramebuffer->height());
 		}
 	}
+
+	m_mustQuit = m_quitAfterFrame >= 0 && m_frameIndex > m_quitAfterFrame;
 }
 
 void Scene::render() const {

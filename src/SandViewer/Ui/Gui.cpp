@@ -182,6 +182,11 @@ void Gui::update() {
 	updateImGui();
 	if (m_scene) {
 		m_scene->update(static_cast<float>(glfwGetTime()) - m_startTime);
+		if (auto window = m_window.lock()) {
+			if (m_scene->mustQuit()) {
+				glfwSetWindowShouldClose(window->glfw(), GL_TRUE);
+			}
+		}
 	}
 }
 

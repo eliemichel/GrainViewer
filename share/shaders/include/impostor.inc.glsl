@@ -127,7 +127,7 @@ SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, vec3 p, flo
 	}
 
 	float distanceToCenter = length(ray.origin - p - dot(ray.origin - p, ray.direction) / dot(ray.direction,ray.direction) * ray.direction) / radius;
-	float t = smoothstep(hitSphereCorrectionFactor * .5, hitSphereCorrectionFactor, distanceToCenter);
+	float t = smoothstep(hitSphereCorrectionFactor * .2, hitSphereCorrectionFactor, distanceToCenter);
 
 	SphericalImpostorHit hit;
 	hit.position = mix(sphereHit.position, planeHit.position, t);

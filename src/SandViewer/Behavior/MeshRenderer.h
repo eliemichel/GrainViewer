@@ -7,6 +7,7 @@
 
 class MeshDataRenderer;
 class TransformBehavior;
+class MeshDataBehavior;
 
 class MeshRenderer : public Behavior {
 public:
@@ -18,6 +19,9 @@ public:
 		std::unique_ptr<GlTexture> baseColorMap;
 		std::unique_ptr<GlTexture> normalMap;
 		std::unique_ptr<GlTexture> metallicRoughnessMap;
+
+		GLuint setUniforms(const ShaderProgram & shader, GLuint id, GLuint firstTextureIndex) const;
+		static void deserializeArray(const rapidjson::Value& json, const std::string & key, std::vector<Material> & output);
 	};
 
 public:

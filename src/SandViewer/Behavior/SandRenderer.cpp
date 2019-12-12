@@ -57,6 +57,9 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 		loadColormapTexture(ResourceManager::resolveResourcePath(colormap));
 	}
 
+	// Instance materials
+	MeshRenderer::Material::deserializeArray(json, "instanceMaterials", m_instanceMaterials);
+
 	// Shader
 	jrOption(json, "shader", m_impostorShaderName, m_impostorShaderName);
 	m_shadowMapImpostorShaderName = m_impostorShaderName + "_SHADOW_MAP";
@@ -583,6 +586,12 @@ void SandRenderer::renderInstances(const Camera & camera, const World & world, R
 				m_colormapTexture->bind();
 				m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
 				++o;
+			}
+
+			GLuint matId = 0;
+			for (const auto& mat : m_instanceMaterials) {
+				o = mat.setUniforms(*m_instanceCloudShader, matId, o);
+				++matId;
 			}
 
 			// Render

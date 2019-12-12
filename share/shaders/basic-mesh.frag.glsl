@@ -31,7 +31,7 @@ uniform float roughness = 0.7;
 uniform float occlusion = 1.0;
 uniform vec3 emission = vec3(0.0, 0.0, 0.0);
 uniform vec3 normal = vec3(0.5, 0.5, 1.0);
-uniform float normal_mapping = 0.0;
+uniform float normal_mapping = 1.0;
 
 #include "include/gbuffer.inc.glsl"
 
@@ -59,8 +59,8 @@ void main() {
     fragment.metallic = metallic;
     if (material[matId].hasMetallicRoughnessMap) {
         vec4 t = texture(material[matId].metallicRoughnessMap, uv_ts);
-        fragment.roughness = t.x;
-        fragment.metallic = t.y;
+        fragment.metallic = t.x;
+        fragment.roughness = t.y;
     } else {
         fragment.roughness = material[matId].roughness;
         fragment.metallic = material[matId].metallic;

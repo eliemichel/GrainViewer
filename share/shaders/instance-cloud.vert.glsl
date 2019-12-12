@@ -1,8 +1,11 @@
 #version 450 core
+#include "sys:defines"
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 uv;
+layout (location = 3) in uint materialId;
+layout (location = 4) in vec3 tangent;
 
 struct PointCloundVboEntry {
     vec4 position;
@@ -16,6 +19,7 @@ layout (std430, binding = 2) buffer elementsSsbo {
 
 out vec3 normal_ws;
 out vec3 position_ws;
+out vec3 tangent_ws;
 out vec2 uv_ts;
 flat out uint matId;
 out vec3 baseColor;
@@ -54,12 +58,12 @@ void main() {
 
     gl_Position = projectionMatrix * viewMatrix * vec4(position_ws, 1.0);
     
-	float r = randomGrainColorFactor(int(pointId));
-
-    uv_ts = uv;
+    tangent_ws = tangent;
+    uv_ts = vec2(uv.x, 1.-uv.y);
     matId = 0;
 
 #ifdef PROCEDURAL_BASECOLOR
+	float r = randomGrainColorFactor(int(pointId));
     baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
 #endif // PROCEDURAL_BASECOLOR
 }

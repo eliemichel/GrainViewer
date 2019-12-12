@@ -25,7 +25,7 @@ void main() {
 	normal_ws = mat3(modelMatrix) * normal;
 	normal_cs = mat3(viewModelMatrix) * normal;
 	tangent_ws = tangent;
-	uv_ts = uv;
+	uv_ts = vec2(uv.x, 1.-uv.y);
 	matId = 0;//materialId;
 }
 

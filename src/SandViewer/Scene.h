@@ -44,6 +44,8 @@ public:
 
 	World & world() { return m_world; }
 
+	bool mustQuit() const { return m_mustQuit;  }
+
 private:
 	void recordFrame(const Camera & camera) const;
 
@@ -63,6 +65,8 @@ private:
 	std::vector<uint8_t> m_pixels;
 
 	float m_fps;
+	int m_quitAfterFrame = -1; // -1 to deactivate this feature, otherwise automatically quit the program after the specified frame (usefull for batch rendering)
+	bool m_mustQuit = false;
 
 	// Not really related to the scene, save window resolution
 	int m_width;

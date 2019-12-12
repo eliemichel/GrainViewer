@@ -5,6 +5,7 @@
 #include "PointCloud.h"
 #include "GlTexture.h"
 #include "GlBuffer.h"
+#include "MeshRenderer.h"
 
 class ShaderProgram;
 class MeshDataBehavior;
@@ -158,6 +159,8 @@ private:
 	std::vector<std::unique_ptr<GlTexture>> m_baseColorTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_metallicRoughnessTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
+
+	std::vector<MeshRenderer::Material> m_instanceMaterials;
 
 	float m_time;
 };

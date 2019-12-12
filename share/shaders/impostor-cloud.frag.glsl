@@ -8,6 +8,9 @@
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
 // SET_DEPTH allows for self intersection but significantly degrades performances
 
+//#define MIXEDHIT_SAMPLING
+//#define SPHEREHIT_SAMPLING
+
 flat in uint id;
 in float radius;
 in vec3 position_ws;
@@ -36,7 +39,7 @@ uniform SphericalImpostor impostor[3];
 uniform sampler2D colormapTexture;
 uniform float uInnerRadius;
 
-uniform float hitSphereCorrectionFactor = 0.65;
+uniform float hitSphereCorrectionFactor = 1.;//0.65;
 
 uniform bool uHasMetallicRoughnessMap = false;
 uniform float uDefaultRoughness = 0.5;
@@ -97,7 +100,7 @@ void main() {
 	fragment.ws_coord = outerSphereHitPosition_ws;
 	fragment.material_id = pbrMaterial;
 
-	if (fragment.alpha < 0.2) discard;
+	if (fragment.alpha < 0.5) discard;
 	//if (dot(fragment.normal, ray_ws.direction) >= 0.0) discard;
 
 #ifdef PROCEDURAL_BASECOLOR
