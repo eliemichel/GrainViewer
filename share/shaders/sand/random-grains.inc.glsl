@@ -25,5 +25,7 @@ mat4 randomGrainMatrix(int id, vec3 position_ws) {
 
 // Used to query colorramp image
 float randomGrainColorFactor(int id) {
-    return randv2(vec2(id, id));
+    //return float(id) * .1;
+    return fract(dot(vec2(id*.01, id*.213) ,vec2(12.9898,78.233))*.01);
+    return randv2(vec2(id*.01, id*.213));
 }

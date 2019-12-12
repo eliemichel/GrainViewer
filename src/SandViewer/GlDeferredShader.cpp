@@ -129,10 +129,12 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.setUniform("isShadowMapEnabled", world.isShadowMapEnabled());
 
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
-	m_shader.setUniform("uColormap", static_cast<GLint>(o));
-	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-	m_colormap->bind();
-	++o;
+	if (m_colormap) {
+		m_shader.setUniform("uColormap", static_cast<GLint>(o));
+		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+		m_colormap->bind();
+		++o;
+	}
 
 	glBindVertexArray(m_vao);
 	glDrawArrays(GL_POINTS, 0, 1);

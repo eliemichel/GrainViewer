@@ -104,8 +104,13 @@ void main() {
 	//if (dot(fragment.normal, ray_ws.direction) >= 0.0) discard;
 
 #ifdef PROCEDURAL_BASECOLOR
-	float r = randomGrainColorFactor(int(id));
+	float r0 = randomGrainColorFactor(int(id));
+	float r = position_ws.z*.6 + mix(0.35, 0.3, sin(position_ws.x*.5+.5))*r0;
+	if (r0 < 0.5) {
+		r = 1. - r0;
+	}
     fragment.baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
+    fragment.baseColor *= mix(vec3(0.9, 0.9, 0.9), vec3(1.6, 2.0, 2.0), r0);
 #endif
 
 	if (!uHasMetallicRoughnessMap) {

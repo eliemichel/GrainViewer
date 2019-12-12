@@ -4,7 +4,7 @@
 #pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF
 #pragma variant SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION SHOW_RAW_BUFFER1 SHOW_ROUGHNESS
 #pragma variant HDR REINHART
-//#define SHOW_ROUGHNESS
+
 #define WHITE_BACKGROUND
 #define HDR
 
@@ -73,7 +73,7 @@ void main() {
 			float shadow = 0;
 			if (isShadowMapEnabled) {
 				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
-				//shadowBias = 0.000002; // hardcoded hack
+				shadowBias = 0.0001; // hardcoded hack
 				//shadowBias = 0.00005;
 				shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
 				shadow = clamp(shadow, 0.0, 1.0);
@@ -146,7 +146,7 @@ void main() {
 	out_fragment.radiance.rgb = vec3(fragment.roughness);
 #endif // SHOW_ROUGHNESS
 #ifdef SHOW_NORMAL
-	out_fragment.radiance.rgb = fragment.normal.xyz * .5 + .5;
+	out_fragment.radiance.rgb = normalize(nn) * .5 + .5;
 #endif // SHOW_NORMAL
 #ifdef SHOW_BASECOLOR
 	out_fragment.radiance.rgb = fragment.baseColor.rgb;
