@@ -61,7 +61,7 @@ private:
 
 	// Framebuffer used before writing image if the output resolution is different from camera resolution
 	std::unique_ptr<Framebuffer> m_outputFramebuffer;
-	int m_frameIndex;
+	int m_frameIndex = -1;
 	std::vector<uint8_t> m_pixels;
 
 	float m_fps;

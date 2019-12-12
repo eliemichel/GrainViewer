@@ -1,4 +1,7 @@
 #version 450 core
+#include "sys:defines"
+
+#pragma variant ALL_BLACK
 
 in vec3 direction;
 
@@ -22,5 +25,11 @@ void main() {
     fragment.material_id = worldMaterial;
     fragment.normal = direction;
 
+#ifdef ALL_BLACK
+    color1 = vec4(0.001);
+    color2 = uvec4(0.0);
+    color3 = uvec4(0.0);
+#else // ALL_BLACK
     packGFragment(fragment, color1, color2, color3);
+#endif // ALL_BLACK
 }

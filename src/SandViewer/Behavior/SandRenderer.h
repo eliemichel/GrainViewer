@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <fstream>
 #include "Behavior.h"
 #include "PointCloud.h"
 #include "GlTexture.h"
@@ -22,9 +23,10 @@ class PointCloudDataBehavior;
 class SandRenderer : public Behavior {
 public:
 	// Behavior implementation
-	bool deserialize(const rapidjson::Value & json) override;
+	bool deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations) override;
 	void start() override;
-	void update(float time) override;
+	void update(float time, int frame) override;
+	void onPostRender(float time, int frame) override;
 	void render(const Camera & camera, const World & world, RenderType target) const override;
 
 public:
@@ -161,6 +163,9 @@ private:
 	std::unique_ptr<GlTexture> m_colormapTexture;
 
 	std::vector<MeshRenderer::Material> m_instanceMaterials;
+
+	std::string m_outputStats = "";
+	std::ofstream m_outputStatsFile;
 
 	float m_time;
 };

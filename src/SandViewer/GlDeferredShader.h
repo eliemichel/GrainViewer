@@ -17,6 +17,8 @@
 #include "World.h"
 #include "RenderType.h"
 
+class GlTexture;
+
 class GlDeferredShader {
 public:
 	GlDeferredShader();
@@ -38,5 +40,6 @@ private:
 	ShaderProgram m_shader;
 	Framebuffer m_framebuffer;
 	GLuint m_vao;
+	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
 };
 

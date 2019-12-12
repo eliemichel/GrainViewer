@@ -2,10 +2,7 @@
 #include "sys:defines"
 
 /**
- * Debug shader to vizualize the number of fragments, to be used with:
- * glDisable(GL_DEPTH_TEST);
- * glDisable(GL_BLEND);
- * glBlendFunc(GL_ONE, GL_ONE);
+ * use this shader with renderAdditive option of sand renderer
  */
 
 in float radius;
@@ -29,7 +26,7 @@ void main() {
 		discard;
 	}
 
-	out_color = vec4(vec3(1.0/300.0), 1.0);
+	out_color = vec4(vec3(1.0/400.0), 1.0);
 	//out_color = vec4(hitPosition * vec3(0.1, 1.0, 1.0) - vec3(-0.5, 2.0, 0.0), 1.0);
 	//out_color = out_color * vec4(normalize(hitPosition - position_ws) * .5 + .5, 1.0);
 }

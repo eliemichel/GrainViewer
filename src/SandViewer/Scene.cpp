@@ -50,6 +50,13 @@ void Scene::reloadShaders() {
 }
 
 void Scene::update(float time) {
+	// Call on post render callback for the previous frame before we update animation
+	if (m_frameIndex > -1) {
+		for (auto obj : m_objects) {
+			obj->onPostRender(time, m_frameIndex);
+		}
+	}
+
 	++m_frameIndex;
 	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
 		// If recording, slow down the game to ensure that it will play back correctly
@@ -67,7 +74,7 @@ void Scene::update(float time) {
 	m_world.update(time);
 
 	for (auto obj : m_objects) {
-		obj->update(time);
+		obj->update(time, m_frameIndex);
 	}
 
 	// Prepare output framebuffer

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <regex>
 
 #include "utils/jsonutils.h"
 #include "utils/strutils.h"
@@ -13,6 +14,8 @@
 #include "TransformBehavior.h"
 #include "Framebuffer.h"
 #include "PointCloudDataBehavior.h"
+#include "AnimationManager.h"
+#include "EnvironmentVariables.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
@@ -33,7 +36,7 @@ private:
 	std::string m_metallicRoughness;
 };
 
-bool SandRenderer::deserialize(const rapidjson::Value & json)
+bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
 {
 	std::vector<SandRendererModel> models;
 	jrArray<SandRendererModel>(json, "models", models);
@@ -75,7 +78,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 
 #define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
 	jrPropperty(grainRadius);
-	jrPropperty(grainInnerRadiusRatio);
+	//jrPropperty(grainInnerRadiusRatio);
 	jrPropperty(grainMeshScale);
 	jrPropperty(instanceLimit);
 	jrPropperty(disableImpostors);
@@ -83,6 +86,30 @@ bool SandRenderer::deserialize(const rapidjson::Value & json)
 	jrPropperty(renderAdditive);
 #undef jrProperty
 
+	// grainInnerRadiusRatio can be an array of keyframes
+	// TODO: do this for all other properties
+	if (json.HasMember("grainInnerRadiusRatio")) {
+		const auto& ratio = json["grainInnerRadiusRatio"];
+		if (ratio.IsFloat()) {
+			m_properties.grainInnerRadiusRatio = ratio.GetFloat();
+		}
+		else if (ratio.IsArray() && animations) {
+			std::vector<float> keyframes(ratio.Size());
+			for (int i = 0; i < ratio.Size(); ++i) {
+				keyframes[i] = ratio[i].GetFloat();
+			}
+			animations->addAnimation([keyframes, this](float time, int frame) {
+				int i = std::min(std::max(0, frame), static_cast<int>(keyframes.size()));
+				m_properties.grainInnerRadiusRatio = keyframes[i];
+			});
+		}
+	}
+
+	if (jrOption(json, "outputStats", m_outputStats, m_outputStats)) {
+		m_outputStats = std::regex_replace(m_outputStats, std::regex("\\$BASEFILE"), env.baseFile);
+		m_outputStats = ResourceManager::resolveResourcePath(m_outputStats);
+	}
+	
 	if (json.HasMember("cullingMechanism") && json["cullingMechanism"].IsString()) {
 		std::string s = json["cullingMechanism"].GetString();
 		if (s == "AtomicSum") {
@@ -162,11 +189,27 @@ void SandRenderer::start()
 	}
 
 	m_isDeferredRendered = true;
+
+	if (!m_outputStats.empty()) {
+		m_outputStatsFile.open(m_outputStats);
+		m_outputStatsFile << "frame;impostorCount;instanceCount;grainInnerRadiusRatio\n";
+	}
 }
 
-void SandRenderer::update(float time)
+void SandRenderer::update(float time, int frame)
 {
 	m_time = time;
+}
+
+void SandRenderer::onPostRender(float time, int frame)
+{
+	if (m_outputStatsFile.is_open()) {
+		m_outputStatsFile
+			<< frame << ";"
+			<< m_renderInfo.impostorCount << ";"
+			<< m_renderInfo.instanceCount << ";"
+			<< m_properties.grainInnerRadiusRatio << "\n";
+	}
 }
 
 void SandRenderer::render(const Camera & camera, const World & world, RenderType target) const

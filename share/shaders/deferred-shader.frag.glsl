@@ -27,6 +27,9 @@ uniform mat4 viewMatrix;
 uniform mat4 inverseViewMatrix;
 uniform float time;
 
+uniform sampler2D uColormap;
+uniform bool uHasColormap = false;
+
 #include "include/light.inc.glsl"
 
 uniform PointLight light[3];
@@ -156,7 +159,10 @@ void main() {
 #endif // TRANSPARENT_BACKGROUND
 #ifdef SHOW_RAW_BUFFER1
 	out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
-	out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
+	if (uHasColormap) {
+		out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
+	}
+	//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
 #endif // SHOW_BASECOLOR
 
 	out_fragment.normal = fragment.normal;

@@ -55,11 +55,18 @@ public:
 	 * Precondition: start() has been called before, and onDestroy has not been called yet.
 	 */
 	virtual void update(float time) {}
+	virtual void update(float time, int frame) { update(time); }
 	/**
 	 * Called for rendering, cannot change this object data
 	 * Precondition: start() has been called before, and onDestroy has not been called yet.
 	 */
 	virtual void render(const Camera & camera, const World & world, RenderType target) const {}
+
+	/**
+	 * Called after render, at the time of the next frame, but before frame
+	 * number and animations have been incremented.
+	 */
+	virtual void onPostRender(float time, int frame) {}
 
 	/**
 	 * Called when it is needed to reload shaders.

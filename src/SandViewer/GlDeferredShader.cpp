@@ -11,6 +11,8 @@
 #include "GlDeferredShader.h"
 #include "Light.h"
 #include "ShadowMap.h"
+#include "ResourceManager.h"
+#include "GlTexture.h"
 
 using namespace std;
 
@@ -43,6 +45,16 @@ bool GlDeferredShader::deserialize(const rapidjson::Value & json)
 			for (rapidjson::SizeType i = 0; i < defines.Size(); i++) {
 				addShaderDefine(defines[i].GetString());
 			}
+		}
+	}
+
+	if (json.HasMember("colormap")) {
+		auto& colormap = json["colormap"];
+		if (!colormap.IsString()) {
+			ERR_LOG << "'colormap' must be a file path";
+		} else {
+			m_colormap = ResourceManager::loadTexture(colormap.GetString());
+			m_colormap->setWrapMode(GL_CLAMP_TO_EDGE);
 		}
 	}
 
@@ -115,6 +127,12 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	}
 
 	m_shader.setUniform("isShadowMapEnabled", world.isShadowMapEnabled());
+
+	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
+	m_shader.setUniform("uColormap", static_cast<GLint>(o));
+	glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
+	m_colormap->bind();
+	++o;
 
 	glBindVertexArray(m_vao);
 	glDrawArrays(GL_POINTS, 0, 1);

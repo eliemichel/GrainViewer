@@ -22,11 +22,11 @@ void RuntimeObject::reloadShaders()
 	}
 }
 
-void RuntimeObject::update(float time)
+void RuntimeObject::update(float time, int frame)
 {
 	forEachBehavior {
 		if (it->second->isEnabled())
-			it->second->update(time);
+			it->second->update(time, frame);
 	}
 }
 
@@ -35,6 +35,14 @@ void RuntimeObject::render(const Camera & camera, const World & world, RenderTyp
 	forEachBehaviorConst {
 		if (it->second->isEnabled())
 			it->second->render(camera, world, target);
+	}
+}
+
+void RuntimeObject::onPostRender(float time, int frame)
+{
+	forEachBehavior{
+		if (it->second->isEnabled())
+		it->second->onPostRender(time, frame);
 	}
 }
 
