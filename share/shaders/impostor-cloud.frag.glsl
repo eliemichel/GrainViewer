@@ -93,8 +93,8 @@ void main() {
 
 	fragment.normal = ws_from_gs_rot * fragment.normal;
 	//fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
-	fragment.ws_coord = innerSphereHitPosition_ws;
-	//fragment.ws_coord = outerSphereHitPosition_ws;
+	//fragment.ws_coord = innerSphereHitPosition_ws;
+	fragment.ws_coord = outerSphereHitPosition_ws;
 	fragment.material_id = pbrMaterial;
 
 	if (fragment.alpha < 0.5) discard;
@@ -119,7 +119,7 @@ void main() {
 		fragment.roughness = uDefaultRoughness;
 	}
 
-	fragment.baseColor *= 3.0;
+	fragment.baseColor *= 1.0;
 
 #ifdef SET_DEPTH
 	vec3 p = (viewMatrix * vec4(fragment.ws_coord, 1.0)).xyz;

@@ -133,7 +133,6 @@ void main() {
 	const float gamma = 0.8;
 	out_fragment.radiance = pow(out_fragment.radiance, vec4(1.0 / gamma));
 #endif
-	out_fragment.radiance.rgb *= vec3(1.0, 1.0, 1.1);
 
 	/*/ Minimap Shadow Depth
 	if (gl_FragCoord.x < 256 && gl_FragCoord.y < 256) {

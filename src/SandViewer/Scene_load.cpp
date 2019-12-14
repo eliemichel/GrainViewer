@@ -157,6 +157,10 @@ bool Scene::load(const std::string & filename)
 		}
 	}
 
+	const glm::vec2 & res = viewportCamera()->resolution();
+	DEBUG_LOG << "reso: " << res.x << ", " << res.y;
+	m_deferredShader.setResolution(res.x, res.y);
+
 	reloadShaders();
 
 	DEBUG_LOG << "Loading done.";
