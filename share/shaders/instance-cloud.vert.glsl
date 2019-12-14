@@ -63,7 +63,16 @@ void main() {
     matId = 0;
 
 #ifdef PROCEDURAL_BASECOLOR
-	float r = randomGrainColorFactor(int(pointId));
+    float r = randomGrainColorFactor(int(pointId));
     baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
 #endif // PROCEDURAL_BASECOLOR
+#ifdef PROCEDURAL_BASECOLOR2
+    float r0 = randomGrainColorFactor(int(pointId));
+    float r = position_ws.z*.6 + mix(0.35, 0.3, sin(position_ws.x*.5+.5))*r0;
+    if (r0 < 0.5) {
+        r = 1. - r0;
+    }
+    baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
+    baseColor *= mix(vec3(0.9, 0.9, 0.9), vec3(1.6, 2.0, 2.0), r0);
+#endif // PROCEDURAL_BASECOLOR2
 }

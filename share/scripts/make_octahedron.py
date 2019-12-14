@@ -3,9 +3,8 @@ from random import random
 from math import pi, sqrt, sin, cos, acos
 
 """
-Generate point cloud, that you can then use with blender_octaedron2camera.py
+Generate point cloud, that you can then use with blender_import_cameramesh.py
 to generate camera positions to render impostor textures.
-Use then with GlPointCloudMultiViewImpostors
 """
 
 def make_octahedron(n, output_filename):

@@ -95,7 +95,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 		}
 		else if (ratio.IsArray() && animations) {
 			std::vector<float> keyframes(ratio.Size());
-			for (int i = 0; i < ratio.Size(); ++i) {
+			for (int i = 0; i < static_cast<int>(ratio.Size()); ++i) {
 				keyframes[i] = ratio[i].GetFloat();
 			}
 			animations->addAnimation([keyframes, this](float time, int frame) {

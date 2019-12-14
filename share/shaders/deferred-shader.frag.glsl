@@ -67,7 +67,7 @@ void main() {
 		surface.baseColor = fragment.baseColor;
 		surface.metallic = fragment.metallic;
 		surface.roughness = fragment.roughness;
-		surface.reflectance = 1.0;
+		surface.reflectance = 0.7;
 		
 		for (int k = 0 ; k < 3 ; ++k) {
 			float shadow = 0;

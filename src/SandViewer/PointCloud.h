@@ -23,6 +23,7 @@ public:
 
 	size_t frameCount() const { return m_frame_count; }
 	const std::vector<glm::vec3> & data() const { return m_data; }
+	std::vector<glm::vec3> & data() { return m_data; }
 
 private:
 	std::vector<glm::vec3> m_data;

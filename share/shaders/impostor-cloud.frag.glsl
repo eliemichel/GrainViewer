@@ -39,14 +39,11 @@ uniform SphericalImpostor impostor[3];
 uniform sampler2D colormapTexture;
 uniform float uInnerRadius;
 
-uniform float hitSphereCorrectionFactor = 1.;//0.65;
+uniform float hitSphereCorrectionFactor = .65;//0.65;
 
 uniform bool uHasMetallicRoughnessMap = false;
 uniform float uDefaultRoughness = 0.5;
 uniform float uDefaultMetallic = 0.0;
-
-// DEBUG
-uniform sampler2D occlusionMap;
 
 void main() {
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
@@ -56,7 +53,7 @@ void main() {
 #ifdef SHADOW_MAP
 #ifndef SET_DEPTH
 	// Early quit for shadow maps unless we alter fragment depth
-	bool hit = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, radius * .9);
+	bool hit = intersectRaySphere(innerSphereHitPosition_ws, ray_ws, position_ws.xyz, radius*2);
 	if (!hit) {
 		discard;
 	}
@@ -96,14 +93,18 @@ void main() {
 
 	fragment.normal = ws_from_gs_rot * fragment.normal;
 	//fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
-	//fragment.ws_coord = innerSphereHitPosition_ws;
-	fragment.ws_coord = outerSphereHitPosition_ws;
+	fragment.ws_coord = innerSphereHitPosition_ws;
+	//fragment.ws_coord = outerSphereHitPosition_ws;
 	fragment.material_id = pbrMaterial;
 
 	if (fragment.alpha < 0.5) discard;
 	//if (dot(fragment.normal, ray_ws.direction) >= 0.0) discard;
 
 #ifdef PROCEDURAL_BASECOLOR
+    float r = randomGrainColorFactor(int(id));
+    fragment.baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
+#endif // PROCEDURAL_BASECOLOR
+#ifdef PROCEDURAL_BASECOLOR2
 	float r0 = randomGrainColorFactor(int(id));
 	float r = position_ws.z*.6 + mix(0.35, 0.3, sin(position_ws.x*.5+.5))*r0;
 	if (r0 < 0.5) {
@@ -111,12 +112,14 @@ void main() {
 	}
     fragment.baseColor = texture(colormapTexture, vec2(r, 0.0)).rgb;
     fragment.baseColor *= mix(vec3(0.9, 0.9, 0.9), vec3(1.6, 2.0, 2.0), r0);
-#endif
+#endif // PROCEDURAL_BASECOLOR2
 
 	if (!uHasMetallicRoughnessMap) {
 		fragment.metallic = uDefaultMetallic;
 		fragment.roughness = uDefaultRoughness;
 	}
+
+	fragment.baseColor *= 3.0;
 
 #ifdef SET_DEPTH
 	vec3 p = (viewMatrix * vec4(fragment.ws_coord, 1.0)).xyz;
