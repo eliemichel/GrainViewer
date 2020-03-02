@@ -403,8 +403,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 			shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
 			shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
 			shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+			glBindTextureUnit(0, m_occlusionCullingMap->colorTexture(0));
 			shader.setUniform("occlusionMap", 0);
 			m_prefixSumInfoSsbo->bindSsbo(0);
 			pointData->data().bindSsbo(1);
@@ -448,8 +447,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 			shader.setUniform("uEnableOcclusionCulling", m_properties.enableOcclusionCulling);
 			shader.setUniform("uEnableFrustumCulling", m_properties.enableFrustumCulling);
 			shader.setUniform("uEnableDistanceCulling", m_properties.enableDistanceCulling);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+			glBindTextureUnit(0, m_occlusionCullingMap->colorTexture(0));
 			shader.setUniform("occlusionMap", 0);
 			m_prefixSumInfoSsbo->bindSsbo(0);
 			pointData->data().bindSsbo(1);
@@ -537,14 +535,12 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 
 		size_t o = 0;
 
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		glBindTexture(GL_TEXTURE_2D, m_occlusionCullingMap->colorTexture(0));
+		glBindTextureUnit(static_cast<GLuint>(o), m_occlusionCullingMap->colorTexture(0));
 		shader.setUniform("occlusionMap", static_cast<GLint>(o));
 		++o;
 
 		if (m_colormapTexture) {
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_colormapTexture->bind();
+			m_colormapTexture->bind(static_cast<GLuint>(o));
 			shader.setUniform("colormapTexture", static_cast<GLint>(o));
 			++o;
 		}
@@ -560,16 +556,14 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 
 			std::ostringstream oss2;
 			oss2 << "impostor[" << k << "].normalAlphaTexture";
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_normalAlphaTextures[k]->bind();
+			m_normalAlphaTextures[k]->bind(static_cast<GLuint>(o));
 			shader.setUniform(oss2.str(), static_cast<GLint>(o));
 			++o;
 
 			if (m_baseColorTextures.size() > k) {
 				std::ostringstream oss;
 				oss << "impostor[" << k << "].baseColorTexture";
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				m_baseColorTextures[k]->bind();
+				m_baseColorTextures[k]->bind(static_cast<GLuint>(o));
 				shader.setUniform(oss.str(), static_cast<GLint>(o));
 				++o;
 			}
@@ -577,8 +571,7 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 			if (m_metallicRoughnessTextures.size() > k) {
 				std::ostringstream oss;
 				oss << "impostor[" << k << "].metallicRoughnesTexture";
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				m_metallicRoughnessTextures[k]->bind();
+				m_metallicRoughnessTextures[k]->bind(static_cast<GLuint>(o));
 				shader.setUniform(oss.str(), static_cast<GLint>(o));
 				++o;
 			}
@@ -625,8 +618,7 @@ void SandRenderer::renderInstances(const Camera & camera, const World & world, R
 
 			GLuint o = 0;
 			if (m_colormapTexture) {
-				glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-				m_colormapTexture->bind();
+				m_colormapTexture->bind(static_cast<GLuint>(o));
 				m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
 				++o;
 			}

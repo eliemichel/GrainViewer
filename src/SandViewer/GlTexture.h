@@ -26,7 +26,8 @@ public:
 	GLsizei depth() const { return m_depth; }
 
 	bool isValid() const { return m_id != invalid; }
-	void bind() const;
+	void bind() const; // depreciated
+	void bind(GLuint unit) const;
 	
 private:
 	static const GLuint invalid;
