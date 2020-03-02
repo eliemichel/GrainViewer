@@ -40,6 +40,8 @@ public:
 		, m_isAllocated(false)
 	{}
 	~GlBuffer();
+	GlBuffer(const GlBuffer &) = delete;
+	GlBuffer & operator=(const GlBuffer &) = delete;
 
 	template <class T>
 	inline void addBlock(size_t nbElements = 1) {

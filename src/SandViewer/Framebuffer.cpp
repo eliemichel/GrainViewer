@@ -4,6 +4,8 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
+#include <algorithm>
+
 #include "Framebuffer.h"
 #include "Logger.h"
 
@@ -76,7 +78,9 @@ void Framebuffer::bind() const {
 void Framebuffer::setResolution(size_t width, size_t height)
 {
 	if (width == m_width && height == m_height) return;
-	DEBUG_LOG << "Resizing framebuffer";
+	width = std::min(std::max((size_t)1, width), (size_t)4096);
+	height = std::min(std::max((size_t)1, height), (size_t)4096);
+	DEBUG_LOG << "Resizing framebuffer to (" << width << "x" << height << ")";
 	m_width = static_cast<GLsizei>(width);
 	m_height = static_cast<GLsizei>(height);
 	destroy();

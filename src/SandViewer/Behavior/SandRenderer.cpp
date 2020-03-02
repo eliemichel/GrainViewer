@@ -350,7 +350,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 
 	if (auto pointData = m_pointData.lock()) {
 		GLuint effectivePointCount = static_cast<GLuint>(pointData->pointCount() / pointData->frameCount());
-
+		
 		// 0. Occlusion culling map (kind of shadow map)
 		if (m_properties.grainInnerRadiusRatio > 0) {
 			GLint drawFbo = 0, readFbo = 0;
@@ -383,7 +383,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, readFbo);
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFbo);
 		}
-
+		
 		// 1. Mark instances
 		{
 			const ShaderProgram & shader = *m_cullingShaders[MarkCulling];
@@ -420,7 +420,7 @@ void SandRenderer::renderCullingPrefixSum(const Camera & camera, const World & w
 		{
 			const ShaderProgram & shader = *m_cullingShaders[Group];
 			shader.use();
-			shader.setUniform("uPointCount", effectivePointCount);
+			shader.setUniform("uPointCountPerFrame", effectivePointCount);
 			shader.setUniform("uType", static_cast<GLuint>(0));
 			m_prefixSumInfoSsbo->bindSsbo(0);
 			m_elementBuffers[1 + resultIndex]->bindSsbo(1);

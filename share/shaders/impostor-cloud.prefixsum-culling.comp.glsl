@@ -185,7 +185,7 @@ void main() {
 
 	uint s = prefixSum[i];
 	bool isActive;
-	if (i == uPointCountPerFrame - 1) {
+	if (i + 1 == uPointCountPerFrame) {
 		info.count[uType] = s;
 		isActive = info.isLastPointActive[uType] == 1;
 	} else {
