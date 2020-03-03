@@ -19,3 +19,6 @@
 [submodule "src/External/tinyexr"]
 	path = src/External/tinyexr
 	url = https://github.com/syoyo/tinyexr
+[submodule "src/External/modernglad"]
+	path = src/External/modernglad
+	url = https://github.com/eliemichel/ModernGlad

@@ -3,7 +3,7 @@
 
 #include <png.h>
 
-#include <glad/glad.h>
+#include <glad/modernglad.h>
 #include <GLFW/glfw3.h>
 
 #include "Logger.h"
@@ -19,6 +19,10 @@ int main(int argc, char **argv)
 		LOG << "Usage: " << (argc >= 1 ? argv[0] : "GenerateLeanMaps") << " <normal-map.png> [<lean-map-prefix>]";
 		return EXIT_FAILURE;
 	}
+
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glDeleteTextures(1, &tex);
 
 	std::string inputFilename(argv[1]);
 

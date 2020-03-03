@@ -143,8 +143,7 @@ set(LIBS
 	tinyexr
 	libSOIL
 	tinypngout
-	zlibstatic
-	png_static
+	libpng
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -220,15 +219,14 @@ set(GenerateLeanMaps_SRC
 )
 
 set(GenerateLeanMaps_LIBS
-	glad
+	modernglad
 	glfw
 	glm
 	rapidjson
 	tinyexr
 	libSOIL
 	tinypngout
-	zlibstatic
-	png_static
+	libpng
 )
 
 add_executable(GenerateLeanMaps ${GenerateLeanMaps_SRC})

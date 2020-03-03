@@ -32,6 +32,10 @@ set(GLAD_PROFILE "core" CACHE STRING "" FORCE)
 set(GLAD_API "gl=4.5,gles2=" CACHE STRING "" FORCE)
 add_subdirectory(glad)
 set_property(TARGET glad PROPERTY FOLDER "External")
+set_property(TARGET glad-generate-files PROPERTY FOLDER "External")
+
+add_subdirectory(modernglad)
+set_property(TARGET modernglad PROPERTY FOLDER "External")
 
 # GLFW (3.2.1), for openning the window and getting mouse/keyboard events
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -81,17 +85,27 @@ set_property(TARGET tinyexr PROPERTY FOLDER "External")
 add_subdirectory(zlib)
 set_property(TARGET zlib PROPERTY FOLDER "External")
 set_property(TARGET zlibstatic PROPERTY FOLDER "External")
+set_property(TARGET example PROPERTY FOLDER "External")
+set_property(TARGET minigzip PROPERTY FOLDER "External")
 
 
 # libpng
+include_directories(zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+
 set(PNG_TESTS OFF CACHE BOOL "" FORCE)
 set(PNG_SHARED OFF CACHE BOOL "" FORCE)
 set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
 add_subdirectory(libpng)
-target_include_directories(png_static PUBLIC zlib/ ${CMAKE_CURRENT_BINARY_DIR}/zlib/)
-target_include_directories(png_static PUBLIC libpng/ ${CMAKE_CURRENT_BINARY_DIR}/libpng/)
-
 set_property(TARGET png_static PROPERTY FOLDER "External")
+
+add_library(libpng INTERFACE)
+target_include_directories(libpng INTERFACE
+	zlib
+	${CMAKE_CURRENT_BINARY_DIR}/zlib
+	libpng
+	${CMAKE_CURRENT_BINARY_DIR}/libpng
+)
+target_link_libraries(libpng INTERFACE zlibstatic png_static)
 
 ###############################################################################
 # Repackaged third party libraries
