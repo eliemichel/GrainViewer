@@ -12,6 +12,10 @@ struct GFragment {
 	float metallic;
 	vec3 emission;
 	float alpha;
+
+	// Used for G-impostors but not in gbuffer (converted to regular normal)
+	vec4 lean1;
+	vec4 lean2;
 };
 
 /**
@@ -25,6 +29,8 @@ GFragment LerpGFragment(GFragment ga, GFragment gb, float t) {
 	g.roughness = mix(ga.roughness, gb.roughness, t);
 	g.emission = mix(ga.emission, gb.emission, t);
 	g.alpha = mix(ga.alpha, gb.alpha, t);
+	g.lean1 = mix(ga.lean1, gb.lean1, t);
+	g.lean2 = mix(ga.lean2, gb.lean2, t);
 	g.material_id = ga.material_id; // cannot be interpolated
 
 	// Normal interpolation

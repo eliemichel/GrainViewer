@@ -17,6 +17,8 @@
 #include "AnimationManager.h"
 #include "EnvironmentVariables.h"
 
+#define MAKE_STR(contents) (std::ostringstream() << contents).str()
+
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,7 +47,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 			bool success = loadImpostorTexture(m_normalAlphaTextures, ResourceManager::resolveResourcePath(m.normalAlpha()));
 			if (success) {
 				auto tex = Filtering::CreateLeanTexture(*m_normalAlphaTextures.back());
-				m_normalAlphaTextures_LEAN.push_back(std::move(tex));
+				m_leanTextures.push_back(std::move(tex));
 			}
 		}
 		if (!m.baseColor().empty()) {
@@ -537,16 +539,14 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 		shader.setUniform("uTime", static_cast<GLfloat>(m_time));
 		shader.setUniform("uHasMetallicRoughnessMap", m_properties.hasMetallicRoughnessMap);
 
-		size_t o = 0;
+		GLint o = 0;
 
 		glBindTextureUnit(static_cast<GLuint>(o), m_occlusionCullingMap->colorTexture(0));
-		shader.setUniform("occlusionMap", static_cast<GLint>(o));
-		++o;
+		shader.setUniform("occlusionMap", o++);
 
 		if (m_colormapTexture) {
-			m_colormapTexture->bind(static_cast<GLuint>(o));
-			shader.setUniform("colormapTexture", static_cast<GLint>(o));
-			++o;
+			m_colormapTexture->bind(o);
+			shader.setUniform("colormapTexture", o++);
 		}
 
 		// TODO: Use UBO
@@ -554,30 +554,25 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 			GLuint n = m_normalAlphaTextures[k]->depth();
 			GLuint viewCount = static_cast<GLuint>(sqrt(n / 2));
 
-			std::ostringstream oss1;
-			oss1 << "impostor[" << k << "].viewCount";
-			shader.setUniform(oss1.str(), viewCount);
+			shader.setUniform(MAKE_STR("impostor[" << k << "].viewCount"), viewCount);
 
-			std::ostringstream oss2;
-			oss2 << "impostor[" << k << "].normalAlphaTexture";
-			m_normalAlphaTextures[k]->bind(static_cast<GLuint>(o));
-			shader.setUniform(oss2.str(), static_cast<GLint>(o));
-			++o;
+			m_normalAlphaTextures[k]->bind(o);
+			shader.setUniform(MAKE_STR("impostor[" << k << "].normalAlphaTexture"), o++);
+
+			m_leanTextures[k]->lean1.bind(o);
+			shader.setUniform(MAKE_STR("impostor[" << k << "].lean1Texture"), o++);
+
+			m_leanTextures[k]->lean2.bind(o);
+			shader.setUniform(MAKE_STR("impostor[" << k << "].lean2Texture"), o++);
 
 			if (m_baseColorTextures.size() > k) {
-				std::ostringstream oss;
-				oss << "impostor[" << k << "].baseColorTexture";
-				m_baseColorTextures[k]->bind(static_cast<GLuint>(o));
-				shader.setUniform(oss.str(), static_cast<GLint>(o));
-				++o;
+				m_baseColorTextures[k]->bind(o);
+				shader.setUniform(MAKE_STR("impostor[" << k << "].baseColorTexture"), o++);
 			}
 
 			if (m_metallicRoughnessTextures.size() > k) {
-				std::ostringstream oss;
-				oss << "impostor[" << k << "].metallicRoughnesTexture";
-				m_metallicRoughnessTextures[k]->bind(static_cast<GLuint>(o));
-				shader.setUniform(oss.str(), static_cast<GLint>(o));
-				++o;
+				m_metallicRoughnessTextures[k]->bind(o);
+				shader.setUniform(MAKE_STR("impostor[" << k << "].metallicRoughnesTexture"), o++);
 			}
 		}
 
@@ -620,11 +615,10 @@ void SandRenderer::renderInstances(const Camera & camera, const World & world, R
 			m_instanceCloudShader->setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
 			m_instanceCloudShader->setUniform("uTime", static_cast<GLfloat>(m_time));
 
-			GLuint o = 0;
+			GLint o = 0;
 			if (m_colormapTexture) {
-				m_colormapTexture->bind(static_cast<GLuint>(o));
-				m_instanceCloudShader->setUniform("colormapTexture", static_cast<GLint>(o));
-				++o;
+				m_colormapTexture->bind(o);
+				m_instanceCloudShader->setUniform("colormapTexture", o++);
 			}
 
 			GLuint matId = 0;

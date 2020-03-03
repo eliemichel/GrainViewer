@@ -80,7 +80,7 @@ bool ShaderProgram::check(const std::string& name) const {
 void ShaderProgram::setUniform(const std::string& name, GLint value) const {
 	GLint loc = uniformLocation(name);
 	if (loc != GL_INVALID_INDEX) {
-		glUniform1i(loc, value);
+		glProgramUniform1i(m_programId, loc, value);
 	}
 	else {
 		// Problem with this warning: it is repeated at every call to update.
@@ -92,7 +92,7 @@ void ShaderProgram::setUniform(const std::string& name, GLint value) const {
 void ShaderProgram::setUniform(const std::string& name, GLuint value) const {
 	GLint loc = uniformLocation(name);
 	if (loc != GL_INVALID_INDEX) {
-		glUniform1ui(loc, value);
+		glProgramUniform1ui(m_programId, loc, value);
 	}
 	else {
 		//WARN_LOG << "Uniform does not exist: '" << name << "'";

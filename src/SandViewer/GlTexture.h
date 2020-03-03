@@ -29,6 +29,7 @@ public:
 
 	bool isValid() const { return m_id != invalid; }
 	void bind() const; // depreciated
+	void bind(GLint unit) const;
 	void bind(GLuint unit) const;
 	
 private:

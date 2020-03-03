@@ -1,11 +1,17 @@
 #include <cstdio>
 #include <string>
+
+#include <png.h>
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include "Logger.h"
 #include "ResourceManager.h"
 #include "Filtering.h"
 #include "Ui/Window.h"
 
-#include <png.h>
+#include "ShaderPool.h"
 
 int main(int argc, char **argv)
 {
@@ -44,6 +50,30 @@ int main(int argc, char **argv)
 
 	LOG << "Saving LEAN map 2 to file '" << outputFilename2 << "'...";
 	ResourceManager::saveTexture_libpng(outputFilename2, leanTextures->lean2);
+
+	glfwSwapBuffers(window->glfw());
+
+	LOG << "Test again using texture arrays";
+	{
+		outputFilename1 = prefix + "_lean1_array.png";
+		outputFilename2 = prefix + "_lean2_array.png";
+
+		LOG << "Loading normal map from file '" << inputFilename << "' as a texture array...";
+		auto inputStack = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
+		inputStack->storage(1, GL_RGBA8, inputTexture->width(), inputTexture->height(), 1);
+		ResourceManager::loadTextureSubData(*inputStack, inputFilename, 0, inputStack->width(), inputStack->height());
+		inputStack->generateMipmap();
+
+		LOG << "Creating LEAN maps...";
+		auto leanTextures = Filtering::CreateLeanTexture(*inputStack);
+
+		LOG << "Saving LEAN map 1 to file '" << outputFilename1 << "'...";
+		ResourceManager::saveTexture_libpng(outputFilename1, leanTextures->lean1);
+
+		LOG << "Saving LEAN map 2 to file '" << outputFilename2 << "'...";
+		ResourceManager::saveTexture_libpng(outputFilename2, leanTextures->lean2);
+	}
+	glfwSwapBuffers(window->glfw());
 
 	return EXIT_SUCCESS;
 }

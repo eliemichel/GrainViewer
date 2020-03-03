@@ -6,6 +6,8 @@ struct SphericalImpostor {
 	sampler2DArray normalAlphaTexture;
 	sampler2DArray baseColorTexture;
 	sampler2DArray metallicRoughnesTexture;
+	sampler2DArray lean1Texture;
+	sampler2DArray lean2Texture;
 	uint viewCount; // number of precomputed views
 };
 
@@ -148,16 +150,22 @@ GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) 
 
 	// Otherwise, sample textures
 	vec4 normalAlpha = texture(impostor.normalAlphaTexture, hit.textureCoords);
+	vec4 lean1 = vec4(0.0);
+	vec4 lean2 = vec4(0.0);
 	vec4 baseColor = vec4(0.0);
 	vec4 metallicRoughnes = vec4(0.0);
 	if (normalAlpha.a > 0) {
 		baseColor = texture(impostor.baseColorTexture, hit.textureCoords);
+		lean1 = texture(impostor.lean1Texture, hit.textureCoords);
+		lean2 = texture(impostor.lean2Texture, hit.textureCoords);
 		metallicRoughnes = texture(impostor.metallicRoughnesTexture, hit.textureCoords);
 	}
 
 	GFragment g;
 	g.baseColor = baseColor.rgb;
 	g.normal = normalAlpha.xyz * 2. - 1.;
+	g.lean1 = lean1;
+	g.lean2 = lean2;
 	g.ws_coord = hit.position;
 	g.metallic = metallicRoughnes.x;
 	g.roughness = metallicRoughnes.y;

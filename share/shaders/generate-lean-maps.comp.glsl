@@ -1,37 +1,39 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant FLOAT_ELEMENTS // default is UINT_ELEMENTS
-#ifdef FLOAT_ELEMENTS
-#define ELEMENT_TYPE float
-#else // FLOAT_ELEMENTS
-#define ELEMENT_TYPE uint
-#endif // FLOAT_ELEMENTS
-
-uniform uint uElementCount;
-uniform uint uIteration;
+#if defined(USING_IMAGE_2D)
+#define IMAGE_TYPE image2D
+#define NB_DIM 2
+#elif defined(USING_IMAGE_2D_ARRAY)
+#define IMAGE_TYPE image2DArray
+#define NB_DIM 3
+#elif defined(USING_IMAGE_3D)
+#define IMAGE_TYPE image3D
+#define NB_DIM 3
+#endif // USING_IMAGE_*
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-layout (binding = 0, rgba32f) uniform readonly image3D source;
-layout (binding = 1) uniform writeonly image3D lean1;
-layout (binding = 2) uniform writeonly image3D lean2;
-
-layout (std430, binding = 1) restrict readonly buffer previousElementsSsbo {
-	ELEMENT_TYPE previousElements[];
-};
-layout (std430, binding = 2) restrict writeonly buffer elementsSsbo {
-	ELEMENT_TYPE elements[];
-};
+layout  (rgba8, binding = 0) uniform readonly IMAGE_TYPE source;
+layout (rgba16f, binding = 1) uniform writeonly IMAGE_TYPE lean1;
+layout (rgba16f, binding = 2) uniform writeonly IMAGE_TYPE lean2;
 
 // TODO: find the actual values
 const float sc = 1.0;
-const float s = 1.0;
+const float s = 4.0; // Blinn-Phong exponent
 
 void main() {
-	ivec3 co = ivec3(gl_GlobalInvocationID.xyz);
+#if NB_DIM == 2
+	ivec3 co3 = ivec3(gl_GlobalInvocationID.xyz);
+	ivec2 co = co3.xy;
+	ivec3 size = ivec3(imageSize(source), 1);
+#else // NB_DIM
+	ivec3 co3 = ivec3(gl_GlobalInvocationID.xyz);
+	ivec3 co = co3;
 	ivec3 size = imageSize(source);
-	if (co.x >= size.x || co.y >= size.y || co.z >= size.z) return;
+#endif // NB_DIM
+
+	if (co3.x >= size.x || co3.y >= size.y || co3.z >= size.z) return;
 
 	vec3 tn = imageLoad(source, co).xyz;
 	vec3 N = vec3(2.0 * tn.xy - 1.0, tn.z);
