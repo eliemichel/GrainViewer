@@ -91,6 +91,8 @@ set(SRC
 	Camera.cpp
 	IBehaviorHolder.h
 	EnvironmentVariables.h
+	Filtering.h
+	Filtering.cpp
 	Framebuffer.h
 	Framebuffer.cpp
 	GlBuffer.h
@@ -141,6 +143,8 @@ set(LIBS
 	tinyexr
 	libSOIL
 	tinypngout
+	zlibstatic
+	png_static
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -155,7 +159,7 @@ target_link_libraries(SandViewer LINK_PRIVATE ${LIBS})
 group_source_by_folder(${SRC})
 
 ###############################################################################
-# Tools
+# Tools - PointCloudConvert
 
 set(PointCloudConvert_SRC
 	Tools/PointCloudConvert.cpp
@@ -180,3 +184,56 @@ target_link_libraries(PointCloudConvert LINK_PRIVATE ${PointCloudConvert_LIBS})
 set_property(TARGET PointCloudConvert PROPERTY FOLDER "Tools")
 
 group_source_by_folder(${PointCloudConvert_SRC})
+
+###############################################################################
+# Tools - GenerateLeanMaps
+
+set(GenerateLeanMaps_SRC
+	Tools/GenerateLeanMaps.cpp
+
+	Ui/Window.h
+	Ui/Window.cpp
+
+	utils/strutils.h
+	utils/strutils.cpp
+	utils/fileutils.h
+	utils/fileutils.cpp
+	utils/debug.h
+	utils/debug.cpp
+	
+	Filtering.h
+	Filtering.cpp
+	GlTexture.h
+	GlTexture.cpp
+	Logger.h
+	Logger.cpp
+	ResourceManager.h
+	ResourceManager.cpp
+	Shader.h
+	Shader.cpp
+	ShaderPool.h
+	ShaderPool.cpp
+	ShaderPreprocessor.h
+	ShaderPreprocessor.cpp
+	ShaderProgram.h
+	ShaderProgram.cpp
+)
+
+set(GenerateLeanMaps_LIBS
+	glad
+	glfw
+	glm
+	rapidjson
+	tinyexr
+	libSOIL
+	tinypngout
+	zlibstatic
+	png_static
+)
+
+add_executable(GenerateLeanMaps ${GenerateLeanMaps_SRC})
+target_include_directories(GenerateLeanMaps PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(GenerateLeanMaps LINK_PRIVATE ${GenerateLeanMaps_LIBS})
+set_property(TARGET GenerateLeanMaps PROPERTY FOLDER "Tools")
+
+group_source_by_folder(${GenerateLeanMaps_SRC})

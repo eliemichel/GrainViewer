@@ -21,9 +21,11 @@ public:
 	void generateMipmap() const;
 	void setWrapMode(GLenum wrap) const;
 
+	GLuint raw() const { return m_id; }
 	GLsizei width() const { return m_width; }
 	GLsizei height() const { return m_height; }
 	GLsizei depth() const { return m_depth; }
+	GLenum target() const { return m_target; }
 
 	bool isValid() const { return m_id != invalid; }
 	void bind() const; // depreciated

@@ -73,6 +73,10 @@ public:
 public:
 	// File output
 	static bool saveImage(const std::string & filename, int width, int height, const void *data);
+	static bool saveImage_libpng(const std::string & filename, int width, int height, void *data);
+
+	static bool saveTexture(const std::string & filename, const GlTexture & texture);
+	static bool saveTexture_libpng(const std::string & filename, const GlTexture & texture);
 
 private:
 	static std::unique_ptr<GlTexture> loadTextureSOIL(const fs::path & filepath, GLsizei levels);

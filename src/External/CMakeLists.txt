@@ -77,6 +77,22 @@ add_library(tinyexr STATIC
 target_include_directories(tinyexr PUBLIC tinyexr)
 set_property(TARGET tinyexr PROPERTY FOLDER "External")
 
+# zlib
+add_subdirectory(zlib)
+set_property(TARGET zlib PROPERTY FOLDER "External")
+set_property(TARGET zlibstatic PROPERTY FOLDER "External")
+
+
+# libpng
+set(PNG_TESTS OFF CACHE BOOL "" FORCE)
+set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+add_subdirectory(libpng)
+target_include_directories(png_static PUBLIC zlib/ ${CMAKE_CURRENT_BINARY_DIR}/zlib/)
+target_include_directories(png_static PUBLIC libpng/ ${CMAKE_CURRENT_BINARY_DIR}/libpng/)
+
+set_property(TARGET png_static PROPERTY FOLDER "External")
+
 ###############################################################################
 # Repackaged third party libraries
 ###############################################################################

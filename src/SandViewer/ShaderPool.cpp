@@ -52,6 +52,10 @@ ShaderPool::ShaderPool()
 		"LightGizmo",
 		{ "light-gizmo", ShaderProgram::RenderShader,{} }
 	});
+	m_defaultShaders.insert({
+		"GenerateLeanMaps",
+		{ "generate-lean-maps", ShaderProgram::ComputeShader,{} }
+		});
 }
 
 void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)

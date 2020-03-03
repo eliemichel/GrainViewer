@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <cmath>
 namespace fs = std::filesystem;
+#include <png.h>
 
 #include "utils/strutils.h"
 #include "utils/fileutils.h"
@@ -249,6 +250,89 @@ bool ResourceManager::saveImage(const std::string & filename, int width, int hei
 	TinyPngOut pngout(static_cast<uint32_t>(width), static_cast<uint32_t>(height), out);
 	pngout.write(static_cast<const uint8_t*>(data), static_cast<size_t>(width * height));
 	return true;
+}
+
+bool ResourceManager::saveImage_libpng(const std::string & filename, int width, int height, void *data)
+{
+	FILE *fp = fopen(filename.c_str(), "wb");
+	if (!fp) {
+		return false;
+	}
+
+	png_structp png_ptr = png_create_write_struct(
+		PNG_LIBPNG_VER_STRING,
+		(png_voidp)nullptr,
+		[](png_structp png_ptr, png_const_charp c) { ERR_LOG << "PNG error: " << c; },
+		[](png_structp png_ptr, png_const_charp c) { WARN_LOG << "PNG warning: " << c; }
+	);
+
+	if (!png_ptr) {
+		return false;
+	}
+
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+		return false;
+	}
+
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		fclose(fp);
+		return false;
+	}
+
+	png_set_check_for_invalid_index(png_ptr, 0);
+	png_init_io(png_ptr, fp);
+
+	png_set_IHDR(
+		png_ptr,
+		info_ptr,
+		static_cast<png_uint_32>(width),
+		static_cast<png_uint_32>(height),
+		8,
+		PNG_COLOR_TYPE_RGBA,
+		PNG_INTERLACE_NONE,
+		PNG_COMPRESSION_TYPE_DEFAULT,
+		PNG_FILTER_TYPE_DEFAULT
+	);
+	png_write_info(png_ptr, info_ptr);
+
+	std::vector<png_bytep> row_pointers(height);
+	for (int i = 0; i < height; ++i) {
+		row_pointers[i] = static_cast<png_bytep>(data) + 4 * i * width;
+	}
+
+	png_write_image(png_ptr, row_pointers.data());
+	png_write_end(png_ptr, NULL);
+
+	fclose(fp);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+
+	return true;
+}
+
+bool ResourceManager::saveTexture(const std::string & filename, const GlTexture & texture)
+{
+	GLsizei w = texture.width();
+	GLsizei h = texture.height();
+	GLsizei d = texture.depth();
+	std::vector<uint8_t> pixels(3 * w * h);
+	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGB, GL_UNSIGNED_BYTE, w * h * 3 * sizeof(uint8_t), pixels.data());
+	return saveImage(filename, w, h, pixels.data());
+}
+
+bool ResourceManager::saveTexture_libpng(const std::string & filename, const GlTexture & texture)
+{
+	GLsizei w = texture.width();
+	GLsizei h = texture.height();
+	GLsizei d = texture.depth();
+	std::vector<png_byte> pixels(4 * w * h);
+	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, 4 * w * h * sizeof(png_byte), pixels.data());
+
+	png_uint_32 width = static_cast<png_uint_32>(texture.width());
+	png_uint_32 height = static_cast<png_uint_32>(texture.height());
+	return saveImage_libpng(filename, width, height, pixels.data());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

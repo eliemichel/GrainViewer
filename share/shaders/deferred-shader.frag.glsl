@@ -145,7 +145,7 @@ void main() {
 	out_fragment.radiance.rgb = vec3(fragment.roughness);
 #endif // SHOW_ROUGHNESS
 #ifdef SHOW_NORMAL
-	out_fragment.radiance.rgb = normalize(nn) * .5 + .5;
+	out_fragment.radiance.rgb = normalize(fragment.normal) * .5 + .5;
 #endif // SHOW_NORMAL
 #ifdef SHOW_BASECOLOR
 	out_fragment.radiance.rgb = fragment.baseColor.rgb;

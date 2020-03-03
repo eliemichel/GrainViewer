@@ -57,7 +57,7 @@ void Framebuffer::init() {
 		for (size_t k = 0; k < m_colorLayerInfos.size(); ++k) {
 			drawBuffers[k] = m_colorLayerInfos[k].attachement;
 		}
-		glDrawBuffers(static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
+		glNamedFramebufferDrawBuffers(m_framebufferId, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
 	}
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {

@@ -7,6 +7,7 @@
 #include "GlTexture.h"
 #include "GlBuffer.h"
 #include "MeshRenderer.h"
+#include "Filtering.h"
 
 class ShaderProgram;
 class MeshDataBehavior;
@@ -158,6 +159,7 @@ private:
 	std::weak_ptr<PointCloudDataBehavior> m_pointData;
 
 	std::vector<std::unique_ptr<GlTexture>> m_normalAlphaTextures;
+	std::vector<std::unique_ptr<LeanTexture>> m_normalAlphaTextures_LEAN; // version of the textures set up for LEAN mapping
 	std::vector<std::unique_ptr<GlTexture>> m_baseColorTextures;
 	std::vector<std::unique_ptr<GlTexture>> m_metallicRoughnessTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
