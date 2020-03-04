@@ -19,41 +19,52 @@ void SandRendererDialog::draw()
 			SandRenderer::Properties & props = cont->properties();
 
 			ImGui::SliderFloat("Grain Radius", &props.grainRadius, 0.0f, 0.1f, "radius = %.5f");
-			ImGui::SliderFloat("Inner Radius", &props.grainInnerRadiusRatio, 0.0f, .9999f, "ratio = %.5f");
 
-			ImGui::SliderFloat("Grain Mesh Scale", &props.grainMeshScale, 0.0f, 10.0f, "scale = %.3f");
+			ImGui::SliderFloat("Grain Instance Scale", &props.grainMeshScale, 0.0f, 10.0f, "scale = %.3f");
 			
-			// Instance limit distance
-			static bool onlyInstances = false;
-			static bool onlyImpostors = false;
-			static float instanceLimit = 0.0f;
-			bool wasOnlyInstances = onlyInstances;
-			bool wasOnlyImpostors = onlyImpostors;
-			ImGui::Checkbox("Only Instances", &onlyInstances);
-			ImGui::Checkbox("Only Impostors", &onlyImpostors);
-			if (!onlyInstances && !wasOnlyInstances && !onlyImpostors && !wasOnlyImpostors) {
-				instanceLimit = props.instanceLimit;
+			{
+				ImGui::Text("\nModel Selection");
+
+				static float instanceLimit = 0.0f;
+
+				static int modelType = 2;
+				int prevModelType = modelType;
+				ImGui::RadioButton("Only Instances", &modelType, 0);
+				ImGui::RadioButton("Only Impostors", &modelType, 1);
+				ImGui::RadioButton("Use Limit Distance", &modelType, 2);
+
+				if (modelType == 2 && prevModelType == 2) {
+					instanceLimit = props.instanceLimit;
+				}
+
+				ImGui::SameLine();
+
+				BeginDisable(modelType != 2);
+				ImGui::SliderFloat("Instance Limit Distance", &instanceLimit, 1.0f, 5.0f, "distance = %.2f");
+				EndDisable(modelType != 2);
+
+				props.instanceLimit = modelType == 0 ? std::numeric_limits<float>::infinity() : (modelType == 1 ? 0 : instanceLimit);
 			}
 
-			BeginDisable(onlyInstances || onlyImpostors);
-			ImGui::SliderFloat("Instance Limit Distance", &instanceLimit, 1.0f, 5.0f, "distance = %.2f");
-			EndDisable(onlyInstances || onlyImpostors);
+			{
+				ImGui::Text("\nCulling");
+				ImGui::SliderFloat("Inner Radius", &props.grainInnerRadiusRatio, 0.0f, .9999f, "ratio = %.5f");
+				ImGui::Checkbox("Occlusion Culling", &props.enableOcclusionCulling);
+				ImGui::Checkbox("Frustum Culling", &props.enableFrustumCulling);
+				ImGui::Checkbox("Distance Culling", &props.enableDistanceCulling);
+			}
 
-			props.instanceLimit = onlyInstances ? std::numeric_limits<float>::infinity() : (onlyImpostors ? 0 : instanceLimit);
+			{
+				ImGui::Text("\nDebug");
+				ImGui::Checkbox("Hide Impostors", &props.disableImpostors);
+				ImGui::Checkbox("Hide Instances", &props.disableInstances);
+				ImGui::Checkbox("Render Additive (for debug)", &props.renderAdditive);
+				ImGui::Checkbox("Has Metallic Roughness Map", &props.hasMetallicRoughnessMap);
 
-			ImGui::Checkbox("Disable Impostors", &props.disableImpostors);
-			ImGui::Checkbox("Disable Instances", &props.disableInstances);
-
-			ImGui::Checkbox("Occlusion Culling", &props.enableOcclusionCulling);
-			ImGui::Checkbox("Frustum Culling", &props.enableFrustumCulling);
-			ImGui::Checkbox("Distance Culling", &props.enableDistanceCulling);
-
-			ImGui::Checkbox("Render Additive (for debug)", &props.renderAdditive);
-			ImGui::Checkbox("Has Metallic Roughness Map", &props.hasMetallicRoughnessMap);
-
-			const SandRenderer::RenderInfo & info = cont->renderInfo();
-			ImGui::LabelText("Impostors", "%d", info.impostorCount);
-			ImGui::LabelText("Instances", "%d", info.instanceCount);
+				const SandRenderer::RenderInfo & info = cont->renderInfo();
+				ImGui::LabelText("Impostors", "%d", info.impostorCount);
+				ImGui::LabelText("Instances", "%d", info.instanceCount);
+			}
 
 			EndDisable(!enabled);
 		}

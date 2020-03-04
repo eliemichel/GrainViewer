@@ -36,6 +36,7 @@ set_property(TARGET glad-generate-files PROPERTY FOLDER "External")
 
 add_subdirectory(modernglad)
 set_property(TARGET modernglad PROPERTY FOLDER "External")
+set_property(TARGET modernglad-generate-files PROPERTY FOLDER "External")
 
 # GLFW (3.2.1), for openning the window and getting mouse/keyboard events
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -87,7 +88,6 @@ set_property(TARGET zlib PROPERTY FOLDER "External")
 set_property(TARGET zlibstatic PROPERTY FOLDER "External")
 set_property(TARGET example PROPERTY FOLDER "External")
 set_property(TARGET minigzip PROPERTY FOLDER "External")
-
 
 # libpng
 include_directories(zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
