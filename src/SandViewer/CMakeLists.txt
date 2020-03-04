@@ -32,9 +32,42 @@ if(MSVC)
 endif(MSVC)
 
 ###############################################################################
+# Source subsets
+
+set(AugenCore_SRC
+	utils/strutils.h
+	utils/strutils.cpp
+	utils/fileutils.h
+	utils/fileutils.cpp
+	utils/debug.h
+	utils/debug.cpp
+
+	GlBuffer.h
+	GlBuffer.cpp
+	GlTexture.h
+	GlTexture.cpp
+	Logger.h
+	Logger.cpp
+	ResourceManager.h
+	ResourceManager.cpp
+	Shader.h
+	Shader.cpp
+	ShaderPool.h
+	ShaderPool.cpp
+	ShaderPreprocessor.h
+	ShaderPreprocessor.cpp
+	ShaderProgram.h
+	ShaderProgram.cpp
+)
+
+###############################################################################
 # Main executable
 
 set(SRC
+	main.cpp
+
+	${AugenCore_SRC}
+
 	Behavior/ImpostorCloudRenderer.h
 	Behavior/ImpostorCloudRenderer.cpp
 	Behavior/MeshDataBehavior.h
@@ -54,15 +87,9 @@ set(SRC
 	Behavior/PointCloudDataBehavior.h
 	Behavior/PointCloudDataBehavior.cpp
 
-	utils/debug.h
-	utils/debug.cpp
 	utils/shader.h
 	utils/shader.cpp
 	utils/tplutils.h
-	utils/fileutils.h
-	utils/fileutils.cpp
-	utils/strutils.h
-	utils/strutils.cpp
 	utils/jsonutils.h
 	utils/jsonutils.cpp
 	utils/guiutils.h
@@ -82,7 +109,6 @@ set(SRC
 	Ui/LightGizmoDialog.h
 	Ui/LightGizmoDialog.cpp
 
-	main.cpp
 	bufferFillers.h
 	bufferFillers.cpp
 	AnimationManager.h
@@ -99,31 +125,17 @@ set(SRC
 	GlBuffer.cpp
 	GlDeferredShader.h
 	GlDeferredShader.cpp
-	GlTexture.h
-	GlTexture.cpp
 	Light.h
 	Light.cpp
-	Logger.h
-	Logger.cpp
 	Mesh.h
 	Mesh.cpp
 	PointCloud.h
 	PointCloud.cpp
-	ResourceManager.h
-	ResourceManager.cpp
 	RuntimeObject.h
 	RuntimeObject.cpp
+	Scene.h
 	Scene.cpp
 	Scene_load.cpp
-	Scene.h
-	Shader.h
-	Shader.cpp
-	ShaderPool.h
-	ShaderPool.cpp
-	ShaderPreprocessor.h
-	ShaderPreprocessor.cpp
-	ShaderProgram.h
-	ShaderProgram.cpp
 	ShadowMap.h
 	ShadowMap.cpp
 	Triangle.h
@@ -190,32 +202,13 @@ group_source_by_folder(${PointCloudConvert_SRC})
 set(GenerateLeanMaps_SRC
 	Tools/GenerateLeanMaps.cpp
 
+	${AugenCore_SRC}
+
 	Ui/Window.h
 	Ui/Window.cpp
 
-	utils/strutils.h
-	utils/strutils.cpp
-	utils/fileutils.h
-	utils/fileutils.cpp
-	utils/debug.h
-	utils/debug.cpp
-	
 	Filtering.h
 	Filtering.cpp
-	GlTexture.h
-	GlTexture.cpp
-	Logger.h
-	Logger.cpp
-	ResourceManager.h
-	ResourceManager.cpp
-	Shader.h
-	Shader.cpp
-	ShaderPool.h
-	ShaderPool.cpp
-	ShaderPreprocessor.h
-	ShaderPreprocessor.cpp
-	ShaderProgram.h
-	ShaderProgram.cpp
 )
 
 set(GenerateLeanMaps_LIBS
@@ -235,3 +228,33 @@ target_link_libraries(GenerateLeanMaps LINK_PRIVATE ${GenerateLeanMaps_LIBS})
 set_property(TARGET GenerateLeanMaps PROPERTY FOLDER "Tools")
 
 group_source_by_folder(${GenerateLeanMaps_SRC})
+
+###############################################################################
+# Tools - BenchmarkCullingMethods
+
+set(BenchmarkCullingMethods_SRC
+	Tools/BenchmarkCullingMethods.cpp
+
+	Ui/Window.h
+	Ui/Window.cpp
+
+	${AugenCore_SRC}
+)
+
+set(BenchmarkCullingMethods_LIBS
+	modernglad
+	glfw
+	glm
+	rapidjson
+	tinyexr
+	libSOIL
+	tinypngout
+	libpng
+)
+
+add_executable(BenchmarkCullingMethods ${BenchmarkCullingMethods_SRC})
+target_include_directories(BenchmarkCullingMethods PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(BenchmarkCullingMethods LINK_PRIVATE ${BenchmarkCullingMethods_LIBS})
+set_property(TARGET BenchmarkCullingMethods PROPERTY FOLDER "Tools")
+
+group_source_by_folder(${BenchmarkCullingMethods_SRC})
