@@ -44,17 +44,17 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 	jrArray<SandRendererModel>(json, "models", models);
 	for (auto m : models) {
 		if (!m.normalAlpha().empty()) {
-			bool success = loadImpostorTexture(m_normalAlphaTextures, ResourceManager::resolveResourcePath(m.normalAlpha()));
+			bool success = loadImpostorTexture(m_normalAlphaTextures, m.normalAlpha());
 			if (success) {
 				auto tex = Filtering::CreateLeanTexture(*m_normalAlphaTextures.back());
 				m_leanTextures.push_back(std::move(tex));
 			}
 		}
 		if (!m.baseColor().empty()) {
-			loadImpostorTexture(m_baseColorTextures, ResourceManager::resolveResourcePath(m.baseColor()));
+			loadImpostorTexture(m_baseColorTextures, m.baseColor());
 		}
 		if (!m.metallicRoughness().empty()) {
-			loadImpostorTexture(m_metallicRoughnessTextures, ResourceManager::resolveResourcePath(m.metallicRoughness()));
+			loadImpostorTexture(m_metallicRoughnessTextures, m.metallicRoughness());
 			m_properties.hasMetallicRoughnessMap = true;
 		}
 	}
@@ -63,7 +63,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 	std::string colormap;
 	jrOption(json, "colormap", colormap);
 	if (!colormap.empty()) {
-		loadColormapTexture(ResourceManager::resolveResourcePath(colormap));
+		loadColormapTexture(colormap);
 	}
 
 	// Instance materials

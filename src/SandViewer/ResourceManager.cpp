@@ -116,9 +116,16 @@ std::unique_ptr<GlTexture> ResourceManager::loadTexture(const std::string & file
 std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & textureDirectory, int levels) {
 	vector<fs::path> textureFilenames;
 
-	fs::directory_iterator dir(textureDirectory);
+	std::string fullTextureDirectory = ResourceManager::resolveResourcePath(textureDirectory);
+
+	if (!fs::is_directory(fullTextureDirectory)) {
+		ERR_LOG << "Texture directory does not exist or is not a directory: " << fullTextureDirectory;
+		return nullptr;
+	}
+
+	fs::directory_iterator dir(fullTextureDirectory);
 	if (dir == fs::directory_iterator())  {
-		ERR_LOG << "Error openning texture directory " << textureDirectory;
+		ERR_LOG << "Error openning texture directory " << fullTextureDirectory;
 		return nullptr;
 	}
 
