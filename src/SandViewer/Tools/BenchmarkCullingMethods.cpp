@@ -39,7 +39,7 @@ rendered with the same model are contiguous.
 
 	Settings settings;
 	settings.pointCount = 1000000;
-	settings.benchmarkRepeat = 1000;
+	settings.benchmarkRepeat = 1;
 	settings.testResult = false;
 
 	LOG << " -- Using GlobalAtomicElementBufferBuilder on a buffer of " << settings.pointCount << " elements.";

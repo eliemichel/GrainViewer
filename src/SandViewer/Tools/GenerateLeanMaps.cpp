@@ -20,10 +20,6 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	GLuint tex;
-	glGenTextures(1, &tex);
-	glDeleteTextures(1, &tex);
-
 	std::string inputFilename(argv[1]);
 
 	std::string prefix;
