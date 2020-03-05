@@ -39,7 +39,6 @@ layout (std430, binding = 0) buffer prefixSumInfoSsbo {
 	PrefixSumInfoSsbo info;
 };
 
-uniform uint uPointCountPerFrame;
 uniform uint uPointCount;
 
 // 0: instances
@@ -73,17 +72,17 @@ layout (std430, binding = 2) restrict writeonly buffer impostorElementsSsbo {
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
-	if (i >= uPointCountPerFrame) return;
+	if (i >= uPointCount) return;
 
 	// Fake culling, precomputed on CPU before this benchmark
-	uint type = renderType[i].position.xyz;
-	bool isCulled = type == uType;
+	uint type = renderType[i];
+	bool isCulled = type != uType;
 
-	renderBit[i] = isCulled ? 1 : 0;
+	renderBit[i] = isCulled ? 0 : 1;
 
 	// The last value is saved in an extra buffer because after prefix sum this
 	// last value (is the only one that) cannot be retrieved
-	if (i == uPointCountPerFrame - 1) {
+	if (i == uPointCount - 1) {
 		info.isLastPointActive[uType] = isCulled ? 0 : 1;
 	}
 }
@@ -113,13 +112,13 @@ layout (std430, binding = 2) restrict writeonly buffer elementsSsbo {
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
-	if (i >= uPointCountPerFrame) return;
+	if (i >= uPointCount) return;
 
 	uint offset = uType == 0 ? 0 : info.count[0];
 
 	uint s = prefixSum[i];
 	bool isActive;
-	if (i + 1 == uPointCountPerFrame) {
+	if (i + 1 == uPointCount) {
 		info.count[uType] = s;
 		isActive = info.isLastPointActive[uType] == 1;
 	} else {

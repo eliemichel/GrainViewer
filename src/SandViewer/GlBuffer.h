@@ -49,6 +49,21 @@ public:
 		m_blocks.push_back(Block{ nbElements, stride, byteSize() + static_cast<GLsizei>(nbElements * stride) });
 	}
 
+	/**
+	 * Short for:
+	 *   addBlock(data.size());
+	 *   alloc();
+	 *   fillBlock(...); // from data
+	 */
+	template <class T>
+	inline void importBlock(const std::vector<T> & data) {
+		addBlock<T>(data.size());
+		alloc();
+		fillBlock<T>(0, [&data](T *gpuData, size_t size) {
+			memcpy(gpuData, data.data(), size * sizeof(T));
+		});
+	}
+
 	void addBlockAttribute(size_t blockId, GLint size, GLuint divisor = 0);
 	void addBlockAttributeUint(size_t blockId, GLint size, GLuint divisor = 0);
 
@@ -73,7 +88,7 @@ public:
 	}
 
 	template <class T>
-	inline void readBlock(size_t blockId, std::function<void(T*, size_t)> fill_callback) {
+	inline void readBlock(size_t blockId, std::function<void(T*, size_t)> fill_callback) const {
 		const Block & b = m_blocks[blockId];
 		assert(sizeof(T) == b.stride);
 		GLsizei size = static_cast<GLsizei>(b.nbElements * sizeof(T));
