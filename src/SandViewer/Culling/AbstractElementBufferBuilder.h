@@ -6,9 +6,10 @@
 class GlBuffer;
 
 struct Settings {
-	std::string shaderName = "benchmark-prefixsum-culling";
 	GLuint pointCount = 20;
 	GLuint instancedMeshPointCount = 314;
+	int benchmarkRepeat = 1; // number of repetitions when benchmarking
+	bool testResult = true; // when benchmarking, also test output
 
 	// The next three must sum to at most 1
 	float impostorProportion = 0.1f;
@@ -17,6 +18,10 @@ struct Settings {
 
 	// Must be in sync with shader qualifiers
 	int local_size_x = 128;
+
+	// Here to avoid magic values in the code
+	std::string prefixSumShaderName = "benchmark-prefixsum-culling";
+	std::string globalAtomicShaderName = "benchmark-globalatomic-culling";
 };
 
 /**

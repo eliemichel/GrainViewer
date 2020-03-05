@@ -14,6 +14,9 @@
 
 #include "Culling/AbstractElementBufferBuilder.h"
 #include "Culling/PrefixSumElementBufferBuilder.h"
+#include "Culling/GlobalAtomicElementBufferBuilder.h"
+
+bool doBenchmark(const Settings & settings, std::shared_ptr<AbstractElementBufferBuilder> builder);
 
 int main(int argc, char **argv)
 {
@@ -32,32 +35,47 @@ rendered with the same model are contiguous.
 	// Important: for tests, always fix the random generator seed
 	std::srand(3615);
 
+	bool success = true;
+
 	Settings settings;
 	settings.pointCount = 1000000;
-	LOG << "Generating buffers of " << settings.pointCount << " elements.";
+	settings.benchmarkRepeat = 1000;
+	settings.testResult = false;
 
-	AbstractElementBufferBuilder *builder = new PrefixSumElementBufferBuilder();
+	LOG << " -- Using GlobalAtomicElementBufferBuilder on a buffer of " << settings.pointCount << " elements.";
+	success = success && doBenchmark(settings, std::make_shared<GlobalAtomicElementBufferBuilder>());
 
+	LOG << " -- Using PrefixSumElementBufferBuilder on a buffer of " << settings.pointCount << " elements.";
+	success = success && doBenchmark(settings, std::make_shared<PrefixSumElementBufferBuilder>());
+
+	return success ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+bool doBenchmark(const Settings & settings, std::shared_ptr<AbstractElementBufferBuilder> builder)
+{
 	LOG << "Openning OpenGL context";
 	Window window(128, 128, "BenchmarkCullingMethods");
-	if (!window.isValid()) return EXIT_FAILURE;
+	if (!window.isValid()) return false;
 
-	if (!builder->init(settings)) return EXIT_FAILURE;
+	if (!builder->init(settings)) return false;
 
-	LOG << "Building element buffer 1000 times...";
+	LOG << "Building element buffer " << settings.benchmarkRepeat << " times...";
 	auto startTime = std::chrono::high_resolution_clock::now();
-	for (int i = 0; i < 1000; ++i) {
+	for (int i = 0; i < settings.benchmarkRepeat; ++i) {
 		builder->build();
 	}
 	auto endTime = std::chrono::high_resolution_clock::now();
 	double ellapsed = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(endTime - startTime).count();
 	LOG << "Ellapsed time: " << ellapsed << " seconds.";
 
-	LOG << "Testing output...";
-	bool success = builder->check();
-	LOG << (success ? "Success." : "Failure.");
+	bool success = true;
+	if (settings.testResult) {
+		LOG << "Testing output...";
+		bool success = builder->check();
+		LOG << (success ? "Success." : "Failure.");
+	}
 
 	glfwSwapBuffers(window.glfw()); // To help debugging in RenderDoc
 
-	return success ? EXIT_SUCCESS : EXIT_FAILURE;
+	return true;
 }

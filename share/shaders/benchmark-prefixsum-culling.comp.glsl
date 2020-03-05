@@ -9,27 +9,7 @@ layout (local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 #pragma steps STEP_MARK_CULLING STEP_GROUP STEP_BUILD_COMMAND_BUFFER
 
-struct PointCloundVboEntry {
-	vec4 position;
-};
-struct DrawArraysIndirectCommand  {
-	uint  count;
-	uint  instanceCount;
-	uint  first;
-	uint  baseInstance;
-};
-struct DrawElementsIndirectCommand {
-	uint  count;
-	uint  instanceCount;
-	uint  firstIndex;
-	uint  baseVertex;
-	uint  baseInstance;
-};
-struct CommandBuffer {
-	DrawElementsIndirectCommand impostorCommand;
-	DrawArraysIndirectCommand instanceCommand;
-};
-struct PrefixSumInfoSsbo {
+struct ElementBufferSectionInfo {
 	// Number of elements rendered with this model
 	uint count;
 	// Cumulated number of elements rendered with previous models
@@ -40,7 +20,7 @@ struct PrefixSumInfoSsbo {
 };
 
 layout (std430, binding = 0) buffer prefixSumInfoSsbo {
-	PrefixSumInfoSsbo info[];
+	ElementBufferSectionInfo info[];
 };
 
 uniform uint uPointCount;
@@ -49,14 +29,6 @@ uniform uint uPointCount;
 // 1: instances
 // 2: points
 uniform uint uType = 0;
-
-uniform mat4 modelMatrix;
-uniform mat4 viewModelMatrix;
-#include "include/uniform/camera.inc.glsl"
-
-#include "include/utils.inc.glsl"
-#include "include/frustum.inc.glsl"
-#include "include/anim.inc.glsl"
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STEP_MARK_CULLING
@@ -70,7 +42,7 @@ uniform mat4 viewModelMatrix;
 layout(std430, binding = 1) restrict readonly buffer renderTypeSsbo {
 	uint renderType[];
 };
-layout (std430, binding = 2) restrict writeonly buffer impostorElementsSsbo {
+layout (std430, binding = 2) restrict writeonly buffer renderBitSsbo {
 	uint renderBit[];
 };
 
@@ -142,6 +114,24 @@ void main() {
 #ifdef STEP_BUILD_COMMAND_BUFFER
 
 uniform uint uInstancedMeshPointCount;
+
+struct DrawArraysIndirectCommand  {
+	uint  count;
+	uint  instanceCount;
+	uint  first;
+	uint  baseInstance;
+};
+struct DrawElementsIndirectCommand {
+	uint  count;
+	uint  instanceCount;
+	uint  firstIndex;
+	uint  baseVertex;
+	uint  baseInstance;
+};
+struct CommandBuffer {
+	DrawElementsIndirectCommand impostorCommand;
+	DrawArraysIndirectCommand instanceCommand;
+};
 
 layout (std430, binding = 1) restrict writeonly buffer commandBuffer {
 	CommandBuffer cmd;

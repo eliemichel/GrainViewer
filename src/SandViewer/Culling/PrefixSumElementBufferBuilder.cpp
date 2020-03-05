@@ -3,9 +3,7 @@
 #include "prefixSum.h"
 #include "PrefixSumElementBufferBuilder.h"
 
-// Disable debug logs
-#undef DEBUG_LOG
-#define DEBUG_LOG if (false) Logger("", "", 0, Logger::LDEBUG).stream()
+//#ifdef EXTRA_DEBUG
 
 // For debug, assume that GlBuffer is filled with GLuint
 static std::ostream & operator<<(std::ostream & out, const GlBuffer & buffer) {
@@ -27,7 +25,7 @@ bool PrefixSumElementBufferBuilder::load(const Settings & settings)
 	m_xWorkGroups = (settings.pointCount + (settings.local_size_x - 1)) / settings.local_size_x;
 
 	LOG << "Loading shaders...";
-	m_cullingShaders = LoadCullingShaders(settings.shaderName);
+	m_cullingShaders = LoadCullingShaders(settings.prefixSumShaderName);
 	if (m_cullingShaders.empty()) return false;
 	m_prefixSumShader = ShaderPool::GetShader("PrefixSum");
 	if (!m_prefixSumShader->isValid()) return false;
@@ -49,19 +47,29 @@ bool PrefixSumElementBufferBuilder::load(const Settings & settings)
 }
 
 void PrefixSumElementBufferBuilder::build() {
+#ifdef EXTRA_DEBUG
 	DEBUG_LOG << "RenderTypeSsbo: " << m_renderTypeSsbo;
+#endif //  EXTRA_DEBUG
 	for (int i = 0; i < _RenderModelCount; ++i) {
 		RenderModel renderModel = static_cast<RenderModel>(i);
+#ifdef EXTRA_DEBUG
 		DEBUG_LOG << (i + 1) << ". " << renderModelNames[renderModel];
 		DEBUG_LOG << " - Mark";
+#endif //  EXTRA_DEBUG
 		mark(renderModel, m_renderTypeSsbo, m_elementBuffers[1]);
+#ifdef EXTRA_DEBUG
 		DEBUG_LOG << "     Mark buffer: " << m_elementBuffers[1];
 		DEBUG_LOG << " - Prefix sum";
+#endif //  EXTRA_DEBUG
 		int resultIndex = prefixSum(m_elementBuffers[1], m_elementBuffers[2], *m_prefixSumShader, pointCount());
+#ifdef EXTRA_DEBUG
 		DEBUG_LOG << "     Summed marks: " << m_elementBuffers[1 + resultIndex];
 		DEBUG_LOG << " - Group";
+#endif //  EXTRA_DEBUG
 		group(renderModel, m_elementBuffers[1 + resultIndex], m_elementBuffers[0]);
+#ifdef EXTRA_DEBUG
 		DEBUG_LOG << "     Current Element Buffer: " << m_elementBuffers[0];
+#endif //  EXTRA_DEBUG
 	}
 }
 

@@ -242,6 +242,8 @@ set(BenchmarkCullingMethods_SRC
 	Culling/AbstractElementBufferBuilder.cpp
 	Culling/PrefixSumElementBufferBuilder.h
 	Culling/PrefixSumElementBufferBuilder.cpp
+	Culling/GlobalAtomicElementBufferBuilder.h
+	Culling/GlobalAtomicElementBufferBuilder.cpp
 	Culling/prefixSum.h
 	Culling/prefixSum.cpp
 

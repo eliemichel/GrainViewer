@@ -3,6 +3,8 @@
 #include "GlBuffer.h"
 #include "AbstractElementBufferBuilder.h"
 
+//#define EXTRA_DEBUG
+
 const std::vector<std::string> AbstractElementBufferBuilder::renderModelNames = {
 		"ImpostorModel",
 		"InstanceModel",
@@ -25,6 +27,15 @@ bool AbstractElementBufferBuilder::init(const Settings & settings) {
 	for (GLuint i = 0; i < m_renderTypeData.size(); ++i) {
 		m_renderTypeData[i] = static_cast<GLuint>(randint(_RenderModelCount));
 	}
+
+#ifdef EXTRA_DEBUG
+	std::ostringstream ss;
+	for (GLuint i = 0; i < m_renderTypeData.size(); ++i) {
+		if (i != 0) ss << ", ";
+		ss << m_renderTypeData[i];
+	}
+	LOG << "input renderTypeData: [" << ss.str() << "]";
+#endif // EXTRA_DEBUG
 
 	return load(settings);
 }
@@ -60,19 +71,21 @@ bool AbstractElementBufferBuilder::CheckElementBuffer(const GlBuffer & elementBu
 			}
 			visited[data[i]] = true;
 
-			/*/ For display
+#ifdef EXTRA_DEBUG
 			if (i != 0) {
 				elementSs << ", ";
 				modelSs << ", ";
 			}
 			elementSs << data[i];
 			modelSs << model;
-			//*/
+#endif // EXTRA_DEBUG
 		}
 	});
 
-	//DEBUG_LOG << "Output Element Buffer: [" << elementSs.str() << "]";
-	//DEBUG_LOG << "Output Models: [" << modelSs.str() << "]";
+#ifdef EXTRA_DEBUG
+	DEBUG_LOG << "Output Element Buffer: [" << elementSs.str() << "]";
+	DEBUG_LOG << "Output Models: [" << modelSs.str() << "]";
+#endif // EXTRA_DEBUG
 
 	// Check that all elements are present in output
 	for (size_t i = 0; i < visited.size(); ++i) {
@@ -80,12 +93,15 @@ bool AbstractElementBufferBuilder::CheckElementBuffer(const GlBuffer & elementBu
 			ERR_LOG << "Element #" << i << " is not present in output element buffer.";
 			status = false;
 		}
-		/*/ For display
+#ifdef EXTRA_DEBUG
 		if (i != 0) visitedSs << ", ";
 		visitedSs << (visited[i] ? 1 : 0);
-		//*/
+#endif // EXTRA_DEBUG
 	}
-	//DEBUG_LOG << "Visited: [" << visitedSs.str() << "]";
+
+#ifdef EXTRA_DEBUG
+	DEBUG_LOG << "Visited: [" << visitedSs.str() << "]";
+#endif // EXTRA_DEBUG
 
 	return status;
 }
