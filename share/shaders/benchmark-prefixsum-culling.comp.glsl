@@ -30,19 +30,23 @@ struct CommandBuffer {
 	DrawArraysIndirectCommand instanceCommand;
 };
 struct PrefixSumInfoSsbo {
-	uint count[2]; // 0: instanceCount, 1: impostorCount
+	// Number of elements rendered with this model
+	uint count;
+	// Cumulated number of elements rendered with previous models
+	uint offset;
 	// Keep culling flag for last elements, because the prefix sum discards them
-	uint isLastPointActive[2]; // 0: isLastPointInstance, 1: isLastPointImpostor
+	uint isLastPointActive;
+	uint _pad;
 };
 
 layout (std430, binding = 0) buffer prefixSumInfoSsbo {
-	PrefixSumInfoSsbo info;
+	PrefixSumInfoSsbo info[];
 };
 
 uniform uint uPointCount;
 
-// 0: instances
-// 1: impostors
+// 0: impostors
+// 1: instances
 // 2: points
 uniform uint uType = 0;
 
@@ -83,7 +87,7 @@ void main() {
 	// The last value is saved in an extra buffer because after prefix sum this
 	// last value (is the only one that) cannot be retrieved
 	if (i == uPointCount - 1) {
-		info.isLastPointActive[uType] = isCulled ? 0 : 1;
+		info[uType].isLastPointActive = isCulled ? 0 : 1;
 	}
 }
 
@@ -114,13 +118,15 @@ void main() {
 	uint i = gl_GlobalInvocationID.x;
 	if (i >= uPointCount) return;
 
-	uint offset = uType == 0 ? 0 : info.count[0];
+	uint offset = uType == 0 ? 0 : info[uType].offset;
 
 	uint s = prefixSum[i];
 	bool isActive;
 	if (i + 1 == uPointCount) {
-		info.count[uType] = s;
-		isActive = info.isLastPointActive[uType] == 1;
+		uint lastBit = info[uType].isLastPointActive;
+		isActive = lastBit == 1;
+		info[uType].count = s;
+		info[uType + 1].offset = offset + s + lastBit;
 	} else {
 		isActive = prefixSum[i+1] != s;
 	}
@@ -135,22 +141,22 @@ void main() {
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STEP_BUILD_COMMAND_BUFFER
 
-uniform uint uGrainMeshPointCount;
+uniform uint uInstancedMeshPointCount;
 
 layout (std430, binding = 1) restrict writeonly buffer commandBuffer {
 	CommandBuffer cmd;
 };
 
 void main() {
-	cmd.impostorCommand.count = info.count[1];
+	cmd.impostorCommand.count = info[0].count;
 	cmd.impostorCommand.instanceCount = 1;
-	cmd.impostorCommand.firstIndex = info.count[0];
+	cmd.impostorCommand.firstIndex = 0;
 	cmd.impostorCommand.baseVertex = 0;
 	cmd.impostorCommand.baseInstance = 0;
 	
-	cmd.instanceCommand.count = uGrainMeshPointCount;
-	cmd.instanceCommand.instanceCount = info.count[0];
-	cmd.instanceCommand.first = 0;
+	cmd.instanceCommand.count = uInstancedMeshPointCount;
+	cmd.instanceCommand.instanceCount = info[1].count;
+	cmd.instanceCommand.first = info[1].offset;
 	cmd.instanceCommand.baseInstance = 0;
 }
 

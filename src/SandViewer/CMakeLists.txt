@@ -238,6 +238,13 @@ set(BenchmarkCullingMethods_SRC
 	Ui/Window.h
 	Ui/Window.cpp
 
+	Culling/AbstractElementBufferBuilder.h
+	Culling/AbstractElementBufferBuilder.cpp
+	Culling/PrefixSumElementBufferBuilder.h
+	Culling/PrefixSumElementBufferBuilder.cpp
+	Culling/prefixSum.h
+	Culling/prefixSum.cpp
+
 	${AugenCore_SRC}
 )
 
