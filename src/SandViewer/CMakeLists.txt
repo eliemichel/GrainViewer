@@ -66,6 +66,8 @@ set(AugenCore_SRC
 set(All_SRC
 	${AugenCore_SRC}
 
+	Behavior/GltfDataBehavior.h
+	Behavior/GltfDataBehavior.cpp
 	Behavior/ImpostorCloudRenderer.h
 	Behavior/ImpostorCloudRenderer.cpp
 	Behavior/MeshDataBehavior.h
@@ -156,9 +158,9 @@ set(LIBS
 	glm
 	tinyobjloader
 	tinyexr
-	libSOIL
 	tinypngout
 	libpng
+	tinygltf
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -223,9 +225,9 @@ set(GenerateLeanMaps_LIBS
 	glm
 	rapidjson
 	tinyexr
-	libSOIL
 	tinypngout
 	libpng
+	tinygltf
 )
 
 add_executable(GenerateLeanMaps ${GenerateLeanMaps_SRC})
@@ -263,9 +265,9 @@ set(BenchmarkCullingMethods_LIBS
 	glm
 	rapidjson
 	tinyexr
-	libSOIL
 	tinypngout
 	libpng
+	tinygltf
 )
 
 add_executable(BenchmarkCullingMethods ${BenchmarkCullingMethods_SRC})

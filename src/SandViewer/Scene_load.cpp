@@ -22,6 +22,7 @@
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
 #include "Behavior/FarSandRenderer.h"
+#include "Behavior/GltfDataBehavior.h"
 static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 #define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
@@ -34,6 +35,7 @@ static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeOb
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
 	handleType(FarSandRenderer);
+	handleType(GltfDataBehavior);
 #undef handleType
 }
 
@@ -64,6 +66,7 @@ bool Scene::load(const std::string & filename)
 	}
 
 	if (d.Parse(json.c_str()).HasParseError()) {
+		ERR_LOG << "rapidjson: " << d.GetParseError();
 		ERR_LOG << "Parse error while reading JSON file " << filename;
 		return false;
 	}

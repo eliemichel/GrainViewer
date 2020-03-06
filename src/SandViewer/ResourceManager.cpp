@@ -15,12 +15,13 @@
 #include <algorithm>
 #include <filesystem>
 namespace fs = std::filesystem;
+
 #include <png.h>
 
 #include "utils/strutils.h"
 #include "utils/fileutils.h"
 
-#include <SOIL.h>
+#include <stb_image.h>
 #include <tinyexr.h>
 #include <TinyPngOut.hpp>
 
@@ -359,11 +360,11 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, const GlT
 std::unique_ptr<GlTexture> ResourceManager::loadTextureSOIL(const fs::path & filepath, GLsizei levels)
 {
 	// Load from file
-	int width, height;
+	int width, height, channels;
 	unsigned char *image;
-	image = SOIL_load_image(filepath.string().c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	image = stbi_load(filepath.string().c_str(), &width, &height, &channels, 4);
 	if (NULL == image) {
-		WARN_LOG << "Unable to load texture file: " << filepath;
+		WARN_LOG << "Unable to load texture file: '" << filepath << "' with stb_image: " << stbi_failure_reason();
 		return nullptr;
 	}
 
@@ -375,7 +376,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureSOIL(const fs::path & fil
 	tex->storage(levels, GL_RGBA8, static_cast<GLsizei>(width), static_cast<GLsizei>(height));
 	tex->subImage(0, 0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, image);
 
-	SOIL_free_image_data(image);
+	stbi_image_free(image);
 
 	return tex;
 }
@@ -409,13 +410,14 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureTinyExr(const fs::path & 
 
 bool ResourceManager::imageDimensionsSOIL(const fs::path & filepath, int & width, int & height, Rotation rotation) {
 	unsigned char *image = NULL;
-	image = SOIL_load_image(filepath.string().c_str(), &width, &height, 0, SOIL_LOAD_RGBA);
+	int channels;
+	image = stbi_load(filepath.string().c_str(), &width, &height, &channels, 0);
 	if (NULL == image) {
-		WARN_LOG << "Unable to load texture file '" << filepath << "' with SOIL: " << SOIL_last_result();
+		WARN_LOG << "Unable to load texture file: '" << filepath << "' with stb_image: " << stbi_failure_reason();
 		return false;
 	}
 	else {
-		SOIL_free_image_data(image);
+		stbi_image_free(image);
 		if (rotation == ROTATION0 || rotation == ROTATION270) {
 			int tmp = width;
 			width = height;
@@ -449,16 +451,17 @@ bool ResourceManager::imageDimensionsTinyExr(const fs::path & filepath, int & wi
 
 
 bool ResourceManager::loadTextureSubDataSOIL(GlTexture & texture, const fs::path & filepath, GLint zoffset, GLsizei width, GLsizei height, Rotation rotation) {
-	int imageWidth = 0, imageHeight = 0;
-	unsigned char* image = SOIL_load_image(filepath.string().c_str(), &imageWidth, &imageHeight, 0, SOIL_LOAD_RGBA);
+	int imageWidth = 0, imageHeight = 0, channels;
+	unsigned char *image = stbi_load(filepath.string().c_str(), &imageWidth, &imageHeight, &channels, 4);
 	if (NULL == image) {
-		WARN_LOG << "Unable to load texture file '" << filepath << "' with SOIL: " << SOIL_last_result();
+		WARN_LOG << "Unable to load texture file: '" << filepath << "' with stb_image: " << stbi_failure_reason();
+		return false;
 	}
 
 	if (rotation != ROTATION0) {
 		size_t rotatedWidth, rotatedHeight;
 		unsigned char* rotatedImage = rotateImage(image, static_cast<size_t>(imageWidth), static_cast<size_t>(imageHeight), 4, &rotatedWidth, &rotatedHeight, rotation);
-		SOIL_free_image_data(image);
+		stbi_image_free(image);
 		image = rotatedImage;
 		imageWidth = static_cast<int>(rotatedWidth);
 		imageHeight = static_cast<int>(rotatedHeight);
@@ -477,7 +480,7 @@ bool ResourceManager::loadTextureSubDataSOIL(GlTexture & texture, const fs::path
 		free(image);
 	}
 	else {
-		SOIL_free_image_data(image);
+		stbi_image_free(image);
 	}
 	return true;
 }

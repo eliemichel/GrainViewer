@@ -1,0 +1,58 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 24
+		}
+	],
+
+	"deferredShader": {
+		"defines": []
+	},
+
+	"lights": [
+		{
+			"position": [5, 3, 4],
+			"color": [1, 1, 1],
+			"shadowMapSize": 1024,
+			"hasShadowMap": true,
+			"shadowMapFov": 45.0
+		},
+		{
+			"position": [-8, 2, 4],
+			"color": [1, 0.8, 0.8],
+			"shadowMapSize": 1024
+		},
+		{
+			"position": [2, -5, 1],
+			"color": [0.5, 0.55, 0.7],
+			"shadowMapSize": 1024
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world"
+	},
+
+	"objects": [
+		{
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1, 0, 0, 0,
+						0, 1, 0, 0,
+						0, 0, 1, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "GltfDataBehavior",
+					"filename": "C:/Elie/Data/Models/BusterDrone/scene.gltf"
+				}
+			]
+		}
+	]
+
+}}
