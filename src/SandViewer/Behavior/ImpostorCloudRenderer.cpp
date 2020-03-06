@@ -77,21 +77,17 @@ void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World 
 	// Bind textures
 	size_t o = 0;
 	for (auto & tex : m_normalTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
+		tex->bind(static_cast<GLuint>(o++));
 	}
 	for (auto & tex : m_depthTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
+		tex->bind(static_cast<GLuint>(o++));
 	}
 	for (auto & tex : m_albedoTextures) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		tex->bind();
+		tex->bind(static_cast<GLuint>(o++));
 	}
 
 	if (m_colormapTexture) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
-		m_colormapTexture->bind();
+		m_colormapTexture->bind(static_cast<GLuint>(o++));
 	}
 
 	//glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o++));
@@ -298,7 +294,7 @@ bool ImpostorCloudRenderer::load(const PointCloud & pointCloud) {
 		v[0] = p.x; v[1] = p.y; v[2] = p.z; v += 4;
 	}
 
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 
 	glCreateBuffers(1, &m_vbo);
@@ -306,7 +302,8 @@ bool ImpostorCloudRenderer::load(const PointCloud & pointCloud) {
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
+	//glVertexArrayVertexBuffer(m_vao, 0, m_vbo, 0, 1); // To be tested
+	glEnableVertexArrayAttrib(m_vao, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glBindVertexArray(0);

@@ -6,12 +6,17 @@
 
 #pragma once
 
-#include "Logger.h"
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
 
-#include <glad/glad.h>
+#include <glad/modernglad.h>
+
 #include <vector>
 #include <functional>
 #include <cassert>
+
+#include "Logger.h"
 
 using std::placeholders::_1;
 using std::placeholders::_2;
@@ -109,7 +114,7 @@ public:
 	}
 
 	/// To be called when buffer is bound, in a VAO
-	void enableAttributes();
+	void enableAttributes(GLuint vao);
 
 	/// Free memory that was used for building. Never call fill_block() or fill() after that
 	void finalize();

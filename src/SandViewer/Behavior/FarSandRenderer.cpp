@@ -1,4 +1,8 @@
-#include <glad/glad.h>
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
+#include <glad/modernglad.h>
 
 #include "utils/jsonutils.h"
 #include "FarSandRenderer.h"
@@ -49,8 +53,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		
 		size_t o = 0;
 		if (m_colormapTexture) {
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			m_colormapTexture->bind();
+			m_colormapTexture->bind(static_cast<GLuint>(o));
 			m_shader->setUniform("uColormapTexture", static_cast<GLint>(o));
 			++o;
 		}

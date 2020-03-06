@@ -1,9 +1,13 @@
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
+#include <glad/modernglad.h>
+
 #include <cstdio>
 #include <string>
 
 #include <png.h>
-
-#include <glad/modernglad.h>
 #include <GLFW/glfw3.h>
 
 #include "Logger.h"

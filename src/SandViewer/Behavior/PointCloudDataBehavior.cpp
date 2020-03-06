@@ -85,7 +85,7 @@ void PointCloudDataBehavior::start()
 	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 	m_pointBuffer->bind();
-	m_pointBuffer->enableAttributes();
+	m_pointBuffer->enableAttributes(m_vao);
 	glBindVertexArray(0);
 
 	m_pointBuffer->finalize(); // This buffer will never be mapped on CPU

@@ -6,6 +6,9 @@
 
 #pragma once
 
+// This whole util file is depreciated since we are now using C++ standard's
+// filesystem module (introduced in C++17)
+
 #include "strutils.h"
 
 #include <string>
@@ -38,8 +41,6 @@ std::string shortFileName(const std::string& path);
 
 // Transform both all / and \ into PATH_DELIM
 std::string fixPath(const std::string & path);
-
-bool isFile(const std::string & filename);
 
 bool isAbsolutePath(const std::string & path);
 

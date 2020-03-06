@@ -4,11 +4,16 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#include <glad/glad.h>
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
+#include <glad/modernglad.h>
+
+#include <cmath>
 #include <fstream>
 #include <algorithm>
 #include <filesystem>
-#include <cmath>
 namespace fs = std::filesystem;
 #include <png.h>
 
@@ -261,7 +266,12 @@ bool ResourceManager::saveImage(const std::string & filename, int width, int hei
 
 bool ResourceManager::saveImage_libpng(const std::string & filename, int width, int height, void *data)
 {
-	FILE *fp = fopen(filename.c_str(), "wb");
+	FILE *fp;
+#ifdef _WIN32
+	fopen_s(&fp, filename.c_str(), "wb");
+#else // _WIN32
+	fp = fopen(filename.c_str(), "wb");
+#endif // _WIN32
 	if (!fp) {
 		return false;
 	}

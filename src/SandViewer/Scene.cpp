@@ -62,7 +62,7 @@ void Scene::update(float time) {
 		// If recording, slow down the game to ensure that it will play back correctly
 		time = m_frameIndex / m_fps;
 	} else {
-		m_frameIndex = time * m_fps;
+		m_frameIndex = static_cast<int>(time * m_fps);
 	}
 
 	m_animationManager->update(time, m_frameIndex);
@@ -188,23 +188,28 @@ void Scene::recordFrame(const Camera & camera) const
 	auto& outputSettings = camera.outputSettings();
 	if (outputSettings.isRecordEnabled) {
 		char number[5];
+#ifdef _WIN32
+		sprintf_s(number, 5, "%04d", m_frameIndex);
+#else // _WIN32
 		sprintf(number, "%04d", m_frameIndex);
+#endif // _WIN32
 		auto filename = outputSettings.outputFrameBase + number + ".png";
 
 		const void* pixels = static_cast<const void*>(m_pixels.data());
+		GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
 
 		if (outputSettings.autoOutputResolution && camera.framebuffer()) {
 			// output camera framebuffer
 			camera.framebuffer()->bind();
 			GLint destWidth = static_cast<GLint>(camera.framebuffer()->width());
 			GLint destHeight = static_cast<GLint>(camera.framebuffer()->height());
-			glReadPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, const_cast<void*>(pixels));
+			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
 		}
 		else if (outputSettings.autoOutputResolution) {
 			// output default framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glReadPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, const_cast<void*>(pixels));
+			glReadnPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			ResourceManager::saveImage(filename, m_width, m_height, pixels);
 		}
 		else if (m_outputFramebuffer) {
@@ -222,7 +227,7 @@ void Scene::recordFrame(const Camera & camera) const
 			glBlitNamedFramebuffer(sourceFbo, m_outputFramebuffer->raw(), 0, 0, sourceWidth, sourceHeight, 0, destHeight, destWidth, 0, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 
 			m_outputFramebuffer->bind();
-			glReadPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, const_cast<void*>(pixels));
+			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
 		}
 	}

@@ -63,10 +63,10 @@ void LightGizmo::start()
 	});
 	
 	// Build VAO
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 	m_vertexBuffer->bind();
-	m_vertexBuffer->enableAttributes();
+	m_vertexBuffer->enableAttributes(m_vao);
 	glBindVertexArray(0);
 
 	m_vertexBuffer->finalize();

@@ -80,10 +80,16 @@ Logger::Logger(const char *func, const char *file, int line, Logger::Level level
     {
         using namespace std::chrono;
         std::time_t now_c = system_clock::to_time_t(system_clock::now());
-	struct tm * timeinfo = std::localtime(&now_c);
-	char buffer[26];
-	strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", timeinfo);
-	m_ss << buffer << ": ";
+#ifdef _WIN32
+		struct tm timeinfoData;
+		struct tm * timeinfo = &timeinfoData;
+		localtime_s(timeinfo, &now_c);
+#else // _WIN32
+		struct tm * timeinfo = std::localtime(&now_c);
+#endif // _WIN32
+		char buffer[26];
+		strftime(buffer, 26, "%Y-%m-%d %H:%M:%S", timeinfo);
+		m_ss << buffer << ": ";
     }
 
     switch(level)

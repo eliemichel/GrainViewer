@@ -25,7 +25,11 @@
 #ifndef H_DEBUGUTILS
 #define H_DEBUGUTILS
 
-#include <glad/glad.h>
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
+#include <glad/modernglad.h>
 
 #ifdef _WIN32
 #include <windows.h>

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <glad/glad.h>
 
 #include "Behavior.h"
 #include "ShaderProgram.h"

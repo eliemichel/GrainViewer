@@ -30,15 +30,6 @@ string fixPath(const string & path) {
 	return p;
 }
 
-bool isFile(const string & filename) {
-	FILE *file = fopen(filename.c_str(), "r");
-	if (file) {
-		fclose(file);
-		return true;
-	}
-	return false;
-}
-
 bool isAbsolutePath(const string & path) {
 #ifdef _WIN32
 	return path.length() >= 2 && path[1] == ':';

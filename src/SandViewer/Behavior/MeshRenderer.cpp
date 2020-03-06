@@ -18,8 +18,7 @@ GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint 
 	GLuint o = firstTextureIndex;
 	const std::string prefix = "material[" + std::to_string(id) + "]";
 	if (baseColorMap) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		baseColorMap->bind();
+		baseColorMap->bind(static_cast<GLint>(o));
 		shader.setUniform(prefix + ".baseColorMap", static_cast<GLint>(o));
 		++o;
 		shader.setUniform(prefix + ".hasBaseColorMap", true);
@@ -27,8 +26,7 @@ GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint 
 		shader.setUniform(prefix + ".hasBaseColorMap", false);
 	}
 	if (normalMap) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		normalMap->bind();
+		normalMap->bind(static_cast<GLint>(o));
 		shader.setUniform(prefix + ".normalMap", static_cast<GLint>(o));
 		++o;
 		shader.setUniform(prefix + ".hasNormalMap", true);
@@ -36,8 +34,7 @@ GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint 
 		shader.setUniform(prefix + ".hasNormalMap", false);
 	}
 	if (metallicRoughnessMap) {
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		metallicRoughnessMap->bind();
+		metallicRoughnessMap->bind(static_cast<GLint>(o));
 		shader.setUniform(prefix + ".metallicRoughnessMap", static_cast<GLint>(o));
 		++o;
 		shader.setUniform(prefix + ".hasMetallicRoughnessMap", true);

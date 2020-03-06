@@ -1,3 +1,6 @@
+#include <filesystem>
+namespace fs = std::filesystem;
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include "utils/fileutils.h"
@@ -33,7 +36,7 @@ void ShaderProgram::load() {
 
 		Shader geometryShader(GL_GEOMETRY_SHADER);
 		std::string geometryShaderPath = ResourceManager::shaderFullPath(m_shaderName, GL_GEOMETRY_SHADER);
-		if (isFile(geometryShaderPath)) {
+		if (fs::is_regular_file(geometryShaderPath)) {
 			geometryShader.load(geometryShaderPath, defines, m_snippets);
 			geometryShader.compile();
 			geometryShader.check("geometry shader");

@@ -24,7 +24,7 @@ GlDeferredShader::GlDeferredShader()
 		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT2 },
 	})
 {
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 }
 
 GlDeferredShader::~GlDeferredShader()
@@ -82,14 +82,10 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.setUniform("inverseViewMatrix", inverse(camera.viewMatrix()));
 
 	size_t o = 0;
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, m_framebuffer.colorTexture(0));
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, m_framebuffer.colorTexture(1));
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, m_framebuffer.colorTexture(2));
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, m_framebuffer.depthTexture());
+	glBindTextureUnit(0, m_framebuffer.colorTexture(0));
+	glBindTextureUnit(1, m_framebuffer.colorTexture(1));
+	glBindTextureUnit(1, m_framebuffer.colorTexture(2));
+	glBindTextureUnit(3, m_framebuffer.depthTexture());
 	o += 4;
 
 	// TODO: Use UBO, move to World
@@ -113,15 +109,13 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 		ostringstream oss5;
 		oss5 << "light[" << k << "].shadowMap";
 		m_shader.setUniform(oss5.str(), static_cast<GLint>(o));
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		glBindTexture(GL_TEXTURE_2D, lights[k]->shadowMap().depthTexture());
+		glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().depthTexture());
 		++o;
 		if (lights[k]->isRich()) {
 			ostringstream oss6;
 			oss6 << "light[" << k << "].richShadowMap";
 			m_shader.setUniform(oss6.str(), static_cast<GLint>(o));
-			glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-			glBindTexture(GL_TEXTURE_2D, lights[k]->shadowMap().colorTexture(0));
+			glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().colorTexture(0));
 			++o;
 		}
 	}
@@ -131,8 +125,7 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
 	if (m_colormap) {
 		m_shader.setUniform("uColormap", static_cast<GLint>(o));
-		glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(o));
-		m_colormap->bind();
+		m_colormap->bind(static_cast<GLuint>(o));
 		++o;
 	}
 

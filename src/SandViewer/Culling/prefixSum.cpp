@@ -5,7 +5,7 @@ int prefixSum(const GlBuffer & buffer0, const GlBuffer & buffer1, const ShaderPr
 {
 	if (!shader.isValid()) return -1;
 
-	int iterationCount = static_cast<GLuint>(2 * (floor(log(pointCount) / log(2)) + 1));
+	GLuint iterationCount = static_cast<GLuint>(2 * (floor(log(pointCount) / log(2)) + 1));
 
 	shader.use();
 	shader.setUniform("uElementCount", pointCount);

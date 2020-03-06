@@ -50,7 +50,7 @@ void Framebuffer::init() {
 	glTextureParameteri(m_depthTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	if (m_colorLayerInfos.empty()) {
-		glDrawBuffer(GL_NONE);
+		glNamedFramebufferDrawBuffer(m_framebufferId, GL_NONE);
 	}
 	else {
 		vector<GLenum> drawBuffers(m_colorLayerInfos.size());
@@ -60,7 +60,7 @@ void Framebuffer::init() {
 		glNamedFramebufferDrawBuffers(m_framebufferId, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
 	}
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+	if (glCheckNamedFramebufferStatus(m_framebufferId, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
 		ERR_LOG << "Framebuffer not complete!";
 	}
 

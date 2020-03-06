@@ -23,11 +23,11 @@ void ShadowMap::setLookAt(const glm::vec3 & position, const glm::vec3 & lookAt) 
 	updateProjectionMatrix();
 }
 
-void ShadowMap::setProjection(float fov, float near, float far)
+void ShadowMap::setProjection(float fov, float nearDistance, float farDistance)
 {
 	m_fov = fov;
-	m_near = near;
-	m_far = far;
+	m_near = nearDistance;
+	m_far = farDistance;
 	updateProjectionMatrix();
 }
 

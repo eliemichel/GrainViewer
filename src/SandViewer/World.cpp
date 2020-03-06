@@ -212,13 +212,13 @@ void World::initVao() {
 		-1.0f, -1.0f,  1.0f,
 		1.0f, -1.0f,  1.0f
 	};
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
-	glGenBuffers(1, &m_vbo);
+	glCreateBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(attributes), attributes, GL_STATIC_DRAW);
+	glNamedBufferData(m_vbo, sizeof(attributes), attributes, GL_STATIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
-	glEnableVertexAttribArray(0);
+	glEnableVertexArrayAttrib(m_vao, 0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 }

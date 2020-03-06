@@ -67,11 +67,6 @@ GlTexture::~GlTexture()
 	}
 }
 
-void GlTexture::bind() const
-{
-	glBindTexture(m_target, m_id);
-}
-
 void GlTexture::bind(GLint unit) const
 {
 	bind(static_cast<GLuint>(unit));

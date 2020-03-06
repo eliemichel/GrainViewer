@@ -68,10 +68,10 @@ void MeshDataBehavior::start()
 	m_vertexBuffer->fillBlock(0, fillPointAttributes, *m_mesh);
 
 	// Build VAO
-	glGenVertexArrays(1, &m_vao);
+	glCreateVertexArrays(1, &m_vao);
 	glBindVertexArray(m_vao);
 	m_vertexBuffer->bind();
-	m_vertexBuffer->enableAttributes();
+	m_vertexBuffer->enableAttributes(m_vao);
 	glBindVertexArray(0);
 
 	m_vertexBuffer->finalize();

@@ -48,14 +48,14 @@ void GlBuffer::free() {
 	}
 }
 
-void GlBuffer::enableAttributes() {
+void GlBuffer::enableAttributes(GLuint vao) {
 	GLsizei blockOffset = 0;
 	GLuint id = 0;
 	for (auto b : m_blocks) {
 		for (auto attr : b.attributes) {
 			GLsizei offset = blockOffset + attr.byteOffset;
 			glVertexAttribPointer(id, attr.size, attr.type, GL_FALSE, b.stride, static_cast<GLvoid*>(static_cast<char*>(0) + offset));
-			glEnableVertexAttribArray(id);
+			glEnableVertexArrayAttrib(vao, id);
 			glVertexAttribDivisor(id, attr.divisor);
 			++id;
 		}

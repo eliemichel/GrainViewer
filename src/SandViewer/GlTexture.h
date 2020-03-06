@@ -1,6 +1,10 @@
 #pragma once
 
-#include <glad/glad.h>
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
+#include <glad/modernglad.h>
 
 class GlTexture {
 public:
@@ -28,7 +32,6 @@ public:
 	GLenum target() const { return m_target; }
 
 	bool isValid() const { return m_id != invalid; }
-	void bind() const; // depreciated
 	void bind(GLint unit) const;
 	void bind(GLuint unit) const;
 	
