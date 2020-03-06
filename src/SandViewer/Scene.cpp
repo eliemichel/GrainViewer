@@ -88,8 +88,8 @@ void Scene::update(float time) {
 			}
 		}
 
-		if (s.autoOutputResolution && viewportCamera()->framebuffer()) {
-			m_pixels.resize(3 * viewportCamera()->framebuffer()->width() * viewportCamera()->framebuffer()->height());
+		if (s.autoOutputResolution && viewportCamera()->targetFramebuffer()) {
+			m_pixels.resize(3 * viewportCamera()->targetFramebuffer()->width() * viewportCamera()->targetFramebuffer()->height());
 		}
 		else if (s.autoOutputResolution) {
 			m_pixels.resize(3 * m_width * m_height);
@@ -121,8 +121,8 @@ void Scene::render() const {
 
 	if (m_isDeferredShadingEnabled) {
 		m_deferredShader.bindFramebuffer();
-	} else if (camera.framebuffer()) {
-		camera.framebuffer()->bind();
+	} else if (camera.targetFramebuffer()) {
+		camera.targetFramebuffer()->bind();
 	} else {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
@@ -138,8 +138,8 @@ void Scene::render() const {
 	}
 
 	if (m_isDeferredShadingEnabled) {
-		if (camera.framebuffer()) {
-			camera.framebuffer()->bind();
+		if (camera.targetFramebuffer()) {
+			camera.targetFramebuffer()->bind();
 		} else {
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
@@ -148,7 +148,7 @@ void Scene::render() const {
 		m_deferredShader.render(camera, m_world, DefaultRendering);
 	}
 
-	if (camera.framebuffer()) {
+	if (camera.targetFramebuffer()) {
 		GLint w1 = static_cast<GLint>(camera.resolution().x);
 		GLint h1 = static_cast<GLint>(camera.resolution().y);
 		float ratio = camera.resolution().y / camera.resolution().x;
@@ -159,7 +159,7 @@ void Scene::render() const {
 			w2 = static_cast<GLint>(m_height / ratio);
 			h2 = static_cast<GLint>(m_height);
 		}
-		glBlitNamedFramebuffer(camera.framebuffer()->raw(), 0, 0, 0, w1, h1, 0, 0, w2, h2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		glBlitNamedFramebuffer(camera.targetFramebuffer()->raw(), 0, 0, 0, w1, h1, 0, 0, w2, h2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 
 	recordFrame(camera);
@@ -198,11 +198,11 @@ void Scene::recordFrame(const Camera & camera) const
 		const void* pixels = static_cast<const void*>(m_pixels.data());
 		GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
 
-		if (outputSettings.autoOutputResolution && camera.framebuffer()) {
+		if (outputSettings.autoOutputResolution && camera.targetFramebuffer()) {
 			// output camera framebuffer
-			camera.framebuffer()->bind();
-			GLint destWidth = static_cast<GLint>(camera.framebuffer()->width());
-			GLint destHeight = static_cast<GLint>(camera.framebuffer()->height());
+			camera.targetFramebuffer()->bind();
+			GLint destWidth = static_cast<GLint>(camera.targetFramebuffer()->width());
+			GLint destHeight = static_cast<GLint>(camera.targetFramebuffer()->height());
 			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
 		}
@@ -217,8 +217,8 @@ void Scene::recordFrame(const Camera & camera) const
 			GLuint sourceFbo = 0;
 			GLint sourceWidth = m_width;
 			GLint sourceHeight = m_height;
-			if (camera.framebuffer()) {
-				sourceFbo = camera.framebuffer()->raw();
+			if (camera.targetFramebuffer()) {
+				sourceFbo = camera.targetFramebuffer()->raw();
 				sourceWidth = static_cast<GLint>(camera.resolution().x);
 				sourceHeight = static_cast<GLint>(camera.resolution().y);
 			}

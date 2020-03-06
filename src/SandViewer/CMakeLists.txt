@@ -63,9 +63,7 @@ set(AugenCore_SRC
 ###############################################################################
 # Main executable
 
-set(SRC
-	main.cpp
-
+set(All_SRC
 	${AugenCore_SRC}
 
 	Behavior/ImpostorCloudRenderer.h
@@ -145,6 +143,11 @@ set(SRC
 	World.cpp
 )
 
+set(SRC
+	main.cpp
+	${All_SRC}
+)
+
 set(LIBS
 	modernglad
 	glfw
@@ -195,6 +198,7 @@ add_executable(PointCloudConvert ${PointCloudConvert_SRC})
 target_include_directories(PointCloudConvert PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(PointCloudConvert LINK_PRIVATE ${PointCloudConvert_LIBS})
 set_property(TARGET PointCloudConvert PROPERTY FOLDER "Tools")
+target_compile_definitions(PointCloudConvert PRIVATE -DNOMINMAX)
 
 group_source_by_folder(${PointCloudConvert_SRC})
 
@@ -228,6 +232,7 @@ add_executable(GenerateLeanMaps ${GenerateLeanMaps_SRC})
 target_include_directories(GenerateLeanMaps PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(GenerateLeanMaps LINK_PRIVATE ${GenerateLeanMaps_LIBS})
 set_property(TARGET GenerateLeanMaps PROPERTY FOLDER "Tools")
+target_compile_definitions(GenerateLeanMaps PRIVATE -DNOMINMAX)
 
 group_source_by_folder(${GenerateLeanMaps_SRC})
 
@@ -267,5 +272,22 @@ add_executable(BenchmarkCullingMethods ${BenchmarkCullingMethods_SRC})
 target_include_directories(BenchmarkCullingMethods PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(BenchmarkCullingMethods LINK_PRIVATE ${BenchmarkCullingMethods_LIBS})
 set_property(TARGET BenchmarkCullingMethods PROPERTY FOLDER "Tools")
+target_compile_definitions(BenchmarkCullingMethods PRIVATE -DNOMINMAX)
 
 group_source_by_folder(${BenchmarkCullingMethods_SRC})
+
+###############################################################################
+# Tests
+
+set(SandViewerTests_SRC
+	Tests/SandViewerTests.cpp
+	${All_SRC}
+)
+
+add_executable(SandViewerTests ${SandViewerTests_SRC})
+target_include_directories(SandViewerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(SandViewerTests LINK_PRIVATE ${LIBS})
+set_property(TARGET SandViewerTests PROPERTY FOLDER "Tests")
+target_compile_definitions(SandViewerTests PRIVATE -DNOMINMAX)
+group_source_by_folder(${SandViewerTests_SRC})
+

@@ -66,7 +66,7 @@ public:
 	OutputSettings & outputSettings() { return m_outputSettings; }
 	const OutputSettings & outputSettings() const { return m_outputSettings; }
 
-	std::shared_ptr<Framebuffer> framebuffer() const { return m_framebuffer; }
+	std::shared_ptr<Framebuffer> targetFramebuffer() const { return m_targetFramebuffer; }
 
 	void setProjectionType(ProjectionType projectionType);
 
@@ -136,8 +136,9 @@ protected:
 
 	bool m_freezeResolution;
 
-	// Used only with m_freezeResolution
-	std::shared_ptr<Framebuffer> m_framebuffer;
+	// When resolution is freezed, this target framebuffer is allocated at the
+	// fixed resolution and can be bound by the render pipeline
+	std::shared_ptr<Framebuffer> m_targetFramebuffer;
 
 	std::vector<std::shared_ptr<Framebuffer>> m_extraFramebuffers;
 

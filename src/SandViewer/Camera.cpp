@@ -102,9 +102,9 @@ void Camera::setFreezeResolution(bool freeze)
 		size_t width = static_cast<size_t>(m_resolution.x);
 		size_t height = static_cast<size_t>(m_resolution.y);
 		const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
-		m_framebuffer = std::make_shared<Framebuffer>(width, height, colorLayerInfos);
+		m_targetFramebuffer = std::make_shared<Framebuffer>(width, height, colorLayerInfos);
 	} else {
-		m_framebuffer = nullptr;
+		m_targetFramebuffer = nullptr;
 	}
 }
 
