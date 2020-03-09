@@ -164,6 +164,8 @@ void main() {
 	//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
 #endif // SHOW_BASECOLOR
 
+	out_fragment.radiance.rgb = fragment.ws_coord.rgb;
+
 	out_fragment.normal = fragment.normal;
 	out_fragment.radiance.a = 1.0;
 	// TODO: compute from ws_coord and remove this extra buffer

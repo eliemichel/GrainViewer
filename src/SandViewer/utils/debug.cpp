@@ -53,6 +53,10 @@ void APIENTRY openglCallbackFunction(GLenum source,
 		return;
 	}
 
+	if (severity == GL_DEBUG_SEVERITY_LOW && type == GL_DEBUG_TYPE_PERFORMANCE) {
+		return;
+	}
+
 	cout << "---------------------opengl-callback-start------------" << endl;
 	cout << "message: " << message << endl;
 	cout << "type: ";

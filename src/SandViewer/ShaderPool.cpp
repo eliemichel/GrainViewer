@@ -64,6 +64,10 @@ ShaderPool::ShaderPool()
 		"GenerateLeanMaps_Image3D",
 		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_3D" } }
 		});
+	m_defaultShaders.insert({
+		"GltfMesh",
+		{ "gltf-mesh", ShaderProgram::RenderShader, {} }
+		});
 }
 
 void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)

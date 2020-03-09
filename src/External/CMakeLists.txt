@@ -112,4 +112,4 @@ target_link_libraries(libpng INTERFACE zlibstatic png_static)
 ###############################################################################
 
 add_subdirectory(tinypngout)
-add_subdirectory(gltf)
+add_subdirectory(tinygltf)

@@ -1,11 +1,14 @@
+#include <functional>
+
 #include "Logger.h"
 #include "utils/strutils.h"
 #include "ResourceManager.h"
 #include "GltfDataBehavior.h"
+#include "TransformBehavior.h"
+#include "ShaderPool.h"
 
-///////////////////////////////////////////////////////////////////////////////
-// Accessors
-///////////////////////////////////////////////////////////////////////////////
+static const std::vector<std::string> stdVertexAttribs{ "POSITION", "NORMAL", "TANGENT", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0", "JOINTS_0", "WEIGHTS_0" };
+#define BUFFER_OFFSET(offset) static_cast<void*>(static_cast<char*>(nullptr) + offset)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior Implementation
@@ -15,16 +18,28 @@ bool GltfDataBehavior::deserialize(const rapidjson::Value & json)
 {
 	if (json.HasMember("filename") && json["filename"].IsString()) {
 		m_filename = ResourceManager::resolveResourcePath(json["filename"].GetString());
-		return true;
 	} else {
 		ERR_LOG << "GltfDataBehavior requires a filename to load";
 		return false;
 	}
+
+	if (json.HasMember("shader")) {
+		if (json["shader"].IsString()) {
+			m_shaderName = json["shader"].GetString();
+		}
+		else {
+			ERR_LOG << "GltfDataBehavior 'shader' parameter must be a string";
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void GltfDataBehavior::start()
 {
 	// 1. Load GLTF
+	LOG << "Loading " << m_filename << "...";
 	m_model = std::make_unique<tinygltf::Model>();
 	tinygltf::TinyGLTF loader;
 	std::string err;
@@ -45,15 +60,129 @@ void GltfDataBehavior::start()
 		ERR_LOG << "Unable to open GLTF file: " << m_filename << " (see error above)";
 		return;
 	}
+	LOG << "Loaded.";
 
 	// 2. Move data to GlBuffer (in VRAM)
+
+	auto& rootNode = m_model->nodes[m_model->scenes[m_model->defaultScene].nodes[0]];
+
 	// Build VBO
-	// Build VAO
+	m_buffers.resize(m_model->buffers.size());
+	glCreateBuffers(static_cast<GLsizei>(m_buffers.size()), m_buffers.data());
+	DEBUG_LOG << "buffers:";
+	for (int i = 0; i < m_model->buffers.size(); ++i) {
+		const auto& b = m_model->buffers[i];
+		DEBUG_LOG << " - " << b.name << ": " << b.data.size() << " bytes";
+		glNamedBufferStorage(m_buffers[i], static_cast<GLsizeiptr>(b.data.size()), b.data.data(), NULL);
+	}
+
+	// Build VAOs and draw calls
+	size_t primCount = 0;
+	for (const auto& m : m_model->meshes) {
+		primCount += m.primitives.size();
+	}
+	DEBUG_LOG << "Found " << primCount << " primitives";
+	m_drawCalls.resize(primCount);
+	m_vertexArrays.resize(primCount);
+	glCreateVertexArrays(static_cast<GLsizei>(m_vertexArrays.size()), m_vertexArrays.data());
+	
+	DEBUG_LOG << "bufferViews:";
+	for (int i = 0; i < m_model->bufferViews.size(); ++i) {
+		const auto& v = m_model->bufferViews[i];
+		DEBUG_LOG << " - " << v.name << ": buffer #" << v.buffer << " from offset " << v.byteOffset << " for " << v.byteLength << " bytes by a stride of " << v.byteStride;
+		for (auto vao : m_vertexArrays) {
+			glVertexArrayVertexBuffer(vao, i, m_buffers[v.buffer], static_cast<GLintptr>(v.byteOffset), static_cast<GLsizei>(v.byteStride));
+		}
+	}
+
+	DEBUG_LOG << "meshes:";
+	int primId = 0;
+	for (int i = 0; i < m_model->meshes.size(); ++i) {
+		const auto& m = m_model->meshes[i];
+		DEBUG_LOG << " - " << m.name << ": ";
+		for (int j = 0; j < m.primitives.size(); ++j) {
+			const auto& p = m.primitives[j];
+			auto& drawCall = m_drawCalls[primId];
+			auto& vao = m_vertexArrays[primId++];
+
+			std::ostringstream ss;
+			for (const auto & attr : p.attributes) {
+				if (!ss.str().empty()) ss << ", ";
+				ss << attr.first << ": " << attr.second;
+			}
+			DEBUG_LOG << "   * primitive(attributes={" << ss.str() << "}, indices=#" << p.indices << ")";
+
+			for (int k = 0 ; k < stdVertexAttribs.size() ; ++k) {
+				const std::string & attribName = stdVertexAttribs[k];
+				if (p.attributes.count(attribName)) {
+					DEBUG_LOG << "        (contains std attrib " << attribName << ")";
+					const auto& a = m_model->accessors[p.attributes.at(attribName)];
+
+					glEnableVertexArrayAttrib(vao, k);
+#if 0 // unfortunately GL_MAX_VERTEX_ATTRIB_RELATIVE_OFFSETis too low for the "modern way" to work (weird)
+					glVertexArrayAttribBinding(vao, k, a.bufferView);
+					glVertexArrayAttribFormat(vao, k, static_cast<GLint>(a.type % 16), a.componentType, a.normalized ? GL_TRUE : GL_FALSE, static_cast<GLuint>(a.byteOffset));
+#else				
+					const auto& v = m_model->bufferViews[a.bufferView];
+					glBindVertexArray(vao);
+					glBindBuffer(GL_ARRAY_BUFFER, m_buffers[v.buffer]);
+					glVertexAttribPointer(k, static_cast<GLint>(a.type % 16), a.componentType, a.normalized ? GL_TRUE : GL_FALSE, a.ByteStride(v), BUFFER_OFFSET(v.byteOffset + a.byteOffset));
+#endif
+				}
+				else {
+					glDisableVertexArrayAttrib(vao, k);
+				}
+			}
+			// Elements
+			const auto& a = m_model->accessors[p.indices];
+			const auto& v = m_model->bufferViews[a.bufferView];
+			glVertexArrayElementBuffer(vao, m_buffers[v.buffer]); // what about buffer view attributes?
+			glVertexArrayBindingDivisor(vao, a.bufferView, static_cast<GLuint>(v.byteStride));
+			drawCall.mode = p.mode;
+			drawCall.count = static_cast<GLsizei>(a.count);
+			drawCall.type = a.componentType;
+			drawCall.byteOffset = v.byteOffset;
+		}
+	}
 
 	// 3. Free mesh from RAM now that it is in VRAM
+	m_model.reset();
+
+	// 4. Misc
+	m_shader = ShaderPool::GetShader(m_shaderName);
+	m_transform = getComponent<TransformBehavior>();
 }
 
 void GltfDataBehavior::onDestroy()
 {
-	
+	glDeleteBuffers(static_cast<GLsizei>(m_buffers.size()), m_buffers.data());
+	glDeleteVertexArrays(static_cast<GLsizei>(m_vertexArrays.size()), m_vertexArrays.data());
+}
+
+void GltfDataBehavior::render(const Camera& camera, const World& world, RenderType target) const
+{
+	m_shader->use();
+	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
+	m_shader->bindUniformBlock("Camera", camera.ubo());
+	m_shader->setUniform("modelMatrix", modelMatrix());
+
+	m_shader->setUniform("viewModelMatrix", viewModelMatrix);
+	for (int i = 0; i < m_vertexArrays.size(); ++i) {
+		const auto& drawCall = m_drawCalls[i];
+		glBindVertexArray(m_vertexArrays[i]);
+		glDrawElements(drawCall.mode, drawCall.count, drawCall.type, BUFFER_OFFSET(drawCall.byteOffset));
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// private members
+///////////////////////////////////////////////////////////////////////////////
+
+glm::mat4 GltfDataBehavior::modelMatrix() const {
+	if (auto transform = m_transform.lock()) {
+		return transform->modelMatrix();
+	}
+	else {
+		return glm::mat4(1.0f);
+	}
 }
