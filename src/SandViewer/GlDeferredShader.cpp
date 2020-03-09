@@ -84,7 +84,7 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	size_t o = 0;
 	glBindTextureUnit(0, m_framebuffer.colorTexture(0));
 	glBindTextureUnit(1, m_framebuffer.colorTexture(1));
-	glBindTextureUnit(1, m_framebuffer.colorTexture(2));
+	glBindTextureUnit(2, m_framebuffer.colorTexture(2));
 	glBindTextureUnit(3, m_framebuffer.depthTexture());
 	o += 4;
 

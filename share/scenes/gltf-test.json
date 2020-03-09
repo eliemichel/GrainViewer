@@ -7,7 +7,7 @@
 	],
 
 	"deferredShader": {
-		"defines": [ "SHOW_NORMAL" ]
+		"defines": []
 	},
 
 	"lights": [
@@ -19,8 +19,7 @@
 	],
 
 	"shaders": {
-		"World": "basic-world",
-		"Mesh": "basic-mesh"
+		"World": "basic-world"
 	},
 
 	"objects": [
@@ -38,29 +37,7 @@
 				},
 				{
 					"type": "GltfDataBehavior",
-					"filename": "C:/Elie/Data/Models/KnitIceCream/gltf/scene.gltf"
-				}
-			]
-		},
-		{
-			"type": "RuntimeObject",
-			"behaviors": [
-				{
-					"type": "TransformBehavior",
-					"modelMatrix": [
-						1, 0, 0, 0,
-						0, 1, 0, 0,
-						0, 0, 1, 0,
-						0, 0, 0, 1
-					]
-				},
-				{
-					"type": "MeshDataBehavior",
-					"filename": "C:/Elie/Data/SandViewer/grain000_midhighpoly.obj"
-				},
-				{
-					"type": "MeshRenderer",
-					"shader": "Mesh"
+					"filename": "G:/PhD/Data/Models/KnitIceCream/gltf/scene.gltf"
 				}
 			]
 		}
