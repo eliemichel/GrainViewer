@@ -59,7 +59,16 @@ public:
 	void setResolution(glm::vec2 resolution);
 	inline void setResolution(int w, int h) { setResolution(glm::vec2(static_cast<float>(w), static_cast<float>(h))); }
 	void setFreezeResolution(bool freeze);
+
+	float fov() const { return m_fov; }
 	void setFov(float fov);
+
+	float nearDistance() const { return m_near; }
+	void setNearDistance(float distance);
+
+	float farDistance() const { return m_far; }
+	void setFarDistance(float distance);
+
 	void setOrthographicScale(float orthographicScale);
 	float orthographicScale() const { return m_orthographicScale; }
 
@@ -123,10 +132,15 @@ protected:
 
 	virtual void tilt(float theta) {}
 
+private:
+	void updateProjectionMatrix();
+
 protected:
 	glm::vec3 m_position;
 	glm::vec2 m_resolution;
 	glm::mat4 m_viewMatrix, m_projectionMatrix;
+	float m_near = 0.001f;
+	float m_far = 1000.f;
 	float m_fov;
 	float m_orthographicScale;
 

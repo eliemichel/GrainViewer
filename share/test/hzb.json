@@ -3,6 +3,8 @@
 		{
 			"projection": "perspective",
 			"fov": 24,
+			"near": 0.1,
+			"far": 100.0,
 			"viewMatrix": {
 				"buffer": "hzb-test-scene-camera.bin",
 				"startFrame": 0

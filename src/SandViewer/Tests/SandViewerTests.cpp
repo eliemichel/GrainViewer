@@ -11,8 +11,17 @@
 #include "Filtering.h"
 #include "ShaderPool.h"
 
+#define W 1920
+#define H 1080
+
 // Test hierarchcal Z buffer
 bool testHzb();
+
+// Utils
+/**
+ * camera is the camera that has been used to render the depth buffer
+ */
+void saveDepthBufferMipMaps(const std::string & prefix, GLuint tex, const Camera & camera);
 
 int main(int argc, char** argv) {
 	bool success = true;
@@ -22,9 +31,9 @@ int main(int argc, char** argv) {
 
 bool testHzb()
 {
-	size_t W = 1920, H = 1080;
 	Window window(W, H, "SandViewer Tests - HZB");
 	
+	//////////////////////////////////////////////////////////////
 	// Loading
 	/*
 	loadGeometry();
@@ -44,46 +53,67 @@ bool testHzb()
 		return false;
 	}
 
+	Camera & camera = *scene->viewportCamera();
+
 	scene->setResolution(W, H);
 	scene->update(0);
 	glViewport(0, 0, W, H);
 
+	//////////////////////////////////////////////////////////////
 	// Render pipeline
-	//renderHzb();
-
+	//  A. Render HBZ
 	hierarchicalDepthBuffer.bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	occlusionGeometry->render(*scene->viewportCamera(), scene->world(), DirectRendering);
 
-	//render();
-	fbo.bind();
+	Filtering::MipmapDepthBuffer(hierarchicalDepthBuffer);
 
+	//  B. Render scene
+	fbo.bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	for (const auto & obj : scene->objects()) {
 		if (obj == occlusionGeometry) continue;
-		obj->render(*scene->viewportCamera(), scene->world(), DirectRendering);
+		// TODO: test against HZB
+		obj->render(camera, scene->world(), DirectRendering);
 	}
 
-	// Save framebuffer
-	hierarchicalDepthBuffer.saveToPng("hzb.png");
-	fbo.saveToPng("test.png");
+	//////////////////////////////////////////////////////////////
+	// Save results to files
 
-	Filtering::MipmapDepthBuffer(hierarchicalDepthBuffer);
-	hierarchicalDepthBuffer.saveDepthMipMapsToPng("hzb_depth_mip");
-
-	GlTexture rgb(GL_TEXTURE_2D);
-	rgb.storage(1, GL_RGBA16F, W, H);
-
-	GlTexture depthTexture(hierarchicalDepthBuffer.depthTexture(), GL_TEXTURE_2D);
-
-	Filtering::Blit(rgb, depthTexture, *ShaderPool::GetShader("DepthToColorBuffer"));
-
-	depthTexture.release();
-
-	ResourceManager::saveTexture_libpng("rgb.png", rgb);
+	ResourceManager::saveTexture_libpng("hzb.png", hierarchicalDepthBuffer.colorTexture(0));
+	ResourceManager::saveTexture_libpng("test.png", fbo.colorTexture(0));
+	saveDepthBufferMipMaps("hzb_depth_mip", hierarchicalDepthBuffer.depthTexture(), camera);
 
 	window.swapBuffers();
 
 	return true;
 }
+
+void saveDepthBufferMipMaps(const std::string & prefix, GLuint tex, const Camera & camera)
+{
+	//ResourceManager::saveTextureMipMaps("hzb_depth_mip", hierarchicalDepthBuffer.depthTexture());
+
+	auto convertShader = ShaderPool::GetShader("DepthToColorBuffer");
+	convertShader->setUniform("uNear", camera.nearDistance());
+	convertShader->setUniform("uFar", camera.farDistance());
+	GLint baseLevel, maxLevel;
+	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
+	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
+	for (GLint level = baseLevel; level < maxLevel; ++level) {
+		GLint w, h;
+		glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_WIDTH, &w);
+		glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_HEIGHT, &h);
+
+		if (w == 0 || h == 0) break;
+
+		GlTexture rgb(GL_TEXTURE_2D);
+		rgb.storage(1, GL_RGBA16F, w, h);
+
+		convertShader->setUniform("uMipMapLevel", level);
+
+		Filtering::Blit(rgb, tex, *convertShader);
+		ResourceManager::saveTexture_libpng(prefix + std::to_string(level) + ".png", rgb);
+	}
+}
+

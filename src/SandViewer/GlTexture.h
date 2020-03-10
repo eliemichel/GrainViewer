@@ -8,8 +8,8 @@
 
 class GlTexture {
 public:
-	GlTexture(GLenum target);
-	GlTexture(GLuint id, GLenum target); // move from raw gl texture. This object will take care of deleting texture
+	explicit GlTexture(GLenum target);
+	explicit GlTexture(GLuint id, GLenum target); // move from raw gl texture. This object will take care of deleting texture
 
 	GlTexture(const GlTexture&) = delete;
 	void operator=(const GlTexture&) = delete;

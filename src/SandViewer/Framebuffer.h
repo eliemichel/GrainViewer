@@ -44,13 +44,9 @@ public:
 	 */
 	void setResolution(size_t width, size_t height);
 
-	void saveToPng(const std::string & filename);
-
 	/**
-	 * Save the mipmap levels of depth attachement to prefixXX.png
+	 * Number of mipmap levels in depth buffer
 	 */
-	void saveDepthMipMapsToPng(const std::string & prefix);
-
 	GLsizei depthLevels() const;
 
 private:

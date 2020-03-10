@@ -67,19 +67,7 @@ void Camera::setResolution(glm::vec2 resolution)
 		m_resolution = resolution;
 	}
 
-	switch (m_projectionType) {
-	case PerspectiveProjection:
-		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
-			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, 0.001f, 1000.f);
-		}
-		break;
-	case OrthographicProjection:
-	{
-		float ratio = m_resolution.x > 0.0f ? m_resolution.y / m_resolution.x : 1.0f;
-		m_projectionMatrix = glm::ortho(-m_orthographicScale, m_orthographicScale, -m_orthographicScale * ratio, m_orthographicScale * ratio, 0.001f, 10000.f);
-		break;
-	}
-	}
+	updateProjectionMatrix();
 
 	// Resize extra framebuffers
 	size_t width = static_cast<size_t>(m_resolution.x);
@@ -111,19 +99,33 @@ void Camera::setFreezeResolution(bool freeze)
 void Camera::setFov(float fov)
 {
 	m_fov = fov;
-	setResolution(m_resolution); // update projection matrix
+	updateProjectionMatrix();
 }
+
+
+void Camera::setNearDistance(float distance)
+{
+	m_near = distance;
+	updateProjectionMatrix();
+}
+
+void Camera::setFarDistance(float distance)
+{
+	m_far = distance;
+	updateProjectionMatrix();
+}
+
 
 void Camera::setOrthographicScale(float orthographicScale)
 {
 	m_orthographicScale = orthographicScale;
-	setResolution(m_resolution); // update projection matrix
+	updateProjectionMatrix();
 }
 
 void Camera::setProjectionType(ProjectionType projectionType)
 {
 	m_projectionType = projectionType;
-	setResolution(m_resolution); // update projection matrix
+	updateProjectionMatrix();
 }
 
 void Camera::updateMousePosition(float x, float y)
@@ -142,6 +144,23 @@ void Camera::updateMousePosition(float x, float y)
 	m_lastMouseX = x;
 	m_lastMouseY = y;
 	m_isLastMouseUpToDate = true;
+}
+
+void Camera::updateProjectionMatrix()
+{
+	switch (m_projectionType) {
+	case PerspectiveProjection:
+		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
+			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, m_near, m_far);
+		}
+		break;
+	case OrthographicProjection:
+	{
+		float ratio = m_resolution.x > 0.0f ? m_resolution.y / m_resolution.x : 1.0f;
+		m_projectionMatrix = glm::ortho(-m_orthographicScale, m_orthographicScale, -m_orthographicScale * ratio, m_orthographicScale * ratio, m_near, m_far);
+		break;
+	}
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -344,10 +363,30 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 	if (json.HasMember("fov")) {
 		auto& fov = json["fov"];
 		if (!fov.IsNumber()) {
-			ERR_LOG << "camera fov must be a number";
+			ERR_LOG << "camera 'fov' parameter must be a number";
 		}
 		else {
 			setFov(fov.GetFloat());
+		}
+	}
+
+	if (json.HasMember("near")) {
+		auto& distance = json["near"];
+		if (!distance.IsNumber()) {
+			ERR_LOG << "camera 'near' parameter must be a number";
+		}
+		else {
+			setNearDistance(distance.GetFloat());
+		}
+	}
+
+	if (json.HasMember("far")) {
+		auto& distance = json["far"];
+		if (!distance.IsNumber()) {
+			ERR_LOG << "camera 'far' parameter must be a number";
+		}
+		else {
+			setFarDistance(distance.GetFloat());
 		}
 	}
 }

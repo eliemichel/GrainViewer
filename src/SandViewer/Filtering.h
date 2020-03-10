@@ -48,6 +48,10 @@ public:
 
 	static std::unique_ptr<LeanTexture> CreateLeanTexture(const GlTexture & sourceTexture);
 
+	/**
+	 * Blit texture <source> onto texture <destination> using shader program <shader>
+	 */
+	static void Blit(GlTexture & destination, GLuint source, const ShaderProgram & shader);
 	static void Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader);
 
 	/**

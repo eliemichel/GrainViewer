@@ -9,7 +9,6 @@
 
 #include "Framebuffer.h"
 #include "Logger.h"
-#include "ResourceManager.h"
 
 using namespace std;
 
@@ -92,36 +91,6 @@ void Framebuffer::setResolution(size_t width, size_t height)
 	m_height = static_cast<GLsizei>(height);
 	destroy();
 	init();
-}
-
-void Framebuffer::saveToPng(const std::string & filename)
-{
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
-	m_pixels.resize(4 * width() * height());
-	void* pixels = static_cast<void*>(m_pixels.data());
-	GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
-	//glReadnPixels(0, 0, width(), height(), GL_RGBA, GL_UNSIGNED_BYTE, bufSize, pixels);
-	glGetTextureSubImage(colorTexture(0), 0, 0, 0, 0, width(), height(), 1, GL_RGBA, GL_UNSIGNED_BYTE, 4 * width() * height(), pixels);
-	ResourceManager::saveImage_libpng(filename, width(), height(), pixels);
-}
-
-void Framebuffer::saveDepthMipMapsToPng(const std::string & prefix)
-{
-	m_pixels.resize(width() * height());
-	void* pixels = static_cast<void*>(m_pixels.data());
-	GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
-
-	GLsizei levelWidth = m_width;
-	GLsizei levelHeight = m_height;
-	GLint levelCount = std::min(depthLevels() - 2, 5); // dirty hack otherwise there are "Generic error" failures from the driver
-	for (GLint level = 0; level < levelCount; ++level) {
-		ResourceManager::saveTexture_libpng(prefix + std::to_string(level) + ".png", depthTexture(), level);
-		//GLint levelWidth, levelHeight;
-		//glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_WIDTH, &levelWidth);
-		//glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_HEIGHT, &levelHeight);
-		//glGetTextureSubImage(depthTexture(), level, 0, 0, 0, levelWidth, levelHeight, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, levelWidth * levelHeight, pixels);
-		////ResourceManager::saveImage_libpng(prefix + std::to_string(level) + ".png", levelWidth, levelHeight, pixels);
-	}
 }
 
 GLsizei Framebuffer::depthLevels() const {

@@ -55,7 +55,7 @@ std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sour
 
 //-----------------------------------------------------------------------------
 
-void Filtering::Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader)
+void Filtering::Blit(GlTexture & destination, GLuint source, const ShaderProgram & shader)
 {
 	PostEffect posteffect;
 
@@ -68,12 +68,18 @@ void Filtering::Blit(GlTexture & destination, const GlTexture & source, const Sh
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
 
 	shader.use();
-	source.bind(0);
-	shader.setUniform("mainTexture", 0);
+	glBindTextureUnit(0, source);
+	shader.setUniform("uMainTexture", 0);
+	glViewport(0, 0, destination.width(), destination.height());
 	posteffect.draw();
 
 	glTextureBarrier();
 	glDeleteFramebuffers(1, &fbo);
+}
+
+void Filtering::Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader)
+{
+	Blit(destination, source.raw(), shader);
 }
 
 //-----------------------------------------------------------------------------
@@ -133,10 +139,15 @@ void MipmapDepthBufferGenerator::generate(Framebuffer & framebuffer)
 
 	for (GLsizei level = 0; level < framebuffer.depthLevels() - 1; ++level) {
 		GLsizei nextLevel = level + 1;
+		GLint w, h;
+		glGetTextureLevelParameteriv(framebuffer.depthTexture(), nextLevel, GL_TEXTURE_WIDTH, &w);
+		glGetTextureLevelParameteriv(framebuffer.depthTexture(), nextLevel, GL_TEXTURE_HEIGHT, &h);
+		
 		glTextureParameteri(framebuffer.depthTexture(), GL_TEXTURE_BASE_LEVEL, level);
 		glTextureParameteri(framebuffer.depthTexture(), GL_TEXTURE_MAX_LEVEL, level);
 
 		glNamedFramebufferTexture(framebuffer.raw(), GL_DEPTH_ATTACHMENT, framebuffer.depthTexture(), nextLevel);
+		glViewport(0, 0, w, h);
 		draw();
 		glTextureBarrier();
 	}

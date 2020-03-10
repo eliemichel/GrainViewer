@@ -343,11 +343,15 @@ bool ResourceManager::saveTexture(const std::string & filename, const GlTexture 
 
 bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level)
 {
+	// Avoid padding
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	stbi_flip_vertically_on_write(1);
+
 	// Check level
 	GLint baseLevel, maxLevel;
 	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
 	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
-	if (level < baseLevel || level > maxLevel) {
+	if (level < baseLevel || level >= maxLevel) {
 		ERR_LOG
 			<< "Invalid mipmap level " << level << " for texture " << tex
 			<< " (expected in range " << baseLevel << ".." << maxLevel << ")";
@@ -358,6 +362,11 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_WIDTH, &w);
 	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_HEIGHT, &h);
 	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_DEPTH, &d);
+
+	if (w == 0 || h == 0) {
+		ERR_LOG << "Texture with null size: " << tex;
+		return false;
+	}
 
 	if (d != 1) {
 		WARN_LOG << "Texture depth is clamped to 1 upon saving";
@@ -373,7 +382,7 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	case GL_DEPTH_COMPONENT24:
 	{
 		GLsizei byteCount = w * h * d;
-		pixels.resize(byteCount);
+		pixels = std::vector<png_byte>(byteCount, 0);
 		glGetTextureSubImage(tex, 0, 0, 0, 0, w, h, d, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
 		return stbi_write_png(filename.c_str(), w, h, 1, pixels.data(), w) == 0;
 	}
@@ -387,8 +396,27 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	}
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level) {
+bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level)
+{
 	return saveTexture_libpng(filename, texture.raw(), level);
+}
+
+bool ResourceManager::saveTextureMipMaps(const std::string& prefix, GLuint tex)
+{
+	GLint baseLevel, maxLevel;
+	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
+	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
+	for (GLint level = baseLevel; level < maxLevel; ++level) {
+		if (!ResourceManager::saveTexture_libpng(prefix + std::to_string(level) + ".png", tex, level)) {
+			return false;
+		}
+	}
+	return true;
+}
+
+bool ResourceManager::saveTextureMipMaps(const std::string& prefix, const GlTexture& texture)
+{
+	return saveTextureMipMaps(prefix, texture.raw());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
