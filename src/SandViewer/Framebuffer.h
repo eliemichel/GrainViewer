@@ -19,15 +19,20 @@ typedef struct {
 
 class Framebuffer {
 public:
+	/**
+	 * @param mipmapDepthBuffer Turn it on when implementing Hierarchical Z Buffer
+	 */
 	Framebuffer(size_t width = MAX_DISPLAY_WIDTH,
 		        size_t height = MAX_DISPLAY_HEIGHT,
-		        const std::vector<ColorLayerInfo> & colorLayerInfos = {});
+		        const std::vector<ColorLayerInfo> & colorLayerInfos = {},
+		        bool mipmapDepthBuffer = false);
 	~Framebuffer();
 
 	void bind() const;
 
 	GLuint depthTexture() const { return m_depthTexture; }
 	GLuint colorTexture(size_t i) const { return m_colorTextures[i]; }
+	size_t colorTextureCount() const { return m_colorTextures.size(); }
 
 	GLuint raw() const { return m_framebufferId; }
 
@@ -39,6 +44,15 @@ public:
 	 */
 	void setResolution(size_t width, size_t height);
 
+	void saveToPng(const std::string & filename);
+
+	/**
+	 * Save the mipmap levels of depth attachement to prefixXX.png
+	 */
+	void saveDepthMipMapsToPng(const std::string & prefix);
+
+	GLsizei depthLevels() const;
+
 private:
 	void init();
 	void destroy();
@@ -47,8 +61,14 @@ private:
 	GLsizei m_width, m_height;
 	std::vector<ColorLayerInfo> m_colorLayerInfos;
 
+	GLsizei m_depthLevels;
+
 	GLuint m_framebufferId;
 	std::vector<GLuint> m_colorTextures;
 	GLuint m_depthTexture;
+
+	// Allocated only when the framebuffer is saved to file, assuming that if
+	// it happens once, it is likely to hapen again
+	std::vector<uint8_t> m_pixels;
 };
 

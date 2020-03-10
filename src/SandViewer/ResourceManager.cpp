@@ -346,7 +346,7 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, const GlT
 	GLsizei h = texture.height();
 	GLsizei d = texture.depth();
 	std::vector<png_byte> pixels(4 * w * h);
-	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, 4 * w * h * sizeof(png_byte), pixels.data());
+	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, 4 * w * h * d * sizeof(png_byte), pixels.data());
 
 	int width = static_cast<int>(texture.width());
 	int height = static_cast<int>(texture.height());

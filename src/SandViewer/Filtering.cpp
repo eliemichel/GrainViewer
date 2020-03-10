@@ -4,6 +4,10 @@
 #include "Filtering.h"
 #include "ShaderPool.h"
 
+std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
+
+//-----------------------------------------------------------------------------
+
 std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sourceTexture)
 {
 	auto tex = std::make_unique<LeanTexture>(sourceTexture.target());
@@ -47,4 +51,76 @@ std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sour
 	tex->lean2.generateMipmap();
 
 	return std::move(tex);
+}
+
+//-----------------------------------------------------------------------------
+
+MipmapDepthBufferGenerator::MipmapDepthBufferGenerator()
+{
+	m_shader = ShaderPool::GetShader("GenerateMipmapDepthBuffer");
+
+	static GLfloat points[] = {
+		0, 0, 0,
+		2, 0, 0,
+		0, 2, 0
+	};
+
+	glCreateBuffers(1, &m_vbo);
+	glNamedBufferStorage(m_vbo, sizeof(points), points, NULL);
+
+	glCreateVertexArrays(1, &m_vao);
+	glVertexArrayVertexBuffer(m_vao, 0, m_vbo, 0, 0);
+	glEnableVertexArrayAttrib(m_vao, 0);
+	glVertexArrayAttribBinding(m_vao, 0, 0);
+	glVertexArrayAttribFormat(m_vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+}
+
+MipmapDepthBufferGenerator::~MipmapDepthBufferGenerator()
+{
+	glDeleteVertexArrays(1, &m_vao);
+	glDeleteBuffers(1, &m_vbo);
+}
+
+
+void MipmapDepthBufferGenerator::generate(Framebuffer & framebuffer)
+{
+	framebuffer.bind();
+	m_shader->use();
+	glBindVertexArray(m_vao);
+	glBindTextureUnit(0, framebuffer.depthTexture());
+	m_shader->setUniform("previousLevel", 0);
+
+	if (glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete!";
+
+	glDisable(GL_DEPTH_TEST);
+	for (int i = 0; i < framebuffer.colorTextureCount(); ++i) {
+		glNamedFramebufferTexture(framebuffer.raw(), GL_COLOR_ATTACHMENT0 + i, 0, 0);
+	}
+
+	if (glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete!";
+
+	for (GLsizei level = 0; level < framebuffer.depthLevels() - 1; ++level) {
+		GLsizei nextLevel = level + 1;
+		glTextureParameteri(framebuffer.depthTexture(), GL_TEXTURE_BASE_LEVEL, level);
+		glTextureParameteri(framebuffer.depthTexture(), GL_TEXTURE_MAX_LEVEL, level);
+
+		if (glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete!";
+
+		glNamedFramebufferTexture(framebuffer.raw(), GL_DEPTH_ATTACHMENT, framebuffer.depthTexture(), nextLevel);
+
+		auto s = glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER);
+		if (s != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete! " << s;
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glTextureBarrier();
+
+		if (glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete!";
+	}
+
+	glNamedFramebufferTexture(framebuffer.raw(), GL_DEPTH_ATTACHMENT, framebuffer.depthTexture(), 0);
+	for (int i = 0; i < framebuffer.colorTextureCount(); ++i) {
+		glNamedFramebufferTexture(framebuffer.raw(), GL_COLOR_ATTACHMENT0 + i, framebuffer.colorTexture(i), 0);
+	}
+
+	if (glCheckNamedFramebufferStatus(framebuffer.raw(), GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) ERR_LOG << "Framebuffer not complete!";
 }

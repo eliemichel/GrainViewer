@@ -65,6 +65,10 @@ ShaderPool::ShaderPool()
 		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_3D" } }
 		});
 	m_defaultShaders.insert({
+		"GenerateMipmapDepthBuffer",
+		{ "generate-mipmap-zbuffer", ShaderProgram::RenderShader, {} }
+		});
+	m_defaultShaders.insert({
 		"GltfMesh",
 		{ "gltf-mesh", ShaderProgram::RenderShader, {} }
 		});

@@ -109,10 +109,11 @@ set(All_SRC
 	Ui/LightGizmoDialog.h
 	Ui/LightGizmoDialog.cpp
 
-	bufferFillers.h
-	bufferFillers.cpp
 	AnimationManager.h
 	AnimationManager.cpp
+	Behavior.h
+	BehaviorRegistry.h
+	BehaviorRegistry.cpp
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h
@@ -143,6 +144,9 @@ set(All_SRC
 	TurntableCamera.cpp
 	World.h
 	World.cpp
+
+	bufferFillers.h
+	bufferFillers.cpp
 )
 
 set(SRC
@@ -215,6 +219,8 @@ set(GenerateLeanMaps_SRC
 	Ui/Window.h
 	Ui/Window.cpp
 
+	Framebuffer.h
+	Framebuffer.cpp
 	Filtering.h
 	Filtering.cpp
 )

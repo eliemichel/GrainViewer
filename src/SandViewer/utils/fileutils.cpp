@@ -14,8 +14,9 @@
 using namespace std;
 
 string baseDir(const string & path) {
-	size_t pos = path.find_last_of(PATH_DELIM);
-	return pos != string::npos ? path.substr(0, pos) : "";
+	std::string fixedPath = fixPath(path);
+	size_t pos = fixedPath.find_last_of(PATH_DELIM);
+	return pos != string::npos ? fixedPath.substr(0, pos) : "";
 }
 
 string shortFileName(const string& path) {

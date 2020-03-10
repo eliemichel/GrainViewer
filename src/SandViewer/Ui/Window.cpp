@@ -67,3 +67,8 @@ bool Window::isValid() const
 {
 	return m_window != nullptr;
 }
+
+void Window::swapBuffers() const
+{
+	glfwSwapBuffers(m_window);
+}

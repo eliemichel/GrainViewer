@@ -4,18 +4,21 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
+#include <cmath>
 #include <algorithm>
 
 #include "Framebuffer.h"
 #include "Logger.h"
+#include "ResourceManager.h"
 
 using namespace std;
 
 
-Framebuffer::Framebuffer(size_t width, size_t height, const vector<ColorLayerInfo> & colorLayerInfos)
+Framebuffer::Framebuffer(size_t width, size_t height, const vector<ColorLayerInfo> & colorLayerInfos, bool mipmapDepthBuffer)
 	: m_width(static_cast<GLsizei>(width))
 	, m_height(static_cast<GLsizei>(height))
 	, m_colorLayerInfos(colorLayerInfos)
+	, m_depthLevels(mipmapDepthBuffer ? static_cast<GLsizei>(1 + floor(log2(std::max(m_width, m_height)))) : 1)
 {
 	init();
 }
@@ -41,13 +44,17 @@ void Framebuffer::init() {
 	}
 
 	glCreateTextures(GL_TEXTURE_2D, 1, &m_depthTexture);
-	glTextureStorage2D(m_depthTexture, 1, GL_DEPTH_COMPONENT24, m_width, m_height);
+	glTextureStorage2D(m_depthTexture, m_depthLevels, GL_DEPTH_COMPONENT24, m_width, m_height);
 	glNamedFramebufferTexture(m_framebufferId, GL_DEPTH_ATTACHMENT, m_depthTexture, 0);
 
 	glTextureParameteri(m_depthTexture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTextureParameteri(m_depthTexture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(m_depthTexture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTextureParameteri(m_depthTexture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	if (m_depthLevels > 1) {
+		glGenerateTextureMipmap(m_depthTexture);
+	}
 
 	if (m_colorLayerInfos.empty()) {
 		glNamedFramebufferDrawBuffer(m_framebufferId, GL_NONE);
@@ -87,3 +94,34 @@ void Framebuffer::setResolution(size_t width, size_t height)
 	init();
 }
 
+void Framebuffer::saveToPng(const std::string & filename)
+{
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_framebufferId);
+	m_pixels.resize(4 * width() * height());
+	void* pixels = static_cast<void*>(m_pixels.data());
+	GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
+	glReadnPixels(0, 0, width(), height(), GL_RGBA, GL_UNSIGNED_BYTE, bufSize, pixels);
+	ResourceManager::saveImage_libpng(filename, width(), height(), pixels);
+}
+
+void Framebuffer::saveDepthMipMapsToPng(const std::string & prefix)
+{
+	m_pixels.resize(4 * width() * height());
+	void* pixels = static_cast<void*>(m_pixels.data());
+	GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
+
+	glReadnPixels(0, 0, width(), height(), GL_RGBA, GL_UNSIGNED_BYTE, bufSize, pixels);
+
+	GLsizei levelWidth = m_width;
+	GLsizei levelHeight = m_height;
+	for (GLint level = 0; level < depthLevels() - 2; ++level) {
+		glGetTextureSubImage(depthTexture(), level, 0, 0, 0, levelWidth, levelHeight, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, levelWidth * levelHeight, pixels);
+		ResourceManager::saveImage_libpng(prefix + std::to_string(level) + ".png", levelWidth, levelHeight, pixels);
+		levelWidth = levelWidth / 2 + levelWidth % 2;
+		levelHeight = levelHeight / 2 + levelHeight % 2;
+	}
+}
+
+GLsizei Framebuffer::depthLevels() const {
+	return m_depthLevels;
+}

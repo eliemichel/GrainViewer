@@ -22,6 +22,9 @@ public:
 	GLsizei pointCount() const;
 	GLuint vao() const;
 
+	// Must be called *before* start()
+	void setFilename(const std::string & filename) { m_filename = filename; }
+
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;

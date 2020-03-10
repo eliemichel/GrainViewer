@@ -21,6 +21,8 @@ public:
 	 */
 	bool isValid() const;
 
+	void swapBuffers() const;
+
 private:
 	GLFWwindow *m_window = nullptr;
 };

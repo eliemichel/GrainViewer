@@ -4,6 +4,7 @@
 
 #include "Behavior.h"
 #include "ShaderProgram.h"
+#include "GlTexture.h"
 
 class MeshDataRenderer;
 class TransformBehavior;

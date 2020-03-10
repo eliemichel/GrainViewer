@@ -11,33 +11,8 @@
 #include "Scene.h"
 #include "ShaderPool.h"
 #include "EnvironmentVariables.h"
-
-// TODO: Find a way to avoid this function
-#include "Behavior/MeshDataBehavior.h"
-#include "Behavior/MeshRenderer.h"
-#include "Behavior/ImpostorCloudRenderer.h"
-#include "Behavior/SandRenderer.h"
-#include "Behavior/TransformBehavior.h"
-#include "Behavior/TestPrefixSumRenderer.h"
-#include "Behavior/LightGizmo.h"
-#include "Behavior/PointCloudDataBehavior.h"
-#include "Behavior/FarSandRenderer.h"
-#include "Behavior/GltfDataBehavior.h"
-static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
-{
-#define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
-	handleType(MeshDataBehavior);
-	handleType(MeshRenderer);
-	handleType(ImpostorCloudRenderer);
-	handleType(SandRenderer);
-	handleType(TransformBehavior);
-	handleType(TestPrefixSumRenderer);
-	handleType(LightGizmo);
-	handleType(PointCloudDataBehavior);
-	handleType(FarSandRenderer);
-	handleType(GltfDataBehavior);
-#undef handleType
-}
+#include "BehaviorRegistry.h"
+#include "Behavior.h"
 
 bool Scene::load(const std::string & filename)
 {
@@ -120,6 +95,10 @@ bool Scene::load(const std::string & filename)
 
 			auto obj = std::make_shared<RuntimeObject>();
 
+			if (o.HasMember("name") && o["name"].IsString()) {
+				obj->name = o["name"].GetString();
+			}
+
 			// Components
 			std::vector<std::shared_ptr<Behavior>> behaviors;
 			const auto& d = o["behaviors"];
@@ -131,7 +110,7 @@ bool Scene::load(const std::string & filename)
 				}
 				const std::string & type = behaviorJson["type"].GetString();
 				std::shared_ptr<Behavior> b;
-				addBehavior(b, obj, type);
+				BehaviorRegistry::addBehavior(b, obj, type);
 				if (b) {
 					b->deserialize(behaviorJson, env, m_animationManager);
 					if (behaviorJson.HasMember("enabled") && behaviorJson["enabled"].IsBool()) {

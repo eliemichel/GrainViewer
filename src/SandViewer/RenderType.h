@@ -2,6 +2,7 @@
 
 enum RenderType
 {
+	DirectRendering,
 	DefaultRendering,
 	ShadowMapRendering,
 };
