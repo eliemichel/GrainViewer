@@ -115,11 +115,12 @@ void Framebuffer::saveDepthMipMapsToPng(const std::string & prefix)
 	GLsizei levelHeight = m_height;
 	GLint levelCount = std::min(depthLevels() - 2, 5); // dirty hack otherwise there are "Generic error" failures from the driver
 	for (GLint level = 0; level < levelCount; ++level) {
-		GLint levelWidth, levelHeight;
-		glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_WIDTH, &levelWidth);
-		glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_HEIGHT, &levelHeight);
-		glGetTextureSubImage(depthTexture(), level, 0, 0, 0, levelWidth, levelHeight, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, levelWidth * levelHeight, pixels);
-		ResourceManager::saveImage_libpng(prefix + std::to_string(level) + ".png", levelWidth, levelHeight, pixels);
+		ResourceManager::saveTexture_libpng(prefix + std::to_string(level) + ".png", depthTexture(), level);
+		//GLint levelWidth, levelHeight;
+		//glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_WIDTH, &levelWidth);
+		//glGetTextureLevelParameteriv(depthTexture(), level, GL_TEXTURE_HEIGHT, &levelHeight);
+		//glGetTextureSubImage(depthTexture(), level, 0, 0, 0, levelWidth, levelHeight, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, levelWidth * levelHeight, pixels);
+		////ResourceManager::saveImage_libpng(prefix + std::to_string(level) + ".png", levelWidth, levelHeight, pixels);
 	}
 }
 

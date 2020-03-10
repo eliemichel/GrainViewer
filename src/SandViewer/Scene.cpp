@@ -179,6 +179,15 @@ std::shared_ptr<Camera> Scene::viewportCamera() const
 	return m_viewportCameraIndex < m_cameras.size() ? m_cameras[m_viewportCameraIndex] : nullptr;
 }
 
+std::shared_ptr<RuntimeObject> Scene::findObjectByName(const std::string& name) {
+	for (auto& obj : objects()) {
+		if (obj->name == "OcclusionGeometry") {
+			return obj;
+		}
+	}
+	return nullptr;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Private methods
 ///////////////////////////////////////////////////////////////////////////////

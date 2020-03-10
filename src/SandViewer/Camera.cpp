@@ -70,7 +70,7 @@ void Camera::setResolution(glm::vec2 resolution)
 	switch (m_projectionType) {
 	case PerspectiveProjection:
 		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
-			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, 0.001f, 10000.f);
+			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, 0.001f, 1000.f);
 		}
 		break;
 	case OrthographicProjection:

@@ -35,17 +35,9 @@ bool testHzb()
 	Framebuffer hierarchicalDepthBuffer(W, H, { {GL_RGBA32F, GL_COLOR_ATTACHMENT0} }, true /* mipmapDepthBuffer */);
 
 	auto scene = std::make_shared<Scene>();
-	if (!scene->load(SHARE_DIR "/test/hzb.json")) {
-		return false;
-	}
+	if (!scene->load(SHARE_DIR "/test/hzb.json")) return false;
 
-	std::shared_ptr<RuntimeObject> occlusionGeometry;
-
-	for (auto & obj : scene->objects()) {
-		if (obj->name == "OcclusionGeometry") {
-			occlusionGeometry = obj;
-		}
-	}
+	auto occlusionGeometry = scene->findObjectByName("OcclusionGeometry");
 
 	if (!occlusionGeometry) {
 		ERR_LOG << "Could not find any object called OcclusionGeometry in hzv.json";
@@ -69,6 +61,7 @@ bool testHzb()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	for (const auto & obj : scene->objects()) {
+		if (obj == occlusionGeometry) continue;
 		obj->render(*scene->viewportCamera(), scene->world(), DirectRendering);
 	}
 
@@ -81,7 +74,6 @@ bool testHzb()
 
 	GlTexture rgb(GL_TEXTURE_2D);
 	rgb.storage(1, GL_RGBA16F, W, H);
-	rgb.generateMipmap();
 
 	GlTexture depthTexture(hierarchicalDepthBuffer.depthTexture(), GL_TEXTURE_2D);
 

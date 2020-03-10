@@ -14,6 +14,5 @@ target_include_directories(tinygltf PUBLIC include/)
 target_compile_definitions(
 	tinygltf PUBLIC
 	-DTINYGLTF_USE_CPP14
-	-DTINYGLTF_NO_STB_IMAGE_WRITE
 )
 set_property(TARGET tinygltf PROPERTY FOLDER "External")

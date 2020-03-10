@@ -22,6 +22,7 @@ namespace fs = std::filesystem;
 #include "utils/fileutils.h"
 
 #include <stb_image.h>
+#include <stb_image_write.h>
 #include <tinyexr.h>
 #include <TinyPngOut.hpp>
 
@@ -340,17 +341,54 @@ bool ResourceManager::saveTexture(const std::string & filename, const GlTexture 
 	return saveImage(filename, w, h, pixels.data());
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string & filename, const GlTexture & texture)
+bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level)
 {
-	GLsizei w = texture.width();
-	GLsizei h = texture.height();
-	GLsizei d = texture.depth();
-	std::vector<png_byte> pixels(4 * w * h);
-	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, 4 * w * h * d * sizeof(png_byte), pixels.data());
+	// Check level
+	GLint baseLevel, maxLevel;
+	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
+	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
+	if (level < baseLevel || level > maxLevel) {
+		ERR_LOG
+			<< "Invalid mipmap level " << level << " for texture " << tex
+			<< " (expected in range " << baseLevel << ".." << maxLevel << ")";
+		return false;
+	}
 
-	int width = static_cast<int>(texture.width());
-	int height = static_cast<int>(texture.height());
-	return saveImage_libpng(filename, width, height, pixels.data());
+	GLint w, h, d;
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_WIDTH, &w);
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_HEIGHT, &h);
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_DEPTH, &d);
+
+	if (d != 1) {
+		WARN_LOG << "Texture depth is clamped to 1 upon saving";
+		d = 1;
+	}
+
+	GLint internalformat;
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_INTERNAL_FORMAT, &internalformat);
+
+	std::vector<png_byte> pixels;
+
+	switch (internalformat) {
+	case GL_DEPTH_COMPONENT24:
+	{
+		GLsizei byteCount = w * h * d;
+		pixels.resize(byteCount);
+		glGetTextureSubImage(tex, 0, 0, 0, 0, w, h, d, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		return stbi_write_png(filename.c_str(), w, h, 1, pixels.data(), w) == 0;
+	}
+	default:
+	{
+		GLsizei byteCount = 4 * w * h * d;
+		pixels.resize(byteCount);
+		glGetTextureSubImage(tex, 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		return stbi_write_png(filename.c_str(), w, h, 4, pixels.data(), 4 * w) == 0;
+	}
+	}
+}
+
+bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level) {
+	return saveTexture_libpng(filename, texture.raw(), level);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

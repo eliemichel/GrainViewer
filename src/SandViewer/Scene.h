@@ -47,6 +47,8 @@ public:
 
 	bool mustQuit() const { return m_mustQuit;  }
 
+	std::shared_ptr<RuntimeObject> findObjectByName(const std::string& name);
+
 private:
 	void recordFrame(const Camera & camera) const;
 
