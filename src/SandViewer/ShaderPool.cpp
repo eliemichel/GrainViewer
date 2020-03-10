@@ -69,6 +69,10 @@ ShaderPool::ShaderPool()
 		{ "generate-mipmap-zbuffer", ShaderProgram::RenderShader, {} }
 		});
 	m_defaultShaders.insert({
+		"DepthToColorBuffer",
+		{ "depth-to-color", ShaderProgram::RenderShader, {} }
+		});
+	m_defaultShaders.insert({
 		"GltfMesh",
 		{ "gltf-mesh", ShaderProgram::RenderShader, {} }
 		});

@@ -13,16 +13,28 @@ struct LeanTexture {
 	LeanTexture(GLenum target) : lean1(target), lean2(target) {}
 };
 
-class MipmapDepthBufferGenerator
+/**
+ * A large quad covering the whole screen
+ */
+class PostEffect
+{
+public:
+	PostEffect();
+	~PostEffect();
+	void draw();
+private:
+	GLuint m_vao;
+	GLuint m_vbo;
+};
+
+
+class MipmapDepthBufferGenerator : public PostEffect
 {
 public:
 	MipmapDepthBufferGenerator();
-	~MipmapDepthBufferGenerator();
 	void generate(Framebuffer & framebuffer);
 private:
 	std::shared_ptr<ShaderProgram> m_shader;
-	GLuint m_vao;
-	GLuint m_vbo;
 };
 
 class Filtering {
@@ -35,6 +47,8 @@ public:
 	*/
 
 	static std::unique_ptr<LeanTexture> CreateLeanTexture(const GlTexture & sourceTexture);
+
+	static void Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader);
 
 	/**
 	 * Used for hierarchical depth buffer.

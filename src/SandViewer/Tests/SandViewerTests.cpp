@@ -9,6 +9,7 @@
 #include "Scene.h"
 #include "GlTexture.h"
 #include "Filtering.h"
+#include "ShaderPool.h"
 
 // Test hierarchcal Z buffer
 bool testHzb();
@@ -21,7 +22,8 @@ int main(int argc, char** argv) {
 
 bool testHzb()
 {
-	Window window(512, 512, "SandViewer Tests - HZB");
+	size_t W = 1920, H = 1080;
+	Window window(W, H, "SandViewer Tests - HZB");
 	
 	// Loading
 	/*
@@ -29,8 +31,8 @@ bool testHzb()
 	loadOcclusionProxy();
 	*/
 
-	Framebuffer fbo(512, 512, { {GL_RGBA32F, GL_COLOR_ATTACHMENT0} });
-	Framebuffer hierarchicalDepthBuffer(512, 512, { {GL_RGBA32F, GL_COLOR_ATTACHMENT0} }, true /* mipmapDepthBuffer */);
+	Framebuffer fbo(W, H, { {GL_RGBA32F, GL_COLOR_ATTACHMENT0} });
+	Framebuffer hierarchicalDepthBuffer(W, H, { {GL_RGBA32F, GL_COLOR_ATTACHMENT0} }, true /* mipmapDepthBuffer */);
 
 	auto scene = std::make_shared<Scene>();
 	if (!scene->load(SHARE_DIR "/test/hzb.json")) {
@@ -50,15 +52,16 @@ bool testHzb()
 		return false;
 	}
 
-	scene->setResolution(512, 512);
+	scene->setResolution(W, H);
 	scene->update(0);
-	glViewport(0, 0, 1920, 1080);
+	glViewport(0, 0, W, H);
 
 	// Render pipeline
 	//renderHzb();
 
 	hierarchicalDepthBuffer.bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 	occlusionGeometry->render(*scene->viewportCamera(), scene->world(), DirectRendering);
 
 	//render();
@@ -75,6 +78,18 @@ bool testHzb()
 
 	Filtering::MipmapDepthBuffer(hierarchicalDepthBuffer);
 	hierarchicalDepthBuffer.saveDepthMipMapsToPng("hzb_depth_mip");
+
+	GlTexture rgb(GL_TEXTURE_2D);
+	rgb.storage(1, GL_RGBA16F, W, H);
+	rgb.generateMipmap();
+
+	GlTexture depthTexture(hierarchicalDepthBuffer.depthTexture(), GL_TEXTURE_2D);
+
+	Filtering::Blit(rgb, depthTexture, *ShaderPool::GetShader("DepthToColorBuffer"));
+
+	depthTexture.release();
+
+	ResourceManager::saveTexture_libpng("rgb.png", rgb);
 
 	window.swapBuffers();
 

@@ -20,8 +20,8 @@ public:
 
 	void storage(GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth);
 	void storage(GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height);
-	void subImage(GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void * pixels);
-	void subImage(GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void * pixels);
+	void subImage(GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels);
+	void subImage(GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* pixels);
 	void generateMipmap() const;
 	void setWrapMode(GLenum wrap) const;
 
@@ -34,6 +34,9 @@ public:
 	bool isValid() const { return m_id != invalid; }
 	void bind(GLint unit) const;
 	void bind(GLuint unit) const;
+
+	// forget texture without deleting it, use with caution
+	void release() { m_id = invalid; }
 	
 private:
 	static const GLuint invalid;
