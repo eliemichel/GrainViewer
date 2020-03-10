@@ -5,6 +5,8 @@
 #include "ShaderPool.h"
 
 std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
+std::unique_ptr<PostEffect> Filtering::s_postEffectQuad;
+std::unique_ptr<Framebuffer2> Filtering::s_postEffectFramebuffer;
 
 //-----------------------------------------------------------------------------
 
@@ -57,24 +59,25 @@ std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sour
 
 void Filtering::Blit(GlTexture & destination, GLuint source, const ShaderProgram & shader)
 {
-	PostEffect posteffect;
+	// Init on first use
+	if (!s_postEffectQuad) s_postEffectQuad = std::make_unique<PostEffect>();
+	if (!s_postEffectFramebuffer)
+	{
+		s_postEffectFramebuffer = std::make_unique<Framebuffer2>();
+		std::vector<GLenum> drawBuffers = { GL_COLOR_ATTACHMENT0 };
+		glNamedFramebufferDrawBuffers(s_postEffectFramebuffer->raw(), static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
+	}
 
-	GLuint fbo;
-	glCreateFramebuffers(1, &fbo);
-
-	glNamedFramebufferTexture(fbo, GL_COLOR_ATTACHMENT0, destination.raw(), 0);
-	std::vector<GLenum> drawBuffers = { GL_COLOR_ATTACHMENT0 };
-	glNamedFramebufferDrawBuffers(fbo, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+	glNamedFramebufferTexture(s_postEffectFramebuffer->raw(), GL_COLOR_ATTACHMENT0, destination.raw(), 0);
+	s_postEffectFramebuffer->bind();
 
 	shader.use();
 	glBindTextureUnit(0, source);
 	shader.setUniform("uMainTexture", 0);
 	glViewport(0, 0, destination.width(), destination.height());
-	posteffect.draw();
+	s_postEffectQuad->draw();
 
 	glTextureBarrier();
-	glDeleteFramebuffers(1, &fbo);
 }
 
 void Filtering::Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader)

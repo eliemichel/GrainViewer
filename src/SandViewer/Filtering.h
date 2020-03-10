@@ -3,6 +3,7 @@
 #include <memory>
 #include "GlTexture.h"
 #include "Framebuffer.h"
+#include "Framebuffer2.h"
 
 class ShaderProgram;
 
@@ -66,4 +67,6 @@ public:
 
 private:
 	static std::unique_ptr<MipmapDepthBufferGenerator> s_mipmapDepthBufferGenerator;
+	static std::unique_ptr<PostEffect> s_postEffectQuad;
+	static std::unique_ptr<Framebuffer2> s_postEffectFramebuffer;
 };

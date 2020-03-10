@@ -122,6 +122,8 @@ set(All_SRC
 	Filtering.cpp
 	Framebuffer.h
 	Framebuffer.cpp
+	Framebuffer2.h
+	Framebuffer2.cpp
 	GlBuffer.h
 	GlBuffer.cpp
 	GlDeferredShader.h
@@ -221,6 +223,8 @@ set(GenerateLeanMaps_SRC
 
 	Framebuffer.h
 	Framebuffer.cpp
+	Framebuffer2.h
+	Framebuffer2.cpp
 	Filtering.h
 	Filtering.cpp
 )
