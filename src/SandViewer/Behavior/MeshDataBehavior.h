@@ -22,6 +22,10 @@ public:
 	GLsizei pointCount() const;
 	GLuint vao() const;
 
+	// Available only if m_computeBoundingSphere was true upon start
+	const glm::vec3 & boundingSphereCenter() const { return m_boundingSphereCenter; }
+	float boundingSphereRadius() const { return m_boundingSphereRadius; }
+
 	// Must be called *before* start()
 	void setFilename(const std::string & filename) { m_filename = filename; }
 
@@ -32,8 +36,16 @@ public:
 	void onDestroy() override;
 
 private:
+	// this take into account a potential TransformBehavior attached to the object
+	void computeBoundingSphere();
+
+private:
 	std::string m_filename = "";
 	std::unique_ptr<Mesh> m_mesh;
+
+	bool m_computeBoundingSphere = false;
+	glm::vec3 m_boundingSphereCenter;
+	float m_boundingSphereRadius;
 
 	GLsizei m_pointCount;
 	std::unique_ptr<GlBuffer> m_vertexBuffer;

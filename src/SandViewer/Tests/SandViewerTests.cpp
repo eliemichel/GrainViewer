@@ -10,6 +10,7 @@
 #include "GlTexture.h"
 #include "Filtering.h"
 #include "ShaderPool.h"
+#include "Behavior/MeshDataBehavior.h"
 
 #define W 1920
 #define H 1080
@@ -75,6 +76,13 @@ bool testHzb()
 	for (const auto & obj : scene->objects()) {
 		if (obj == occlusionGeometry) continue;
 		// TODO: test against HZB
+		if (auto meshData = obj->getBehavior<MeshDataBehavior>().lock()) {
+			glm::vec3 c = meshData->boundingSphereCenter();
+			float r = meshData->boundingSphereRadius();
+			DEBUG_LOG << "Bounding Sphere: c = (" << c.x << ", " << c.y << ", " << c.z << "), r = " << r;
+			float ssRadius = camera.projectSphere(c, r);
+			DEBUG_LOG << "(maps to a circle of radius " << ssRadius << " in screen space)";
+		}
 		obj->render(camera, scene->world(), DirectRendering);
 	}
 

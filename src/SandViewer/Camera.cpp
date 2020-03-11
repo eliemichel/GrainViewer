@@ -405,3 +405,17 @@ void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
 {
 	// TODO
 }
+
+float Camera::projectSphere(glm::vec3 center, float radius) const
+{
+	// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
+	glm::vec3 o = (viewMatrix() * glm::vec4(center, 1.0f));
+
+	float r2 = radius * radius;
+	float z2 = o.z * o.z;
+	float l2 = dot(o, o);
+	float fl = 1.0f / (2.0f * glm::tan(glm::radians(fov()) / 2.0f));
+
+	float cr = static_cast<float>(-3.14159 * fl * fl * r2 * sqrt(abs((l2 - r2) / (r2 - z2))) / (r2 - z2));
+	return cr * m_resolution.y;
+}

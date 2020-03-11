@@ -2,7 +2,7 @@
 	"cameras": [
 		{
 			"projection": "perspective",
-			"fov": 24,
+			"fov": 39.6,
 			"near": 0.1,
 			"far": 100.0,
 			"viewMatrix": {
@@ -75,7 +75,8 @@
 				},
 				{
 					"type": "MeshDataBehavior",
-					"filename": "hzb-test-scene-pawn.obj"
+					"filename": "hzb-test-scene-pawn.obj",
+					"computeBoundingSphere": true
 				},
 				{
 					"type": "MeshRenderer",

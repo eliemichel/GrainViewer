@@ -108,6 +108,11 @@ public:
 	std::shared_ptr<Framebuffer> getExtraFramebuffer() const;
 	void releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const;
 
+	/**
+	 * Bounding radius of the projected sphere (which is an ellipsis)
+	 */
+	float projectSphere(glm::vec3 center, float radius) const;
+
 protected:
 	/**
 	* Called when mouse moves and rotation has started
