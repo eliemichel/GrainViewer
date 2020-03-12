@@ -81,8 +81,8 @@ public:
 	static bool saveImage_libpng(const std::string & filename, int width, int height, void *data);
 
 	static bool saveTexture(const std::string & filename, const GlTexture & texture);
-	static bool saveTexture_libpng(const std::string & filename, GLuint tex, GLint level = 0);
-	static bool saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level = 0);
+	static bool saveTexture_libpng(const std::string & filename, GLuint tex, GLint level = 0, bool vflip = false);
+	static bool saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level = 0, bool vflip = false);
 
 	// Save all mipmap levels in prefixXX.png
 	static bool saveTextureMipMaps(const std::string& prefix, GLuint tex);

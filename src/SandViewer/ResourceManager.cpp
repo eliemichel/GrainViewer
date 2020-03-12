@@ -341,11 +341,11 @@ bool ResourceManager::saveTexture(const std::string & filename, const GlTexture 
 	return saveImage(filename, w, h, pixels.data());
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level)
+bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level, bool vflip)
 {
 	// Avoid padding
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
-	stbi_flip_vertically_on_write(1);
+	stbi_flip_vertically_on_write(vflip ? 1 : 0);
 
 	// Check level
 	GLint baseLevel, maxLevel;
@@ -396,9 +396,9 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	}
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level)
+bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level, bool vflip)
 {
-	return saveTexture_libpng(filename, texture.raw(), level);
+	return saveTexture_libpng(filename, texture.raw(), level, vflip);
 }
 
 bool ResourceManager::saveTextureMipMaps(const std::string& prefix, GLuint tex)
