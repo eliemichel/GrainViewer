@@ -411,6 +411,8 @@ float Camera::projectSphere(glm::vec3 center, float radius) const
 	// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
 	glm::vec3 o = (viewMatrix() * glm::vec4(center, 1.0f));
 
+	glm::mat2 R = glm::mat2(o.x, o.y, -o.y, o.x);
+
 	float r2 = radius * radius;
 	float z2 = o.z * o.z;
 	float l2 = dot(o, o);

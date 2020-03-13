@@ -93,6 +93,13 @@ bool testHzb()
 	ResourceManager::saveTexture_libpng("test.png", fbo.colorTexture(0));
 	saveDepthBufferMipMaps("hzb_depth_mip", hierarchicalDepthBuffer.depthTexture(), camera);
 
+	// Save debug
+	ShaderPool::AddShader("Debug", "debug", ShaderProgram::RenderShader);
+	GlTexture debugTexture(GL_TEXTURE_2D);
+	debugTexture.storage(1, GL_RGBA16F, W, H);
+	Filtering::Blit(debugTexture, fbo.colorTexture(0), *ShaderPool::GetShader("Debug"));
+	ResourceManager::saveTexture_libpng("debug.png", debugTexture);
+
 	window.swapBuffers();
 
 	return true;
