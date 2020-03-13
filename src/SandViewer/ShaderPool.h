@@ -10,7 +10,7 @@
 
 class ShaderPool {
 public:
-	static void AddShader(const std::string& shaderName, const std::string& baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string>& defines = {});
+	static void AddShader(const std::string& shaderName, const std::string& baseFile, ShaderProgram::ShaderProgramType type = ShaderProgram::RenderShader, const std::vector<std::string>& defines = {});
 
 	/**
 	 * Copy a base shader and add an extra define. If the define is already

@@ -102,6 +102,10 @@ void Camera::setFov(float fov)
 	updateProjectionMatrix();
 }
 
+float Camera::focalLength() const
+{
+	return 1.0f / (2.0f * glm::tan(glm::radians(fov()) / 2.0f));
+}
 
 void Camera::setNearDistance(float distance)
 {
@@ -406,7 +410,7 @@ void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
 	// TODO
 }
 
-float Camera::projectSphere(glm::vec3 center, float radius) const
+glm::vec3 Camera::projectSphere(glm::vec3 center, float radius) const
 {
 	// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
 	glm::vec3 o = (viewMatrix() * glm::vec4(center, 1.0f));
@@ -414,10 +418,17 @@ float Camera::projectSphere(glm::vec3 center, float radius) const
 	glm::mat2 R = glm::mat2(o.x, o.y, -o.y, o.x);
 
 	float r2 = radius * radius;
-	float z2 = o.z * o.z;
-	float l2 = dot(o, o);
-	float fl = 1.0f / (2.0f * glm::tan(glm::radians(fov()) / 2.0f));
+	float fl = focalLength();
+	float ox2 = o.x * o.x;
+	float oy2 = o.y * o.y;
+	float oz2 = o.z * o.z;
+	float fp = fl * fl * r2 * (ox2 + oy2 + oz2 - r2) / (oz2 - r2);
+	float outerRadius = sqrt(abs(fp / (r2 - oz2)));
 
-	float cr = static_cast<float>(-3.14159 * fl * fl * r2 * sqrt(abs((l2 - r2) / (r2 - z2))) / (r2 - z2));
-	return cr * m_resolution.y;
+	glm::vec2 circleCenter = glm::vec2(o.x, o.y) * o.z * fl / (oz2 - r2);
+
+	float pixelRadius = outerRadius * m_resolution.y;
+	glm::vec2 pixelCenter = circleCenter * m_resolution.y * glm::vec2(-1.0f, 1.0f) + m_resolution * 0.5f;
+
+	return glm::vec3(pixelCenter, pixelRadius);
 }

@@ -26,10 +26,8 @@ else()
 	add_definitions(-DSHARE_DIR="./share")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-if(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
-endif(MSVC)
+enable_cpp17()
+enable_multiprocessor_compilation()
 
 ###############################################################################
 # Source subsets

@@ -53,10 +53,19 @@ void GlBuffer::enableAttributes(GLuint vao) {
 	GLuint id = 0;
 	for (auto b : m_blocks) {
 		for (auto attr : b.attributes) {
-			GLsizei offset = blockOffset + attr.byteOffset;
-			glVertexAttribPointer(id, attr.size, attr.type, GL_FALSE, b.stride, static_cast<GLvoid*>(static_cast<char*>(0) + offset));
+			GLintptr offset = blockOffset + attr.byteOffset;
+			/*
 			glEnableVertexArrayAttrib(vao, id);
+			glVertexAttribPointer(id, attr.size, attr.type, GL_FALSE, b.stride, static_cast<GLvoid*>(static_cast<char*>(0) + offset));
 			glVertexAttribDivisor(id, attr.divisor);
+			/*/
+			GLuint bindingindex = id;
+			glVertexArrayVertexBuffer(vao, bindingindex, m_buffer, offset, b.stride);
+			glVertexArrayBindingDivisor(vao, bindingindex, attr.divisor);
+			glEnableVertexArrayAttrib(vao, id);
+			glVertexArrayAttribBinding(vao, id, bindingindex);
+			glVertexArrayAttribFormat(vao, id, attr.size, attr.type, GL_FALSE, 0);
+			//*/
 			++id;
 		}
 		blockOffset = b.endByteOffset;

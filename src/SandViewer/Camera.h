@@ -61,6 +61,7 @@ public:
 	void setFreezeResolution(bool freeze);
 
 	float fov() const { return m_fov; }
+	float focalLength() const;
 	void setFov(float fov);
 
 	float nearDistance() const { return m_near; }
@@ -109,9 +110,10 @@ public:
 	void releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const;
 
 	/**
-	 * Bounding radius of the projected sphere (which is an ellipsis)
+	 * Bounding circle of the projected sphere (which is an ellipsis).
+	 * xy is the center, z is the radius, all in pixels
 	 */
-	float projectSphere(glm::vec3 center, float radius) const;
+	glm::vec3 projectSphere(glm::vec3 center, float radius) const;
 
 protected:
 	/**

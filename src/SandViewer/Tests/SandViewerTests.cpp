@@ -27,8 +27,8 @@ void saveDepthBufferMipMaps(const std::string & prefix, GLuint tex, const Camera
 
 int main(int argc, char** argv) {
 	bool success = true;
-	//success = success && testHzb();
-	success = success && testSplineBlur();
+	success = success && testHzb();
+	//success = success && testSplineBlur();
 	return EXIT_SUCCESS;
 }
 
@@ -48,6 +48,8 @@ bool testHzb()
 
 	auto scene = std::make_shared<Scene>();
 	if (!scene->load(SHARE_DIR "/test/hzb.json")) return false;
+
+	window.swapBuffers();
 
 	auto occlusionGeometry = scene->findObjectByName("OcclusionGeometry");
 
@@ -75,6 +77,10 @@ bool testHzb()
 	//  B. Render scene
 	fbo.bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, W, H);
+	glEnable(GL_DEPTH_TEST);
+	float debugRadius;
+	glm::vec3 debugCenter;
 	for (const auto & obj : scene->objects()) {
 		if (obj == occlusionGeometry) continue;
 		// TODO: test against HZB
@@ -82,8 +88,10 @@ bool testHzb()
 			glm::vec3 c = meshData->boundingSphereCenter();
 			float r = meshData->boundingSphereRadius();
 			DEBUG_LOG << "Bounding Sphere: c = (" << c.x << ", " << c.y << ", " << c.z << "), r = " << r;
-			float ssRadius = camera.projectSphere(c, r);
-			DEBUG_LOG << "(maps to a circle of radius " << ssRadius << " in screen space)";
+			glm::vec3 ssCircle = camera.projectSphere(c, r);
+			DEBUG_LOG << "(maps to a circle of radius " << ssCircle.z << " at position (" << ssCircle.x << ", " << ssCircle.y << ") in screen space)";
+			debugRadius = r;
+			debugCenter = c;
 		}
 		obj->render(camera, scene->world(), DirectRendering);
 	}
@@ -91,16 +99,24 @@ bool testHzb()
 	//////////////////////////////////////////////////////////////
 	// Save results to files
 
-	ResourceManager::saveTexture_libpng("hzb.png", hierarchicalDepthBuffer.colorTexture(0));
-	ResourceManager::saveTexture_libpng("test.png", fbo.colorTexture(0));
+	ResourceManager::saveTexture_libpng("hzb.png", hierarchicalDepthBuffer.colorTexture(0), 0, true /* vflip */);
+	ResourceManager::saveTexture_libpng("test.png", fbo.colorTexture(0), 0, true /* vflip */);
 	saveDepthBufferMipMaps("hzb_depth_mip", hierarchicalDepthBuffer.depthTexture(), camera);
 
 	// Save debug
 	ShaderPool::AddShader("Debug", "debug", ShaderProgram::RenderShader);
 	GlTexture debugTexture(GL_TEXTURE_2D);
 	debugTexture.storage(1, GL_RGBA16F, W, H);
-	Filtering::Blit(debugTexture, fbo.colorTexture(0), *ShaderPool::GetShader("Debug"));
-	ResourceManager::saveTexture_libpng("debug.png", debugTexture);
+
+	auto debugShader = ShaderPool::GetShader("Debug");
+	debugShader->setUniform("uRadius", debugRadius);
+	debugShader->setUniform("uCenter", debugCenter);
+	debugShader->setUniform("uFocalLength", camera.focalLength());
+	debugShader->setUniform("uViewMatrix", camera.viewMatrix());
+	debugShader->setUniform("uProjectionMatrix", camera.projectionMatrix());
+	debugShader->setUniform("uResolution", glm::vec2(W, H));
+	Filtering::Blit(debugTexture, fbo.colorTexture(0), *debugShader);
+	ResourceManager::saveTexture_libpng("debug.png", debugTexture, 0, true /* vflip */);
 
 	window.swapBuffers();
 
@@ -138,10 +154,10 @@ void saveDepthBufferMipMaps(const std::string & prefix, GLuint tex, const Camera
 bool testSplineBlur()
 {
 	Window window(128, 128, "SandViewer Tests - Misc");
-
-	ShaderPool::AddShader("Blur", "splineblur/blur", ShaderProgram::RenderShader, {});
-	ShaderPool::AddShader("Diffusion", "splineblur/diffusion", ShaderProgram::RenderShader, {});
-	ShaderPool::AddShader("PostEffect", "splineblur/posteffect", ShaderProgram::RenderShader, {});
+	
+	ShaderPool::AddShader("Blur", "splineblur/blur");
+	ShaderPool::AddShader("Diffusion", "splineblur/diffusion");
+	ShaderPool::AddShader("PostEffect", "splineblur/posteffect");
 
 	auto inputImage = ResourceManager::loadTexture("E:/tmp/input.jpg");
 	auto blurShader = ShaderPool::GetShader("Blur");
