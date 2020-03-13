@@ -16,6 +16,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+#include <glm/glm.hpp>
 #include <png.h>
 
 #include "utils/strutils.h"
@@ -399,6 +400,154 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level, bool vflip)
 {
 	return saveTexture_libpng(filename, texture.raw(), level, vflip);
+}
+
+bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint tex, GLint level)
+{
+	// Avoid padding
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+	// Check level
+	GLint baseLevel, maxLevel;
+	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
+	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
+	if (level < baseLevel || level >= maxLevel) {
+		ERR_LOG
+			<< "Invalid mipmap level " << level << " for texture " << tex
+			<< " (expected in range " << baseLevel << ".." << maxLevel << ")";
+		return false;
+	}
+
+	GLint w, h, d;
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_WIDTH, &w);
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_HEIGHT, &h);
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_DEPTH, &d);
+
+	if (w == 0 || h == 0) {
+		ERR_LOG << "Texture with null size: " << tex;
+		return false;
+	}
+
+	if (d != 1) {
+		WARN_LOG << "Texture depth is clamped to 1 upon saving";
+		d = 1;
+	}
+
+	GLint internalformat;
+	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_INTERNAL_FORMAT, &internalformat);
+
+	std::vector<png_byte> pixels;
+
+	switch (internalformat) {
+	case GL_DEPTH_COMPONENT24:
+	{
+		GLsizei pixelCount = w * h * d;
+		std::vector<float> pixels = std::vector<float>(pixelCount, 0);
+		glGetTextureSubImage(tex, level, 0, 0, 0, w, h, d, GL_DEPTH_COMPONENT, GL_FLOAT, pixelCount * sizeof(float), pixels.data());
+		
+		EXRHeader header;
+		InitEXRHeader(&header);
+
+		EXRImage image;
+		InitEXRImage(&image);
+
+		image.num_channels = 1;
+		float* image_ptr[1];
+		image_ptr[0] = pixels.data();
+		image.images = (unsigned char**)image_ptr;
+		image.width = w;
+		image.height = h;
+		header.num_channels = 1;
+		header.channels = (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
+		strncpy(header.channels[0].name, "R", 255); header.channels[0].name[strlen("R")] = '\0';
+
+		header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+		for (int i = 0; i < header.num_channels; i++) {
+			header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of input image
+			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
+		}
+
+		const char* err = nullptr;
+		int ret = SaveEXRImageToFile(&image, &header, filename.c_str(), &err);
+		if (ret != TINYEXR_SUCCESS) {
+			ERR_LOG << "tinyexr: " << err;
+			FreeEXRErrorMessage(err); // free's buffer for an error message
+			return false;
+		}
+
+		free(header.channels);
+		free(header.pixel_types);
+		free(header.requested_pixel_types);
+
+		return true;
+	}
+	default:
+	{
+		GLsizei pixelCount = w * h * d;
+		std::vector<glm::vec4> pixels = std::vector<glm::vec4>(pixelCount);
+		glGetTextureSubImage(tex, level, 0, 0, 0, w, h, d, GL_RGBA, GL_FLOAT, pixelCount * sizeof(glm::vec4), pixels.data());
+		std::vector<float> red = std::vector<float>(pixelCount);
+		std::vector<float> green = std::vector<float>(pixelCount);
+		std::vector<float> blue = std::vector<float>(pixelCount);
+		std::vector<float> alpha = std::vector<float>(pixelCount);
+		// Split RGBARGBARGBA... into R, G, B and A layers
+		for (int i = 0; i < pixelCount; i++) {
+			red[i] = pixels[i].r;
+			green[i] = pixels[i].g;
+			blue[i] = pixels[i].b;
+			alpha[i] = pixels[i].a;
+		}
+
+		EXRHeader header;
+		InitEXRHeader(&header);
+
+		EXRImage image;
+		InitEXRImage(&image);
+
+		image.num_channels = 4;
+		float* image_ptr[4];
+		image_ptr[0] = alpha.data();
+		image_ptr[1] = blue.data();
+		image_ptr[2] = green.data();
+		image_ptr[3] = red.data();
+		image.images = (unsigned char**)image_ptr;
+		image.width = w;
+		image.height = h;
+		header.num_channels = 4;
+		header.channels = (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
+		strncpy(header.channels[0].name, "A", 255); header.channels[0].name[strlen("A")] = '\0';
+		strncpy(header.channels[1].name, "B", 255); header.channels[1].name[strlen("B")] = '\0';
+		strncpy(header.channels[2].name, "G", 255); header.channels[2].name[strlen("G")] = '\0';
+		strncpy(header.channels[3].name, "R", 255); header.channels[3].name[strlen("R")] = '\0';
+
+		header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
+		for (int i = 0; i < header.num_channels; i++) {
+			header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of input image
+			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
+		}
+
+		const char* err = nullptr;
+		int ret = SaveEXRImageToFile(&image, &header, filename.c_str(), &err);
+		if (ret != TINYEXR_SUCCESS) {
+			ERR_LOG << "tinyexr: " << err;
+			FreeEXRErrorMessage(err); // free's buffer for an error message
+			return false;
+		}
+
+		free(header.channels);
+		free(header.pixel_types);
+		free(header.requested_pixel_types);
+
+		return true;
+	}
+	}
+}
+
+bool ResourceManager::saveTexture_tinyexr(const std::string & filename, const GlTexture& texture, GLint level)
+{
+	return saveTexture_tinyexr(filename, texture.raw(), level);
 }
 
 bool ResourceManager::saveTextureMipMaps(const std::string& prefix, GLuint tex)

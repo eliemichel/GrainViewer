@@ -432,3 +432,8 @@ glm::vec3 Camera::projectSphere(glm::vec3 center, float radius) const
 
 	return glm::vec3(pixelCenter, pixelRadius);
 }
+
+float Camera::linearDepth(float zbufferDepth) const
+{
+	return (2.0 * m_near * m_far) / (m_far + m_near - (zbufferDepth * 2.0f - 1.0f) * (m_far - m_near));
+}

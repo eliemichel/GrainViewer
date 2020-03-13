@@ -7,6 +7,7 @@
 std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
 std::unique_ptr<PostEffect> Filtering::s_postEffectQuad;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectFramebuffer;
+std::unique_ptr<Framebuffer2> Filtering::s_postEffectDepthOnlyFramebuffer;
 
 //-----------------------------------------------------------------------------
 
@@ -85,6 +86,37 @@ void Filtering::Blit(GlTexture & destination, const GlTexture & source, const Sh
 	Blit(destination, source.raw(), shader);
 }
 
+void Filtering::BlitDepth(GlTexture & destination, GLuint source, const ShaderProgram & shader)
+{
+	// Init on first use
+	if (!s_postEffectQuad) s_postEffectQuad = std::make_unique<PostEffect>();
+	if (!s_postEffectDepthOnlyFramebuffer)
+	{
+		s_postEffectDepthOnlyFramebuffer = std::make_unique<Framebuffer2>();
+		glNamedFramebufferDrawBuffer(s_postEffectDepthOnlyFramebuffer->raw(), GL_NONE);
+	}
+
+	glNamedFramebufferTexture(s_postEffectDepthOnlyFramebuffer->raw(), GL_DEPTH_ATTACHMENT, destination.raw(), 0);
+	s_postEffectDepthOnlyFramebuffer->bind();
+
+	shader.use();
+	glBindTextureUnit(0, source);
+	shader.setUniform("uMainTexture", 0);
+	glViewport(0, 0, destination.width(), destination.height());
+
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	s_postEffectQuad->draw(false /* disableDepthTest */);
+
+	glTextureBarrier();
+}
+
+void Filtering::BlitDepth(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader)
+{
+	BlitDepth(destination, source.raw(), shader);
+}
+
 //-----------------------------------------------------------------------------
 
 PostEffect::PostEffect()
@@ -111,9 +143,9 @@ PostEffect::~PostEffect()
 	glDeleteBuffers(1, &m_vbo);
 }
 
-void PostEffect::draw()
+void PostEffect::draw(bool disableDepthTest)
 {
-	glDisable(GL_DEPTH_TEST);
+	if (disableDepthTest) glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_vao);
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
@@ -128,6 +160,7 @@ MipmapDepthBufferGenerator::MipmapDepthBufferGenerator()
 void MipmapDepthBufferGenerator::generate(Framebuffer & framebuffer)
 {
 	framebuffer.bind();
+	glEnable(GL_DEPTH_TEST);
 	m_shader->use();
 	glBindTextureUnit(0, framebuffer.depthTexture());
 	m_shader->setUniform("previousLevel", 0);
@@ -151,7 +184,8 @@ void MipmapDepthBufferGenerator::generate(Framebuffer & framebuffer)
 
 		glNamedFramebufferTexture(framebuffer.raw(), GL_DEPTH_ATTACHMENT, framebuffer.depthTexture(), nextLevel);
 		glViewport(0, 0, w, h);
-		draw();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		draw(false /* disableDepthTest */);
 		glTextureBarrier();
 	}
 

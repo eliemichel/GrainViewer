@@ -22,7 +22,7 @@ class PostEffect
 public:
 	PostEffect();
 	~PostEffect();
-	void draw();
+	void draw(bool disableDepthTest = true);
 private:
 	GLuint m_vao;
 	GLuint m_vbo;
@@ -56,6 +56,12 @@ public:
 	static void Blit(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader);
 
 	/**
+	 * Same as Blit, but attaching destination texture to depth
+	 */
+	static void BlitDepth(GlTexture & destination, GLuint source, const ShaderProgram & shader);
+	static void BlitDepth(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader);
+
+	/**
 	 * Used for hierarchical depth buffer.
 	 * Assumes that level 0 of depth buffer has been rendered, and compute
 	 * other levels by max-ing neighbors
@@ -69,4 +75,5 @@ private:
 	static std::unique_ptr<MipmapDepthBufferGenerator> s_mipmapDepthBufferGenerator;
 	static std::unique_ptr<PostEffect> s_postEffectQuad;
 	static std::unique_ptr<Framebuffer2> s_postEffectFramebuffer;
+	static std::unique_ptr<Framebuffer2> s_postEffectDepthOnlyFramebuffer;
 };

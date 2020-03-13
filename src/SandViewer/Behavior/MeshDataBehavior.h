@@ -23,6 +23,7 @@ public:
 	GLuint vao() const;
 
 	// Available only if m_computeBoundingSphere was true upon start
+	bool hasBoundingSphere() const { return m_computeBoundingSphere;  }
 	const glm::vec3 & boundingSphereCenter() const { return m_boundingSphereCenter; }
 	float boundingSphereRadius() const { return m_boundingSphereRadius; }
 

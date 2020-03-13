@@ -115,6 +115,11 @@ public:
 	 */
 	glm::vec3 projectSphere(glm::vec3 center, float radius) const;
 
+	/**
+	 * Convert depth value from Z-buffer to a linear depth in camera space units
+	 */
+	float linearDepth(float zbufferDepth) const;
+
 protected:
 	/**
 	* Called when mouse moves and rotation has started
