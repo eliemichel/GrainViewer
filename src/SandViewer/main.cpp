@@ -29,7 +29,6 @@
 #include <glad/modernglad.h> // must be the first include
 #include <cstdlib> // for EXIT_FAILURE and EXIT_SUCCESS
 #include <memory>
-#include <GLFW/glfw3.h>
 
 #include "Ui/Window.h"
 #include "Ui/Gui.h"
@@ -59,13 +58,13 @@ int main(int argc, char *argv[]) {
 	}
 	gui->afterLoading();
 
-	while (!glfwWindowShouldClose(window->glfw())) {
-		glfwPollEvents();
+	while (!window->shouldClose()) {
+		window->pollEvents();
 
 		gui->update();
 		gui->render();
 
-		glfwSwapBuffers(window->glfw());
+		window->swapBuffers();
 	}
 
 	return EXIT_SUCCESS;

@@ -68,7 +68,17 @@ bool Window::isValid() const
 	return m_window != nullptr;
 }
 
+void Window::pollEvents() const
+{
+	glfwPollEvents();
+}
+
 void Window::swapBuffers() const
 {
 	glfwSwapBuffers(m_window);
+}
+
+bool Window::shouldClose() const
+{
+	return glfwWindowShouldClose(m_window);
 }

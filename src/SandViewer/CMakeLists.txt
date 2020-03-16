@@ -94,8 +94,12 @@ set(All_SRC
 	utils/guiutils.cpp
 
 	Ui/Dialog.h
+	Ui/Widgets.h
+	Ui/Widgets.cpp
 	Ui/Gui.h
 	Ui/Gui.cpp
+	Ui/TestGui.h
+	Ui/TestGui.cpp
 	Ui/Window.h
 	Ui/Window.cpp
 	Ui/SandRendererDialog.h
@@ -165,6 +169,7 @@ set(LIBS
 	tinypngout
 	libpng
 	tinygltf
+	nanoflann
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -291,6 +296,16 @@ group_source_by_folder(${BenchmarkCullingMethods_SRC})
 
 set(SandViewerTests_SRC
 	Tests/SandViewerTests.cpp
+
+	Tests/testHzb.h
+	Tests/testHzb.cpp
+
+	Tests/testSplineBlur.h
+	Tests/testSplineBlur.cpp
+
+	Tests/testPointcloudDistance.h
+	Tests/testPointcloudDistance.cpp
+
 	${All_SRC}
 )
 

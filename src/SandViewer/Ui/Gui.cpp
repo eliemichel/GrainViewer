@@ -210,7 +210,7 @@ void Gui::updateImGui() {
 	ImGui::End();
 
 	if (m_showPanel) {
-		ImGui::SetNextWindowSize(ImVec2(m_panelWidth, m_windowWidth));
+		ImGui::SetNextWindowSize(ImVec2(m_panelWidth, m_windowHeight));
 		ImGui::SetNextWindowPos(ImVec2(m_windowWidth - m_panelWidth, 0.f));
 		ImGui::Begin("Dialogs", nullptr,
 			ImGuiWindowFlags_NoResize |

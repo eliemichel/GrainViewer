@@ -21,7 +21,9 @@ public:
 	 */
 	bool isValid() const;
 
+	void pollEvents() const;
 	void swapBuffers() const;
+	bool shouldClose() const;
 
 private:
 	GLFWwindow *m_window = nullptr;

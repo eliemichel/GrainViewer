@@ -113,3 +113,4 @@ target_link_libraries(libpng INTERFACE zlibstatic png_static)
 
 add_subdirectory(tinypngout)
 add_subdirectory(tinygltf)
+add_subdirectory(nanoflann)
