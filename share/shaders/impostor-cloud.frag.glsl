@@ -1,8 +1,7 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant NO_INTERPOLATION PROCEDURAL_BASECOLOR DEBUG_SPHERE DEBUG_INNER_SPHERE DEBUG_CUBE SET_DEPTH
-#pragma variant SPHEREHIT_SAMPLING MIXEDHIT_SAMPLING
+#pragma variant PROCEDURAL_BASECOLOR SET_DEPTH
 #pragma hidden_variant SHADOW_MAP
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
@@ -45,6 +44,11 @@ uniform bool uHasMetallicRoughnessMap = false;
 uniform float uDefaultRoughness = 0.5;
 uniform float uDefaultMetallic = 0.0;
 
+// Global switches
+uniform int uDebugShape = -1; // 0: DEBUG_SPHERE 1: DEBUG_INNER_SPHERE 2: DEBUG_CUBE
+uniform int uInterpolationMode = 1; // 0: NO_INTERPOLATION 1: INTERPOLATION
+uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: MIXEDHIT_SAMPLING
+
 void main() {
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
@@ -71,27 +75,38 @@ void main() {
 
     vec3 position_gs = (gs_from_ws * vec4(position_ws, 1.0)).xyz;
 
-#ifdef NO_INTERPOLATION
-	GFragment fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_gs, position_gs, radius);
-#elif defined(MIXEDHIT_SAMPLING)
-	GFragment fragment = IntersectRaySphericalGBillboard_MixedHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
-#elif defined(SPHEREHIT_SAMPLING)
-	GFragment fragment = IntersectRaySphericalGBillboard_SphereHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
-#else
-	GFragment fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, radius);
-#endif
+    GFragment fragment;
+	if (uInterpolationMode == 0) {
+		fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_gs, position_gs, radius);
+	} else {
+		switch (uSamplingMode) {
+		case 0: // PLANEHIT_SAMPLING
+			fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, radius);
+			break;
+		case 1: // SPHEREHIT_SAMPLING
+			fragment = IntersectRaySphericalGBillboard_SphereHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
+			break;
+		case 2: // MIXEDHIT_SAMPLING
+			fragment = IntersectRaySphericalGBillboard_MixedHit(impostor[0], ray_gs, position_gs, radius, hitSphereCorrectionFactor);
+			break;
+		}
+	}
 	
-#ifdef DEBUG_SPHERE
-	fragment = IntersectRaySphere(ray_ws, position_ws, radius);
-#endif
-#ifdef DEBUG_INNER_SPHERE
-	fragment = IntersectRaySphere(ray_ws, position_ws, uInnerRadius);
-#endif
-#ifdef DEBUG_CUBE
-	fragment = IntersectRayCube(ray_ws, position_ws, radius);
-#endif
+	switch (uDebugShape) {
+	case 0: // DEBUG_SPHERE
+		fragment = IntersectRaySphere(ray_ws, position_ws, radius);
+		break;
+	case 1: // DEBUG_INNER_SPHERE
+		fragment = IntersectRaySphere(ray_ws, position_ws, uInnerRadius);
+		break;
+	case 2: // DEBUG_CUBE
+		fragment = IntersectRayCube(ray_ws, position_ws, radius);
+		break;
+	default:
+		fragment.normal = ws_from_gs_rot * fragment.normal;
+		break;
+	}
 
-	fragment.normal = ws_from_gs_rot * fragment.normal;
 	//fragment.ws_coord = ws_from_gs_rot * (fragment.ws_coord - position_gs) + position_ws;
 	//fragment.ws_coord = innerSphereHitPosition_ws;
 	fragment.ws_coord = outerSphereHitPosition_ws;

@@ -69,7 +69,7 @@ void GlDeferredShader::reloadShaders()
 void GlDeferredShader::update(float time)
 {
 	m_shader.use();
-	m_shader.setUniform("time", static_cast<GLfloat>(time));
+	m_shader.setUniform("uTime", static_cast<GLfloat>(time));
 }
 
 void GlDeferredShader::render(const Camera & camera, const World & world, RenderType target) const
@@ -120,7 +120,9 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 		}
 	}
 
-	m_shader.setUniform("isShadowMapEnabled", world.isShadowMapEnabled());
+	m_shader.setUniform("uIsShadowMapEnabled", world.isShadowMapEnabled());
+	m_shader.setUniform("uShadingMode", m_shadingMode);
+	m_shader.setUniform("uTransparentFilm", m_transparentFilm);
 
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
 	if (m_colormap) {

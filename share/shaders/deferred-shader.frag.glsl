@@ -25,7 +25,7 @@ uniform sampler3D iridescenceLut;
 
 uniform mat4 viewMatrix;
 uniform mat4 inverseViewMatrix;
-uniform float time;
+uniform float uTime;
 
 uniform sampler2D uColormap;
 uniform bool uHasColormap = false;
@@ -34,7 +34,11 @@ uniform bool uHasColormap = false;
 
 uniform PointLight light[3];
 uniform float lightPowerScale = 1.0;
-uniform bool isShadowMapEnabled = true;
+
+// Global switches
+uniform bool uIsShadowMapEnabled = true;
+uniform bool uTransparentFilm = false;
+uniform int uShadingMode = 0; // 0: BEAUTY, 1: NORMAL, 2: BASE_COLOR
 
 #include "include/gbuffer.inc.glsl"
 
@@ -71,7 +75,7 @@ void main() {
 		
 		for (int k = 0 ; k < 3 ; ++k) {
 			float shadow = 0;
-			if (isShadowMapEnabled) {
+			if (uIsShadowMapEnabled) {
 				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
 				shadowBias = 0.0001; // hardcoded hack
 				//shadowBias = 0.00005;
@@ -141,32 +145,50 @@ void main() {
 	}
 	//*/
 
-#ifdef SHOW_ROUGHNESS
-	out_fragment.radiance.rgb = vec3(fragment.roughness);
-#endif // SHOW_ROUGHNESS
-#ifdef SHOW_NORMAL
-	out_fragment.radiance.rgb = normalize(fragment.normal) * .5 + .5;
-#endif // SHOW_NORMAL
-#ifdef SHOW_BASECOLOR
-	out_fragment.radiance.rgb = fragment.baseColor.rgb;
-#endif // SHOW_BASECOLOR
-#ifdef SHOW_POSITION
-	out_fragment.radiance.rgb = fragment.ws_coord.rgb;
-#endif // SHOW_POSITION
-#ifdef TRANSPARENT_BACKGROUND
-	out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
-#endif // TRANSPARENT_BACKGROUND
-#ifdef SHOW_RAW_BUFFER1
-	out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
-	if (uHasColormap) {
-		out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
+	switch (uShadingMode) {
+	case 0: // BEAUTY
+		break;
+	case 1: // NORMAL
+		out_fragment.radiance.rgb = normalize(fragment.normal) * .5 + .5;
+		break;
+	case 2: // BASE_COLOR
+		out_fragment.radiance.rgb = fragment.baseColor.rgb;
+		break;
+	case 3: // METALLIC
+		out_fragment.radiance.rgb = vec3(fragment.metallic);
+		break;
+	case 4: // ROUGHNESS
+		out_fragment.radiance.rgb = vec3(fragment.roughness);
+		break;
+	case 5: // WORLD_POSITION
+		out_fragment.radiance.rgb = fragment.ws_coord.rgb;
+		break;
+	case 6: // RAW_GBUFFER1
+		out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
+		if (uHasColormap) {
+			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
+		}
+	case 7: // RAW_GBUFFER2
+		out_fragment.radiance.rgb = texelFetch(gbuffer2, ivec2(gl_FragCoord.xy), 0).rgb;
+		if (uHasColormap) {
+			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
+		}
+		//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
+	case 8: // RAW_GBUFFER3
+		out_fragment.radiance.rgb = texelFetch(gbuffer3, ivec2(gl_FragCoord.xy), 0).rgb;
+		if (uHasColormap) {
+			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
+		}
+		break;
 	}
-	//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
-#endif // SHOW_BASECOLOR
+
+	if (uTransparentFilm) {
+		out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
+	}
 
 	out_fragment.normal = fragment.normal;
 	out_fragment.radiance.a = 1.0;
-	// TODO: compute from ws_coord and remove this extra buffer
-	out_fragment.depth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
+	// out_fragment was designed to be sent to post effects, ne need here
+	//out_fragment.depth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
 	out_color = out_fragment.radiance;
 }

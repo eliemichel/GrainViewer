@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "utils/strutils.h"
 #include "PointCloud.h"
+#include "filterPointToPointDistance.h"
 
 #define XMIN -151
 #define XMAX 151
@@ -28,6 +29,11 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+	if (argc >= 4 && std::string(argv[3]) == "point-to-point-filter") {
+		bool success = filterPointToPointDistance(inputFilename, outputFilename);
+		return success ? EXIT_SUCCESS : EXIT_FAILURE;
+	}
+
 	if (!endsWith(outputFilename, ".bin")) {
 		outputFilename += ".bin";
 	}
@@ -42,7 +48,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 
-	if (argc >= 4 && std::string(argv[3]) == "filter") {
+	if (argc >= 4 && std::string(argv[3]) == "bbox-filter") {
 		PointCloud filteredPointCloud;
 		filteredPointCloud.data().reserve(pointCloud.data().size());
 		for (const auto& p : pointCloud.data()) {

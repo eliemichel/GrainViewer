@@ -7,13 +7,8 @@
 #include <nanoflann.hpp>
 
 #include "Logger.h"
-#include "ShaderPool.h"
 #include "Ui/Window.h"
 #include "Ui/TestGui.h"
-#include "GlTexture.h"
-#include "Filtering.h"
-#include "ResourceManager.h"
-#include "testSplineBlur.h"
 #include "PointCloud.h"
 
 #define MAKE_STR(streamline) (std::ostringstream() << streamline).str()
@@ -36,12 +31,9 @@ private:
 	PointCloud & m_pointCloud;
 };
 
-bool testPointcloudDistance()
+bool filterPointToPointDistance(const std::string & inputFilename, const std::string & outputFilename)
 {
-	std::string inputFilename = R"(G:\PhD\Data\SandViewer\beach-positions.bin)";
-	std::string outputFilename = R"(G:\PhD\Data\SandViewer\beach-positions-cleaned.bin)";
-
-	auto window = std::make_shared<Window>(512, 128, "SandViewer Tests - Point Cloud Distance");
+	auto window = std::make_shared<Window>(512, 128, "SandViewer - Filter Point To Point Distance");
 	if (!window->isValid()) return EXIT_FAILURE;
 	auto gui = std::make_unique<TestGui>(window);
 
@@ -77,7 +69,7 @@ bool testPointcloudDistance()
 	float sumSqDistance = 0.0f;
 	float sumDistance = 0.0f;
 
-	int pointCount = kdtree.dataset.kdtree_get_point_count();
+	int pointCount = static_cast<int>(kdtree.dataset.kdtree_get_point_count());
 	int progressStep = pointCount / 1000;
 	size_t count = 2;
 	std::vector<size_t> indices(count);
@@ -130,7 +122,7 @@ bool testPointcloudDistance()
 
 		const size_t matchCount = kdtree.radiusSearch(glm::value_ptr(pointCloud.data()[i]), cutoffDistance, matches, params);
 		for (int k = 0; k < matchCount; ++k) {
-			int j = matches[k].first;
+			int j = static_cast<int>(matches[k].first);
 			if (j != i && !isDeleted[j]) {
 				// Check distance again because for some ununderstandable reason there are many false positive coming from radiusSearch()
 				float d = glm::length(pointCloud.data()[i] - pointCloud.data()[j]);
@@ -156,7 +148,7 @@ bool testPointcloudDistance()
 	gui->updateProgress(0.9f);
 
 	PointCloud filteredPointCloud;
-	filteredPointCloud.data().reserve(filteredPointCloud.data().size() - deletedCount);
+	filteredPointCloud.data().reserve(pointCloud.data().size() - deletedCount);
 	for (int i = 0; i < pointCloud.data().size(); ++i) {
 		if (!isDeleted[i]) filteredPointCloud.data().push_back(pointCloud.data()[i]);
 	}

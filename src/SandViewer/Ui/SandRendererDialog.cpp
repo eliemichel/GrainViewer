@@ -55,6 +55,29 @@ void SandRendererDialog::draw()
 			}
 
 			{
+				ImGui::Text("\nInterpolation");
+				ImGui::RadioButton("None", &props.interpolationMode, 0);
+				ImGui::RadioButton("Default", &props.interpolationMode, 1);
+			}
+
+			{
+				BeginDisable(props.interpolationMode == 0);
+				ImGui::Text("\nImpostor Sampling");
+				ImGui::RadioButton("PlaneHit", &props.samplingMode, 0);
+				ImGui::RadioButton("SphereHit", &props.samplingMode, 1);
+				ImGui::RadioButton("MixedHit", &props.samplingMode, 2);
+				EndDisable(props.interpolationMode == 0);
+			}
+
+			{
+				ImGui::Text("\nDebug Shape");
+				ImGui::RadioButton("None", &props.debugShape, -1);
+				ImGui::RadioButton("Sphere", &props.debugShape, 0);
+				ImGui::RadioButton("Inner Sphere", &props.debugShape, 1);
+				ImGui::RadioButton("Cube", &props.debugShape, 2);
+			}
+
+			{
 				ImGui::Text("\nDebug");
 				ImGui::Checkbox("Hide Impostors", &props.disableImpostors);
 				ImGui::Checkbox("Hide Instances", &props.disableInstances);

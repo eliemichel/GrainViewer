@@ -90,6 +90,9 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 	jrPropperty(disableImpostors);
 	jrPropperty(disableInstances);
 	jrPropperty(renderAdditive);
+	jrPropperty(interpolationMode);
+	jrPropperty(samplingMode);
+	jrPropperty(debugShape);
 #undef jrProperty
 
 	// grainInnerRadiusRatio can be an array of keyframes
@@ -205,6 +208,9 @@ void SandRenderer::start()
 void SandRenderer::update(float time, int frame)
 {
 	m_time = time;
+	m_impostorShader->setUniform("uDebugShape", static_cast<GLint>(properties().debugShape));
+	m_impostorShader->setUniform("uInterpolationMode", static_cast<GLint>(properties().interpolationMode));
+	m_impostorShader->setUniform("uSamplingMode", static_cast<GLint>(properties().samplingMode));
 }
 
 void SandRenderer::onPostRender(float time, int frame)

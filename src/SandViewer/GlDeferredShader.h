@@ -21,6 +21,18 @@ class GlTexture;
 
 class GlDeferredShader {
 public:
+	enum ShadingMode {
+		BeautyPass,
+		NormalPass,
+		BaseColorPass,
+		MetallicPass,
+		RoughnessPass,
+		WorldPositionPass,
+		RawGBuffer0,
+		RawGBuffer1,
+		RawGBuffer2,
+	};
+public:
 	GlDeferredShader();
 	~GlDeferredShader();
 
@@ -36,10 +48,19 @@ public:
 
 	void setResolution(int width, int height);
 
+	ShadingMode shadingMode() const { return m_shadingMode; }
+	void setShadingMode(ShadingMode shadingMode) { m_shadingMode = shadingMode; }
+
+	bool transparentFilm() const { return m_transparentFilm; }
+	void setTransparentFilm(bool transparent) { m_transparentFilm = transparent; }
+
 private:
 	ShaderProgram m_shader;
 	Framebuffer m_framebuffer;
 	GLuint m_vao;
 	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
+
+	ShadingMode m_shadingMode = BeautyPass;
+	bool m_transparentFilm = false;
 };
 

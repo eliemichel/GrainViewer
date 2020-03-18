@@ -190,19 +190,34 @@ group_source_by_folder(${SRC})
 
 set(PointCloudConvert_SRC
 	Tools/PointCloudConvert.cpp
+	Tools/filterPointToPointDistance.h
+	Tools/filterPointToPointDistance.cpp
 
 	utils/strutils.h
 	utils/strutils.cpp
 	utils/fileutils.h
 	utils/fileutils.cpp
+	utils/debug.h
+	utils/debug.cpp
 	Logger.h
 	Logger.cpp
 	PointCloud.h
 	PointCloud.cpp
+
+	Ui/Window.h
+	Ui/Window.cpp
+	Ui/TestGui.h
+	Ui/TestGui.cpp
+	Ui/Widgets.h
+	Ui/Widgets.cpp
 )
 
 set(PointCloudConvert_LIBS
+	glfw
+	modernglad
 	glm
+	nanoflann
+	imgui
 )
 
 add_executable(PointCloudConvert ${PointCloudConvert_SRC})
@@ -302,9 +317,6 @@ set(SandViewerTests_SRC
 
 	Tests/testSplineBlur.h
 	Tests/testSplineBlur.cpp
-
-	Tests/testPointcloudDistance.h
-	Tests/testPointcloudDistance.cpp
 
 	${All_SRC}
 )

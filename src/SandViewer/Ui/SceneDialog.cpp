@@ -16,6 +16,26 @@ void SceneDialog::draw()
 			ImGui::Checkbox("Shadow Maps (global toggle)", &shadowMaps);
 			world.setShadowMapEnabled(shadowMaps);
 
+			GlDeferredShader & shading = cont->deferredShader();
+			{
+				int mode = shading.shadingMode();
+				ImGui::Text("\nShading Mode");
+				ImGui::RadioButton("Beauty", &mode, GlDeferredShader::BeautyPass);
+				ImGui::RadioButton("Normal", &mode, GlDeferredShader::NormalPass);
+				ImGui::RadioButton("Base Color", &mode, GlDeferredShader::BaseColorPass);
+				ImGui::RadioButton("Metallic", &mode, GlDeferredShader::MetallicPass);
+				ImGui::RadioButton("Roughness", &mode, GlDeferredShader::RoughnessPass);
+				ImGui::RadioButton("World Position", &mode, GlDeferredShader::WorldPositionPass);
+				ImGui::RadioButton("Raw GBuffer 0", &mode, GlDeferredShader::RawGBuffer0);
+				ImGui::RadioButton("Raw GBuffer 1", &mode, GlDeferredShader::RawGBuffer1);
+				ImGui::RadioButton("Raw GBuffer 2", &mode, GlDeferredShader::RawGBuffer2);
+				shading.setShadingMode(static_cast<GlDeferredShader::ShadingMode>(mode));
+
+				bool transparent = shading.transparentFilm();
+				ImGui::Checkbox("Transparent film", &transparent);
+				shading.setTransparentFilm(transparent);
+			}
+
 			/*
 			int i = 0;
 			for (auto& l : world.lights()) {

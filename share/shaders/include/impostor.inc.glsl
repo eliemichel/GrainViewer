@@ -283,6 +283,7 @@ GFragment IntersectRayCube(Ray ray, vec3 p, float radius) {
 			if (linf <= radius) {
 				g.baseColor.rgb = n * .5 + .5;
 				g.alpha = 1.0;
+				g.normal = n;
 				minl = l;
 			}
 		}

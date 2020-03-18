@@ -44,6 +44,7 @@ public:
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
 
 	World & world() { return m_world; }
+	GlDeferredShader & deferredShader() { return m_deferredShader; }
 
 	bool mustQuit() const { return m_mustQuit;  }
 

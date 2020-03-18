@@ -75,6 +75,9 @@ public:
 		bool enableFrustumCulling = true;
 		bool hasMetallicRoughnessMap = false;
 		bool renderAdditive;
+		int debugShape = -1;
+		int interpolationMode = 1;
+		int samplingMode = 0;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
