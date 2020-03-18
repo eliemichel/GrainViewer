@@ -100,9 +100,9 @@ bool testHzb()
 				DEBUG_LOG << "Bounding Sphere: c = (" << c.x << ", " << c.y << ", " << c.z << "), r = " << r;
 				glm::vec3 ssCircle = camera.projectSphere(c, r);
 				DEBUG_LOG << "(maps to a circle of radius " << ssCircle.z << " at position (" << ssCircle.x << ", " << ssCircle.y << ") in screen space)";
-				int mipmapLevel = std::min(static_cast<size_t>(ceil(log2(ssCircle.z) + 1)), zbuffers.size() - 1);
-				float fpixelx = ssCircle.x / pow(2, mipmapLevel);
-				float fpixely = ssCircle.y / pow(2, mipmapLevel);
+				int mipmapLevel = std::min(static_cast<int>(ceil(log2(ssCircle.z) + 1)), static_cast<int>(zbuffers.size()) - 1);
+				float fpixelx = ssCircle.x / static_cast<float>(pow(2, mipmapLevel));
+				float fpixely = ssCircle.y / static_cast<float>(pow(2, mipmapLevel));
 				float fractx = fpixelx - floor(fpixelx);
 				float fracty = fpixely - floor(fpixely);
 				int pixelx = static_cast<int>(floor(fpixelx));

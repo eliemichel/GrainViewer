@@ -26,6 +26,7 @@ void SceneDialog::draw()
 				ImGui::RadioButton("Metallic", &mode, GlDeferredShader::MetallicPass);
 				ImGui::RadioButton("Roughness", &mode, GlDeferredShader::RoughnessPass);
 				ImGui::RadioButton("World Position", &mode, GlDeferredShader::WorldPositionPass);
+				ImGui::RadioButton("Depth", &mode, GlDeferredShader::DepthPass);
 				ImGui::RadioButton("Raw GBuffer 0", &mode, GlDeferredShader::RawGBuffer0);
 				ImGui::RadioButton("Raw GBuffer 1", &mode, GlDeferredShader::RawGBuffer1);
 				ImGui::RadioButton("Raw GBuffer 2", &mode, GlDeferredShader::RawGBuffer2);

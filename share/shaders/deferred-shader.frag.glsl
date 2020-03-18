@@ -8,6 +8,7 @@
 #define WHITE_BACKGROUND
 #define HDR
 
+#include "include/uniform/camera.inc.glsl"
 #include "include/utils.inc.glsl"
 
 in vec2 uv_coords;
@@ -23,8 +24,6 @@ layout (binding = 4) uniform samplerCubeArray filteredCubemaps;
 uniform sampler2D iblBsdfLut;
 uniform sampler3D iridescenceLut;
 
-uniform mat4 viewMatrix;
-uniform mat4 inverseViewMatrix;
 uniform float uTime;
 
 uniform sampler2D uColormap;
@@ -54,6 +53,42 @@ struct OutputFragment {
 	float depth;
 };
 
+void pbrShading(const in GFragment fragment, out OutputFragment out_fragment)
+{
+	vec3 camPos_ws = vec3(inverseViewMatrix[3]);
+	vec3 toCam = normalize(camPos_ws - fragment.ws_coord);
+
+	SurfaceAttributes surface;
+	surface.baseColor = fragment.baseColor;
+	surface.metallic = fragment.metallic;
+	surface.roughness = fragment.roughness;
+	surface.reflectance = 0.7;
+
+	out_fragment.radiance = vec4(0.0, 0.0, 0.0, 1.0);
+
+	for (int k = 0 ; k < 3 ; ++k) {
+		float shadow = 0;
+		if (uIsShadowMapEnabled) {
+			float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
+			shadowBias = 0.0001; // hardcoded hack
+			//shadowBias = 0.00005;
+			shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
+			shadow = clamp(shadow, 0.0, 1.0);
+			shadow *= .8;
+		}
+		
+		vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
+		vec3 f = vec3(0.0);
+#ifdef OLD_BRDF
+		f = bsdfPbrMetallicRoughness(toCam, toLight, fragment.normal, surface.baseColor, surface.roughness, surface.metallic);
+#else // OLD_BRDF
+		f = brdf(toCam, fragment.normal, toLight, surface);
+#endif // OLD_BRDF
+		out_fragment.radiance.rgb += f * light[k].color * lightPowerScale * (1. - shadow);
+	}
+	out_fragment.radiance += vec4(fragment.emission, 0.0);
+}
+
 void main() {
 	GFragment fragment;
 	unpackGFragment(gbuffer1, gbuffer2, gbuffer3, ivec2(gl_FragCoord.xy), fragment);
@@ -62,38 +97,7 @@ void main() {
 	switch (fragment.material_id) {
 	case pbrMaterial:
 	{
-		vec3 camPos_ws = vec3(inverseViewMatrix[3]);
-		vec3 toCam = normalize(camPos_ws - fragment.ws_coord);
-
-		out_fragment.radiance = vec4(0.0, 0.0, 0.0, 1.0);
-
-		SurfaceAttributes surface;
-		surface.baseColor = fragment.baseColor;
-		surface.metallic = fragment.metallic;
-		surface.roughness = fragment.roughness;
-		surface.reflectance = 0.7;
-		
-		for (int k = 0 ; k < 3 ; ++k) {
-			float shadow = 0;
-			if (uIsShadowMapEnabled) {
-				float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
-				shadowBias = 0.0001; // hardcoded hack
-				//shadowBias = 0.00005;
-				shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
-				shadow = clamp(shadow, 0.0, 1.0);
-				shadow *= .8;
-			}
-			
-			vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);
-			vec3 f = vec3(0.0);
-#ifdef OLD_BRDF
-			f = bsdfPbrMetallicRoughness(toCam, toLight, fragment.normal, surface.baseColor, surface.roughness, surface.metallic);
-#else // OLD_BRDF
-			f = brdf(toCam, fragment.normal, toLight, surface);
-#endif // OLD_BRDF
-			out_fragment.radiance.rgb += f * light[k].color * lightPowerScale * (1. - shadow);
-		}
-		out_fragment.radiance += vec4(fragment.emission, 0.0);
+		pbrShading(fragment, out_fragment);
 		break;
 	}
 
@@ -119,9 +123,21 @@ void main() {
 	}
 
 	case skyboxMaterial:
-	default:
 		out_fragment.radiance = vec4(fragment.baseColor, 1.0);
 		break;
+
+	default:
+		if (fragment.material_id >= accumulatedPbrMaterial) {
+			float oneOverSampleCount = 1.0 / fragment.roughness;
+			//GFragment normalizedFragment = fragment;
+			//normalizedFragment.baseColor *= oneOverSampleCount;
+			//normalizedFragment.roughness *= oneOverSampleCount;
+			//normalizedFragment.metallic *= oneOverSampleCount;
+			//normalizedFragment.ws_coord *= oneOverSampleCount;
+			//normalizedFragment.normal *= oneOverSampleCount;
+			//pbrShading(fragment, out_fragment);
+			out_fragment.radiance.rgb = fragment.ws_coord * oneOverSampleCount;
+		}
 	}
 	//gl_FragDepth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
 
@@ -156,34 +172,52 @@ void main() {
 		break;
 	case 3: // METALLIC
 		out_fragment.radiance.rgb = vec3(fragment.metallic);
+		out_fragment.radiance.a = 1.0;
 		break;
 	case 4: // ROUGHNESS
 		out_fragment.radiance.rgb = vec3(fragment.roughness);
+		out_fragment.radiance.a = 1.0;
 		break;
 	case 5: // WORLD_POSITION
 		out_fragment.radiance.rgb = fragment.ws_coord.rgb;
 		break;
-	case 6: // RAW_GBUFFER1
+	case 6: // DEPTH
+	{
+		float depth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
+		float linearDepth = (2.0 * uNear * uFar) / (uFar + uNear - (depth * 2.0 - 1.0) * (uFar - uNear));
+		out_fragment.radiance.rgb = vec3(linearDepth / uFar);
+		break;
+	}
+	case 7: // RAW_GBUFFER1
 		out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}
-	case 7: // RAW_GBUFFER2
+		out_fragment.radiance.a = 1.0;
+		break;
+	case 8: // RAW_GBUFFER2
 		out_fragment.radiance.rgb = texelFetch(gbuffer2, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}
+		out_fragment.radiance.a = 1.0;
 		//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
-	case 8: // RAW_GBUFFER3
+		break;
+	case 9: // RAW_GBUFFER3
 		out_fragment.radiance.rgb = texelFetch(gbuffer3, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}
+		out_fragment.radiance.a = 1.0;
 		break;
 	}
 
 	if (uTransparentFilm) {
-		out_fragment.radiance.a = fragment.material_id == worldMaterial ? 0.0 : 1.0;
+		if (fragment.material_id == worldMaterial) {
+			out_fragment.radiance = vec4(1.0, 1.0, 1.0, 0.0);
+		} else {
+			out_fragment.radiance.a = 1.0;
+		}
 	}
 
 	out_fragment.normal = fragment.normal;

@@ -28,6 +28,7 @@ public:
 		MetallicPass,
 		RoughnessPass,
 		WorldPositionPass,
+		DepthPass,
 		RawGBuffer0,
 		RawGBuffer1,
 		RawGBuffer2,

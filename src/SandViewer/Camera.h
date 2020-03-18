@@ -52,10 +52,15 @@ public:
 	GLuint ubo() const { return m_ubo; }
 
 	inline glm::vec3 position() const { return m_position; }
-	inline glm::mat4 viewMatrix() const { return m_viewMatrix; }
-	inline glm::mat4 projectionMatrix() const { return m_projectionMatrix; }
 
-	inline glm::vec2 resolution() const { return m_resolution; }
+	inline glm::mat4 viewMatrix() const { return m_uniforms.viewMatrix; }
+	inline void setViewMatrix(glm::mat4 matrix) { m_uniforms.viewMatrix = matrix; }  // use with caution
+
+	inline glm::mat4 projectionMatrix() const { return m_uniforms.projectionMatrix; }
+	inline void setProjectionMatrix(glm::mat4 matrix) { m_uniforms.projectionMatrix = matrix; }  // use with caution
+	void setProjectionType(ProjectionType projectionType);
+
+	inline glm::vec2 resolution() const { return m_uniforms.resolution; }
 	void setResolution(glm::vec2 resolution);
 	inline void setResolution(int w, int h) { setResolution(glm::vec2(static_cast<float>(w), static_cast<float>(h))); }
 	void setFreezeResolution(bool freeze);
@@ -64,10 +69,10 @@ public:
 	float focalLength() const;
 	void setFov(float fov);
 
-	float nearDistance() const { return m_near; }
+	float nearDistance() const { return m_uniforms.uNear; }
 	void setNearDistance(float distance);
 
-	float farDistance() const { return m_far; }
+	float farDistance() const { return m_uniforms.uFar; }
 	void setFarDistance(float distance);
 
 	void setOrthographicScale(float orthographicScale);
@@ -77,11 +82,6 @@ public:
 	const OutputSettings & outputSettings() const { return m_outputSettings; }
 
 	std::shared_ptr<Framebuffer> targetFramebuffer() const { return m_targetFramebuffer; }
-
-	void setProjectionType(ProjectionType projectionType);
-
-	inline void setViewMatrix(glm::mat4 matrix) { m_viewMatrix = matrix; }  // use with caution
-	inline void setProjectionMatrix(glm::mat4 matrix) { m_projectionMatrix = matrix; }
 
 	inline void startMouseRotation() { m_isMouseRotationStarted = true; m_isLastMouseUpToDate = false; }
 	inline void stopMouseRotation() { m_isMouseRotationStarted = false; }
@@ -106,7 +106,7 @@ public:
 	 * every frame.
 	 * TODO: implement a proper dynamic framebuffer pool mechanism
 	 */
-	std::shared_ptr<Framebuffer> getExtraFramebuffer() const;
+	std::shared_ptr<Framebuffer> getExtraFramebuffer(bool depthOnly = false) const;
 	void releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const;
 
 	/**
@@ -145,17 +145,34 @@ protected:
 	virtual void tilt(float theta) {}
 
 private:
+	// Memory layout on GPU, matches shaders/include/uniform/camera.inc.glsl
+	struct CameraUbo {
+		glm::mat4 viewMatrix;
+		glm::mat4 projectionMatrix;
+		glm::mat4 inverseViewMatrix;
+		glm::vec2 resolution;
+		float uNear = 0.001f;
+		float uFar = 1000.f;
+		float uLeft;
+		float uRight;
+		float uTop;
+		float uBottom;
+	};
+
+private:
 	void updateProjectionMatrix();
 
 protected:
+	// Core data
+	CameraUbo m_uniforms;
+	GLuint m_ubo;
+
+	// Other data, used to build matrices but not shared with gpu
 	glm::vec3 m_position;
-	glm::vec2 m_resolution;
-	glm::mat4 m_viewMatrix, m_projectionMatrix;
-	float m_near = 0.001f;
-	float m_far = 1000.f;
 	float m_fov;
 	float m_orthographicScale;
 
+	// Move related attributes
 	bool m_isMouseRotationStarted, m_isMouseZoomStarted, m_isMousePanningStarted;
 	bool m_isLastMouseUpToDate;
 	float m_lastMouseX, m_lastMouseY;
@@ -170,6 +187,4 @@ protected:
 
 	OutputSettings m_outputSettings;
 	ProjectionType m_projectionType;
-
-	GLuint m_ubo;
 };

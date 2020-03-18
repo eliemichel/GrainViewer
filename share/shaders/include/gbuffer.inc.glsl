@@ -12,10 +12,12 @@ struct GFragment {
 	float metallic;
 	vec3 emission;
 	float alpha;
+	uint count;
 
 	// Used for G-impostors but not in gbuffer (converted to regular normal)
 	vec4 lean1;
 	vec4 lean2;
+
 };
 
 /**
@@ -70,6 +72,7 @@ void unpackGFragment(
 	tmp = unpackHalf2x16(data3.y);
 	fragment.emission = vec3(unpackHalf2x16(data3.x), tmp.x);
 	fragment.metallic = tmp.y;
+	fragment.count = data3.w;
 }
 
 void packGFragment(
@@ -89,7 +92,7 @@ void packGFragment(
 		packHalf2x16(fragment.emission.xy),
 		packHalf2x16(vec2(fragment.emission.z, fragment.metallic)),
 		packHalf2x16(vec2(0.0, 0.0)),
-		0
+		fragment.count
 	);
 }
 
@@ -108,3 +111,4 @@ const uint iridescentMaterial = 7;
 const uint worldMaterial = 8;
 const uint iblMaterial = 9;
 const uint farCloudTestMaterial = 10;
+const uint accumulatedPbrMaterial = 11; // must always be last, cause with accumulation it is actually more than this value

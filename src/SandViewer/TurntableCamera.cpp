@@ -20,8 +20,8 @@ TurntableCamera::TurntableCamera()
 }
 
 void TurntableCamera::updateViewMatrix() {
-	m_viewMatrix = glm::translate(vec3(0.f, 0.f, -m_zoom)) * glm::toMat4(m_quat) * glm::translate(m_center);
-	m_position = vec3(glm::inverse(m_viewMatrix)[3]);
+	m_uniforms.viewMatrix = glm::translate(vec3(0.f, 0.f, -m_zoom)) * glm::toMat4(m_quat) * glm::translate(m_center);
+	m_position = vec3(glm::inverse(m_uniforms.viewMatrix)[3]);
 
 	updateUbo();
 }
@@ -33,7 +33,7 @@ void TurntableCamera::updateDeltaMouseRotation(float x1, float y1, float x2, flo
 
 	// rotate around camera X axis by dy
 	theta = dy * m_sensitivity;
-	vec3 xAxis = vec3(glm::row(m_viewMatrix, 0));
+	vec3 xAxis = vec3(glm::row(m_uniforms.viewMatrix, 0));
 	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * xAxis);
 
 	// rotate around world Z axis by dx
@@ -61,15 +61,15 @@ void TurntableCamera::updateDeltaMousePanning(float x1, float y1, float x2, floa
 	float dy = -(y2 - y1) / 300.f * m_zoom;
 
 	// move center along the camera screen plane
-	vec3 xAxis = vec3(glm::row(m_viewMatrix, 0));
-	vec3 yAxis = vec3(glm::row(m_viewMatrix, 1));
+	vec3 xAxis = vec3(glm::row(m_uniforms.viewMatrix, 0));
+	vec3 yAxis = vec3(glm::row(m_uniforms.viewMatrix, 1));
 	m_center += dx * xAxis + dy * yAxis;
 
 	updateViewMatrix();
 }
 
 void TurntableCamera::tilt(float theta) {
-	vec3 zAxis = vec3(glm::row(m_viewMatrix, 2));
+	vec3 zAxis = vec3(glm::row(m_uniforms.viewMatrix, 2));
 	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * zAxis);
 	updateViewMatrix();
 }

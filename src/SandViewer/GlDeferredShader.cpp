@@ -76,10 +76,12 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 {
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDepthMask(GL_TRUE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
 
 	m_shader.use();
-	m_shader.setUniform("viewMatrix", camera.viewMatrix());
-	m_shader.setUniform("inverseViewMatrix", inverse(camera.viewMatrix()));
+	m_shader.bindUniformBlock("Camera", camera.ubo());
 
 	size_t o = 0;
 	glBindTextureUnit(0, m_framebuffer.colorTexture(0));

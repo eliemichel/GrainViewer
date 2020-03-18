@@ -459,7 +459,7 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 		image.height = h;
 		header.num_channels = 1;
 		header.channels = (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
-		strncpy(header.channels[0].name, "R", 255); header.channels[0].name[strlen("R")] = '\0';
+		header.channels[0].name[0] = 'R'; header.channels[0].name[1] = '\0';
 
 		header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
 		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
@@ -516,10 +516,10 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 		image.height = h;
 		header.num_channels = 4;
 		header.channels = (EXRChannelInfo *)malloc(sizeof(EXRChannelInfo) * header.num_channels);
-		strncpy(header.channels[0].name, "A", 255); header.channels[0].name[strlen("A")] = '\0';
-		strncpy(header.channels[1].name, "B", 255); header.channels[1].name[strlen("B")] = '\0';
-		strncpy(header.channels[2].name, "G", 255); header.channels[2].name[strlen("G")] = '\0';
-		strncpy(header.channels[3].name, "R", 255); header.channels[3].name[strlen("R")] = '\0';
+		header.channels[0].name[0] = 'A'; header.channels[0].name[1] = '\0';
+		header.channels[1].name[0] = 'B'; header.channels[1].name[1] = '\0';
+		header.channels[2].name[0] = 'G'; header.channels[2].name[1] = '\0';
+		header.channels[3].name[0] = 'R'; header.channels[3].name[1] = '\0';
 
 		header.pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
 		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);

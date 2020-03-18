@@ -40,7 +40,7 @@ Camera::~Camera() {
 
 void Camera::update(float time) {
 	m_position = glm::vec3(3.f * cos(time), 3.f * sin(time), 0.f);
-	m_viewMatrix = glm::lookAt(
+	m_uniforms.viewMatrix = glm::lookAt(
 		m_position,
 		glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3(0.0f, 0.0f, 1.0f));
@@ -48,36 +48,35 @@ void Camera::update(float time) {
 
 void Camera::initUbo() {
 	glCreateBuffers(1, &m_ubo);
-	glNamedBufferStorage(m_ubo, static_cast<GLsizeiptr>((3 * 16 + 4) * sizeof(GLfloat)), NULL, GL_DYNAMIC_STORAGE_BIT);
+	glNamedBufferStorage(m_ubo, static_cast<GLsizeiptr>(sizeof(CameraUbo)), NULL, GL_DYNAMIC_STORAGE_BIT);
 }
 void Camera::updateUbo() {
-	glm::mat4 inverseViewMatrix = inverse(m_viewMatrix);
-	GLsizeiptr matSize = static_cast<GLsizeiptr>(16 * sizeof(GLfloat));
-	GLsizeiptr vec2Size = static_cast<GLsizeiptr>(2 * sizeof(GLfloat));
-	GLsizeiptr matOffset = static_cast<GLintptr>(16 * sizeof(GLfloat));
-	glNamedBufferSubData(m_ubo, 0, matSize, glm::value_ptr(m_viewMatrix));
-	glNamedBufferSubData(m_ubo, matOffset, matSize, glm::value_ptr(m_projectionMatrix));
-	glNamedBufferSubData(m_ubo, 2 * matOffset, matSize, glm::value_ptr(inverseViewMatrix));
-	glNamedBufferSubData(m_ubo, 3 * matOffset, vec2Size, glm::value_ptr(resolution()));
+	
+	m_uniforms.inverseViewMatrix = inverse(m_uniforms.viewMatrix);
+	m_uniforms.resolution = resolution();
+	glNamedBufferSubData(m_ubo, 0, static_cast<GLsizeiptr>(sizeof(CameraUbo)), &m_uniforms);
 }
 
 void Camera::setResolution(glm::vec2 resolution)
 {
 	if (!m_freezeResolution) {
-		m_resolution = resolution;
+		m_uniforms.resolution = resolution;
 	}
 
 	updateProjectionMatrix();
 
 	// Resize extra framebuffers
-	size_t width = static_cast<size_t>(m_resolution.x);
-	size_t height = static_cast<size_t>(m_resolution.y);
-	if (m_extraFramebuffers.size() < 1) {
+	size_t width = static_cast<size_t>(m_uniforms.resolution.x);
+	size_t height = static_cast<size_t>(m_uniforms.resolution.y);
+	if (m_extraFramebuffers.size() == 0) {
 		const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
 		m_extraFramebuffers.push_back(std::make_shared<Framebuffer>(width, height, colorLayerInfos));
+		const std::vector<ColorLayerInfo> colorLayerInfos2 = {};
+		m_extraFramebuffers.push_back(std::make_shared<Framebuffer>(width, height, colorLayerInfos2));
 	}
 	else {
 		m_extraFramebuffers[0]->setResolution(width, height);
+		m_extraFramebuffers[1]->setResolution(width, height);
 	}
 
 	updateUbo();
@@ -87,8 +86,8 @@ void Camera::setFreezeResolution(bool freeze)
 {
 	m_freezeResolution = freeze;
 	if (m_freezeResolution) {
-		size_t width = static_cast<size_t>(m_resolution.x);
-		size_t height = static_cast<size_t>(m_resolution.y);
+		size_t width = static_cast<size_t>(m_uniforms.resolution.x);
+		size_t height = static_cast<size_t>(m_uniforms.resolution.y);
 		const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
 		m_targetFramebuffer = std::make_shared<Framebuffer>(width, height, colorLayerInfos);
 	} else {
@@ -109,13 +108,13 @@ float Camera::focalLength() const
 
 void Camera::setNearDistance(float distance)
 {
-	m_near = distance;
+	m_uniforms.uNear = distance;
 	updateProjectionMatrix();
 }
 
 void Camera::setFarDistance(float distance)
 {
-	m_far = distance;
+	m_uniforms.uFar = distance;
 	updateProjectionMatrix();
 }
 
@@ -154,14 +153,22 @@ void Camera::updateProjectionMatrix()
 {
 	switch (m_projectionType) {
 	case PerspectiveProjection:
-		if (m_resolution.x > 0.0f && m_resolution.y > 0.0f) {
-			m_projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_resolution.x, m_resolution.y, m_near, m_far);
+		if (m_uniforms.resolution.x > 0.0f && m_uniforms.resolution.y > 0.0f) {
+			m_uniforms.projectionMatrix = glm::perspectiveFov(glm::radians(m_fov), m_uniforms.resolution.x, m_uniforms.resolution.y, m_uniforms.uNear, m_uniforms.uFar);
+			m_uniforms.uRight = m_uniforms.uNear / m_uniforms.projectionMatrix[0][0];
+			m_uniforms.uLeft = -m_uniforms.uRight;
+			m_uniforms.uTop = m_uniforms.uNear / m_uniforms.projectionMatrix[1][1];
+			m_uniforms.uBottom = -m_uniforms.uTop;
 		}
 		break;
 	case OrthographicProjection:
 	{
-		float ratio = m_resolution.x > 0.0f ? m_resolution.y / m_resolution.x : 1.0f;
-		m_projectionMatrix = glm::ortho(-m_orthographicScale, m_orthographicScale, -m_orthographicScale * ratio, m_orthographicScale * ratio, m_near, m_far);
+		float ratio = m_uniforms.resolution.x > 0.0f ? m_uniforms.resolution.y / m_uniforms.resolution.x : 1.0f;
+		m_uniforms.projectionMatrix = glm::ortho(-m_orthographicScale, m_orthographicScale, -m_orthographicScale * ratio, m_orthographicScale * ratio, m_uniforms.uNear, m_uniforms.uFar);
+		m_uniforms.uRight = 1.0f / m_uniforms.projectionMatrix[0][0];
+		m_uniforms.uLeft = -m_uniforms.uRight;
+		m_uniforms.uTop = 1.0f / m_uniforms.projectionMatrix[1][1];
+		m_uniforms.uBottom = -m_uniforms.uTop;
 		break;
 	}
 	}
@@ -399,10 +406,10 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 // Framebuffer pool
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer() const
+std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(bool depthOnly) const
 {
 	// TODO
-	return m_extraFramebuffers[0];
+	return m_extraFramebuffers[depthOnly ? 1 : 0];
 }
 
 void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
@@ -427,13 +434,13 @@ glm::vec3 Camera::projectSphere(glm::vec3 center, float radius) const
 
 	glm::vec2 circleCenter = glm::vec2(o.x, o.y) * o.z * fl / (oz2 - r2);
 
-	float pixelRadius = outerRadius * m_resolution.y;
-	glm::vec2 pixelCenter = circleCenter * m_resolution.y * glm::vec2(-1.0f, 1.0f) + m_resolution * 0.5f;
+	float pixelRadius = outerRadius * m_uniforms.resolution.y;
+	glm::vec2 pixelCenter = circleCenter * m_uniforms.resolution.y * glm::vec2(-1.0f, 1.0f) + m_uniforms.resolution * 0.5f;
 
 	return glm::vec3(pixelCenter, pixelRadius);
 }
 
 float Camera::linearDepth(float zbufferDepth) const
 {
-	return (2.0 * m_near * m_far) / (m_far + m_near - (zbufferDepth * 2.0f - 1.0f) * (m_far - m_near));
+	return (2.0f * m_uniforms.uNear * m_uniforms.uFar) / (m_uniforms.uFar + m_uniforms.uNear - (zbufferDepth * 2.0f - 1.0f) * (m_uniforms.uFar - m_uniforms.uNear));
 }
