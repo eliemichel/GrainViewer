@@ -44,7 +44,7 @@ bool filterPointToPointDistance(const std::string & inputFilename, const std::st
 	window->swapBuffers();
 
 	PointCloud pointCloud;
-	pointCloud.loadBin(inputFilename);
+	pointCloud.load(inputFilename);
 	assert(pointCloud.frameCount() == 1);
 
 	//---------------------------------------------

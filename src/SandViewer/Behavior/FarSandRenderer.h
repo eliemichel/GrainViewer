@@ -40,6 +40,8 @@ public:
 		bool useShellCulling = true;
 		DebugShape debugShape = DebugShapeDisc;
 		WeightMode weightMode = WeightModeNone;
+		bool shellDepthFalloff = false;
+		bool disableBlend = false; // For debug
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }

@@ -51,9 +51,9 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
-	//GLint drawFboId = 0, readFboId = 0;
-	//glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-	//glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
+	GLint drawFboId = 0, readFboId = 0;
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
 	//auto depthFbo = camera.getExtraFramebuffer(true /* depthOnly */);
 
 	// 1. Render epsilon depth buffer
@@ -81,8 +81,12 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		if (properties().useShellCulling) {
 			glDepthMask(GL_FALSE);
 			glEnable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_ONE, GL_ONE);
+			if (properties().disableBlend) {
+				glDisable(GL_BLEND);
+			} else {
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_ONE, GL_ONE);
+			}
 		}
 		else {
 			glDepthMask(GL_TRUE);
@@ -93,8 +97,12 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderProgram & shader = *m_shader;
 		setCommonUniforms(shader, camera);
 
-		//glBindTextureUnit(0, depthFbo->depthTexture());
-		//shader.setUniform("uDepthTexture", 0);
+		if (properties().useShellCulling && properties().shellDepthFalloff) {
+			GLint depthTexture;
+			glGetNamedFramebufferAttachmentParameteriv(drawFboId, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthTexture);
+			glBindTextureUnit(7, static_cast<GLuint>(depthTexture));
+			shader.setUniform("uDepthTexture", 7);
+		}
 
 		shader.use();
 		glBindVertexArray(pointData->vao());
@@ -127,6 +135,7 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
 	shader.setUniform("uDebugShape", m_properties.debugShape);
 	shader.setUniform("uWeightMode", m_properties.weightMode);
+	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
 
 	GLint o = 0;
 	if (m_colormapTexture) {

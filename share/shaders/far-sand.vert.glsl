@@ -1,7 +1,7 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2
+#pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2 PROCEDURAL_BASECOLOR3
 
 layout (location = 0) in vec4 position;
 
@@ -44,6 +44,13 @@ void main() {
 	if (r < 0.1) u = 0.01;
 	if (r > 0.9) u = 0.99;
     baseColor = texture(uColormapTexture, vec2(u, 0.0)).rgb;
+#elif defined(PROCEDURAL_BASECOLOR3) // PROCEDURAL_BASECOLOR
+	uint id = gl_VertexID;
+	float r = randomGrainColorFactor(int(id));
+	float u = pow(0.5 + position_ws.z * 0.5, 3.0);
+	if (r < 0.1) u = 0.01;
+	if (r > 0.9) u = 0.99;
+    baseColor = texture(uColormapTexture, vec2(clamp(u + (r - 0.5) * 0.2, 0.01, 0.99), 0.0)).rgb;
 #else
     baseColor = vec3(1.0, 0.5, 0.0);
 #endif // PROCEDURAL_BASECOLOR

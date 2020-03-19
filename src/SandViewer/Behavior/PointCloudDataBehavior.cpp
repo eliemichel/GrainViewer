@@ -62,11 +62,7 @@ void PointCloudDataBehavior::start()
 	// 2. Load point cloud data
 
 	PointCloud pointCloud;
-	if (endsWith(m_filename, ".bin")) {
-		pointCloud.loadBin(m_filename);
-	} else {
-		pointCloud.loadXYZ(m_filename);
-	}
+	pointCloud.load(m_filename);
 	m_pointCount = static_cast<GLsizei>(pointCloud.data().size());
 	m_frameCount = static_cast<GLsizei>(pointCloud.frameCount());
 

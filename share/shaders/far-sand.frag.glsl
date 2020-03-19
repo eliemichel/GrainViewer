@@ -16,6 +16,7 @@ layout (location = 1) out uvec4 gbuffer_color2;
 layout (location = 2) out uvec4 gbuffer_color3;
 
 #include "include/gbuffer.inc.glsl"
+#include "include/zbuffer.inc.glsl"
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeLitSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -29,9 +30,12 @@ const int cWeightQuad = 1;
 const int cWeightGaussian = 2;
 uniform int uWeightMode = cWeightNone;
 
+uniform float uEpsilon = 0.5;
+uniform bool uShellDepthFalloff = false;
+
+///////////////////////////////////////////////////////////////////////////////
 #ifdef STAGE_EPSILON_ZBUFFER
 
-uniform float uEpsilon = 0.5;
 
 void main() {
     //float r2 = screenSpaceRadius * screenSpaceRadius;
@@ -41,9 +45,9 @@ void main() {
     }
 
     // Readable version
-    float linearDepth = (2.0 * uNear * uFar) / (uFar + uNear - (gl_FragCoord.z * 2.0 - 1.0) * (uFar - uNear));
+    float linearDepth = linearizeDepth(gl_FragCoord.z);
     linearDepth += uEpsilon;
-    float logDepth = (uFar + uNear - (2.0 * uNear * uFar) / linearDepth) / (uFar - uNear) * 0.5 + 0.5;
+    float logDepth = unlinearizeDepth(linearDepth);
 
     gl_FragDepth = logDepth;
 
@@ -59,6 +63,7 @@ void main() {
     packGFragment(fragment, gbuffer_color1, gbuffer_color2, gbuffer_color3);
 }
 
+///////////////////////////////////////////////////////////////////////////////
 #else // STAGE_EPSILON_ZBUFFER
 
 uniform float height = 0.0;
@@ -68,6 +73,8 @@ uniform float occlusion = 1.0;
 uniform vec3 emission = vec3(0.0, 0.0, 0.0);
 uniform vec3 normal = vec3(0.5, 0.5, 1.0);
 uniform float normal_mapping = 0.0;
+
+uniform sampler2D uDepthTexture;
 
 #include "include/utils.inc.glsl"
 #include "include/raytracing.inc.glsl"
@@ -147,15 +154,23 @@ void main() {
             surface.reflectance = 0.7;
 
 
-            for (int k = 0 ; k < 3 ; ++k) {
-                float shadow = 0;
+            for (int k = 0 ; k < 1 ; ++k) {
                 vec3 toLight = normalize(vec3(5.0, 5.0, 5.0) - position_ws);
                 vec3 f = vec3(0.0);
                 f = brdf(toCam, n, toLight, surface);
-                beauty.rgb += f * vec3(1.0) * (1. - shadow);
+                beauty.rgb += f * vec3(3.0);
             }
         } else {
             beauty = baseColor;
+        }
+
+        if (uShellDepthFalloff) {
+            float d = texelFetch(uDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
+            float limitDepth = linearizeDepth(d);
+            float depth = linearizeDepth(gl_FragCoord.z);
+            float fac = (limitDepth - depth) / uEpsilon;
+            //beauty = vec3(1.0, fac, 0.0);
+            weight *= fac;
         }
 
         fragment.roughness = weight;
@@ -165,4 +180,5 @@ void main() {
     packGFragment(fragment, gbuffer_color1, gbuffer_color2, gbuffer_color3);
 }
 
+///////////////////////////////////////////////////////////////////////////////
 #endif // STAGE_EPSILON_ZBUFFER

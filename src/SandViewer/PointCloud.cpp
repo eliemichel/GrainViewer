@@ -9,6 +9,20 @@
 
 #include "Logger.h"
 #include "PointCloud.h"
+#include "utils/strutils.h"
+
+bool PointCloud::load(const std::string & filename)
+{
+	if (endsWith(filename, ".bin")) {
+		return loadBin(filename);
+	}
+	else if (endsWith(filename, ".raw")) {
+		return loadMomentRaw(filename);
+	}
+	else {
+		return loadXYZ(filename);
+	}
+}
 
 bool PointCloud::loadXYZ(const std::string & filename) {
 	std::ifstream in(filename);
@@ -53,6 +67,59 @@ bool PointCloud::loadBin(const std::string & filename) {
 
 	in.close();
 	LOG << "Loaded cloud of " << size << " points from " << filename << " (" << m_frame_count << " frames of " << point_count << " points)";
+	return true;
+}
+
+#define READ(in, value) in.read(reinterpret_cast<char*>(&(value)), sizeof(value) / sizeof(char))
+
+bool PointCloud::loadMomentRaw(const std::string & filename, float threshold)
+{
+	std::ifstream in(filename, std::ios::binary);
+	if (!in.is_open()) {
+		ERR_LOG << "Could not open raw file '" << filename << "'";
+		return false;
+	}
+
+	uint32_t version, nChannel, nDimensions, shape[3], value;
+	READ(in, version);
+	READ(in, nChannel);
+	READ(in, nDimensions);
+	if (nChannel != 1 || nDimensions != 3) {
+		ERR_LOG << "Only single channel 3-dimensional raw files can be loaded as point clouds";
+		return false;
+	}
+	READ(in, shape[0]);
+	READ(in, shape[1]);
+	READ(in, shape[2]);
+	size_t voxelCount = shape[0] * shape[1] * shape[2];
+
+	m_frame_count = 1;
+	m_data.resize(static_cast<size_t>(0.1f * voxelCount)); // first size guess
+
+	int k = 0;
+	uint32_t actualThreshold = static_cast<uint32_t>(threshold * voxelCount);
+	for (size_t i = 0; i < voxelCount; ++i) {
+		if (k >= m_data.size()) {
+			m_data.resize(2 * m_data.size());
+		}
+
+		READ(in, value);
+		if (value < actualThreshold) {
+			size_t u, v, w;
+			w = i % shape[1];
+			v = (i / shape[1]) % shape[0];
+			u = i / (shape[0] * shape[1]);
+			float x = static_cast<float>(u) / static_cast<float>(shape[0] - 1) - 0.5f;
+			float y = static_cast<float>(v) / static_cast<float>(shape[1] - 1) - 0.5f;
+			float z = static_cast<float>(w) / static_cast<float>(shape[2] - 1) - 0.5f;
+			m_data[k] = glm::vec3(x, y, z);
+			++k;
+		}
+	}
+
+
+	in.close();
+	LOG << "Loaded cloud of " << m_data.size() << " points from " << filename;
 	return true;
 }
 

@@ -28,7 +28,9 @@ void FarSandRendererDialog::draw()
 
 			BeginDisable(!props.useShellCulling);
 			{
-				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 10.0f, "%.5f");
+				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
+
+				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
 
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
@@ -41,6 +43,9 @@ void FarSandRendererDialog::draw()
 				ImGui::PopID();
 			}
 			EndDisable(!props.useShellCulling);
+
+			ImGui::Text("\nDebug");
+			ImGui::Checkbox("Disable additive blend", &props.disableBlend);
 
 			EndDisable(!enabled);
 		}

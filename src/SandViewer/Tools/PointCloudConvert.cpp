@@ -40,13 +40,7 @@ int main(int argc, char *argv[]) {
 
 	PointCloud pointCloud;
 
-	if (endsWith(inputFilename, ".bin")) {
-		pointCloud.loadBin(inputFilename);
-	}
-	else {
-		pointCloud.loadXYZ(inputFilename);
-	}
-	
+	pointCloud.load(inputFilename);
 
 	if (argc >= 4 && std::string(argv[3]) == "bbox-filter") {
 		PointCloud filteredPointCloud;
