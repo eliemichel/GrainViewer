@@ -40,9 +40,16 @@ private:
 	void updateImGui();
 
 private:
+	struct DialogGroup {
+		std::string title;
+		std::vector<std::shared_ptr<Dialog>> dialogs;
+		bool enabled = false;
+	};
+
+private:
 	std::weak_ptr<Window> m_window;
 	std::shared_ptr<Scene> m_scene;
-	std::vector<std::shared_ptr<Dialog>> m_dialogs;
+	std::vector<DialogGroup> m_dialogGroups;
 
 	float m_startTime;
 

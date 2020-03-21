@@ -1,5 +1,6 @@
 #include <limits>
 #include <imgui.h>
+#include <glm/gtc/type_ptr.hpp>
 #include "utils/guiutils.h"
 #include "FarSandRendererDialog.h"
 
@@ -24,8 +25,7 @@ void FarSandRendererDialog::draw()
 			ImGui::RadioButton("Square", &shape, FarSandRenderer::DebugShapeSquare);
 			props.debugShape = static_cast<FarSandRenderer::DebugShape>(shape);
 
-			ImGui::Checkbox("Use Shell Culling", &props.useShellCulling);
-
+			ImGui::Checkbox("\nUse Shell Culling", &props.useShellCulling);
 			BeginDisable(!props.useShellCulling);
 			{
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
@@ -43,6 +43,14 @@ void FarSandRendererDialog::draw()
 				ImGui::PopID();
 			}
 			EndDisable(!props.useShellCulling);
+
+			ImGui::Checkbox("\nUse Bbox Culling", &props.useBbox);
+			BeginDisable(!props.useBbox);
+			{
+				ImGui::SliderFloat3("Minimum", glm::value_ptr(props.bboxMin), 0.001f, 1.0f, "%.5f");
+				ImGui::SliderFloat3("Maximum", glm::value_ptr(props.bboxMax), 0.001f, 1.0f, "%.5f");
+			}
+			EndDisable(!props.useBbox);
 
 			ImGui::Text("\nDebug");
 			ImGui::Checkbox("Disable additive blend", &props.disableBlend);

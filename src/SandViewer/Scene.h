@@ -15,6 +15,8 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <fstream>
+#include <sstream>
 
 #include "Camera.h"
 #include "TurntableCamera.h"
@@ -36,6 +38,7 @@ public:
 	void reloadShaders();
 	void update(float time);
 	void render() const;
+	void onPostRender(float time);
 
 	// Clear scene
 	void clear();
@@ -47,11 +50,13 @@ public:
 	GlDeferredShader & deferredShader() { return m_deferredShader; }
 
 	bool mustQuit() const { return m_mustQuit;  }
+	int frame() const { return m_frameIndex; }
 
 	std::shared_ptr<RuntimeObject> findObjectByName(const std::string& name);
 
 private:
 	void recordFrame(const Camera & camera) const;
+	void measureStats();
 
 private:
 	std::string m_filename;
@@ -71,6 +76,11 @@ private:
 	float m_fps;
 	int m_quitAfterFrame = -1; // -1 to deactivate this feature, otherwise automatically quit the program after the specified frame (usefull for batch rendering)
 	bool m_mustQuit = false;
+
+	// Post render stats
+	std::string m_outputStats; // path to stats file
+	std::vector<glm::vec3> m_statsCountColors; // colors to count pixels in render
+	std::ofstream m_outputStatsFile;
 
 	// Not really related to the scene, save window resolution
 	int m_width;

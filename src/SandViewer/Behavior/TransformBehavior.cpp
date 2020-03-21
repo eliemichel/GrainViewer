@@ -10,6 +10,34 @@
 
 bool TransformBehavior::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
 {
+	if (json.HasMember("postTransform") && json["postTransform"].IsArray()) {
+		auto& postTransformJson = json["postTransform"];
+		bool valid = true;
+		for (int i = 0; i < 16 && valid; ++i) valid = valid && postTransformJson[i].IsNumber();
+		if (!valid) {
+			ERR_LOG << "postTransform must be a 16-float array";
+		}
+		else {
+			float data[16];
+			for (int i = 0; i < 16; ++i) data[i] = postTransformJson[i].GetFloat();
+			m_postTransform = glm::make_mat4(data);
+		}
+	}
+
+	if (json.HasMember("preTransform") && json["preTransform"].IsArray()) {
+		auto& preTransformJson = json["preTransform"];
+		bool valid = true;
+		for (int i = 0; i < 16 && valid; ++i) valid = valid && preTransformJson[i].IsNumber();
+		if (!valid) {
+			ERR_LOG << "preTransform must be a 16-float array";
+		}
+		else {
+			float data[16];
+			for (int i = 0; i < 16; ++i) data[i] = preTransformJson[i].GetFloat();
+			m_preTransform = glm::make_mat4(data);
+		}
+	}
+
 	if (json.HasMember("modelMatrix")) {
 		auto& mat = json["modelMatrix"];
 		if (mat.IsArray()) {
@@ -21,7 +49,7 @@ bool TransformBehavior::deserialize(const rapidjson::Value & json, const Environ
 			else {
 				float data[16];
 				for (int i = 0; i < 16; ++i) data[i] = mat[i].GetFloat();
-				m_modelMatrix = glm::make_mat4(data);
+				m_transform = glm::make_mat4(data);
 			}
 		}
 		else if (mat.IsObject()) {
@@ -47,34 +75,49 @@ bool TransformBehavior::deserialize(const rapidjson::Value & json, const Environ
 					ERR_LOG << "modelMatrix buffer size must be a multiple of 16 (in file " << path << ")";
 				}
 
-				auto& postTransformJson = mat["postTransform"];
-				if (postTransformJson.IsArray()) {
-					bool valid = true;
-					for (int i = 0; i < 16 && valid; ++i) valid = valid && postTransformJson[i].IsNumber();
-					if (!valid) {
-						ERR_LOG << "postTransform must be a 16-float array";
-					} else {
-						float data[16];
-						for (int i = 0; i < 16; ++i) data[i] = postTransformJson[i].GetFloat();
-						m_postTransform = glm::make_mat4(data);
+				if (mat.HasMember("postTransform")) {
+					auto& postTransformJson = mat["postTransform"];
+					if (postTransformJson.IsArray()) {
+						WARN_LOG << "It is now recommanded to use the postTransform parameter at the root of TransformBehavior rather than as a child of modelMatrix";
+						bool valid = true;
+						for (int i = 0; i < 16 && valid; ++i) valid = valid && postTransformJson[i].IsNumber();
+						if (!valid) {
+							ERR_LOG << "postTransform must be a 16-float array";
+						}
+						else {
+							float data[16];
+							for (int i = 0; i < 16; ++i) data[i] = postTransformJson[i].GetFloat();
+							m_postTransform = glm::make_mat4(data);
+						}
 					}
 				}
 
 				int startFrame = mat["startFrame"].GetInt();
 				int endFrame = startFrame + static_cast<int>(size) / 16 - 1;
-				int freezeAfterFrame = endFrame;
 
-				if (mat["freezeAfterFrame"].IsInt()) {
+				// Before this, or if it is left unspecified, the animation loops
+				int freezeAfterFrame = -1;
+				if (mat.HasMember("freezeAfterFrame") && mat["freezeAfterFrame"].IsInt()) {
 					freezeAfterFrame = mat["freezeAfterFrame"].GetInt();
 				}
 
 				animations->addAnimation([startFrame, endFrame, freezeAfterFrame, buffer, this](float time, int frame) {
-					int offset = (frame - startFrame) % (endFrame - startFrame + 1);
-					offset = std::min(offset, freezeAfterFrame);
-					m_modelMatrix = m_postTransform * glm::make_mat4(buffer.get() + 16 * offset);
+					int offset = frame - startFrame;
+					if (freezeAfterFrame >= 0) {
+						offset = std::min(offset, freezeAfterFrame);
+					}
+					offset = offset % (endFrame - startFrame + 1);
+					m_transform = glm::make_mat4(buffer.get() + 16 * offset);
+					updateModelMatrix();
 				});
 			}
 		}
 	}
+	updateModelMatrix();
 	return true;
+}
+
+void TransformBehavior::updateModelMatrix()
+{
+	m_modelMatrix = m_postTransform * m_transform * m_preTransform;
 }

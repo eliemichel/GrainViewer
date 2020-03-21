@@ -48,6 +48,23 @@ bool PointCloudDataBehavior::deserialize(const rapidjson::Value & json)
 		return false;
 	}
 
+	if (json.HasMember("bbox")) {
+		if (json["bbox"].IsObject()) {
+			m_useBbox = true;
+			auto & bbox = json["bbox"];
+			if (bbox.HasMember("xmin") && bbox["xmin"].IsNumber()) m_bboxMin.x = bbox["xmin"].GetFloat();
+			if (bbox.HasMember("ymin") && bbox["ymin"].IsNumber()) m_bboxMin.y = bbox["ymin"].GetFloat();
+			if (bbox.HasMember("zmin") && bbox["zmin"].IsNumber()) m_bboxMin.z = bbox["zmin"].GetFloat();
+			if (bbox.HasMember("xmax") && bbox["xmax"].IsNumber()) m_bboxMax.x = bbox["xmax"].GetFloat();
+			if (bbox.HasMember("ymax") && bbox["ymax"].IsNumber()) m_bboxMax.y = bbox["ymax"].GetFloat();
+			if (bbox.HasMember("zmax") && bbox["zmax"].IsNumber()) m_bboxMax.z = bbox["zmax"].GetFloat();
+		}
+		else {
+			ERR_LOG << "Field 'filename' of PointCloudDataBehavior must be a string";
+			return false;
+		}
+	}
+
 	m_filename = ResourceManager::resolveResourcePath(m_filename);
 
 	return true;
@@ -62,9 +79,36 @@ void PointCloudDataBehavior::start()
 	// 2. Load point cloud data
 
 	PointCloud pointCloud;
-	pointCloud.load(m_filename);
-	m_pointCount = static_cast<GLsizei>(pointCloud.data().size());
+	
+	if (m_useBbox) {
+		PointCloud fullPointCloud;
+		fullPointCloud.load(m_filename);
+
+		if (fullPointCloud.frameCount() > 1) {
+			WARN_LOG << "Using bbox with animated point cloud has undefined behavior";
+		}
+
+		pointCloud.data().resize(128);
+		int k = 0;
+		for (const auto & p : fullPointCloud.data()) {
+			if (k >= pointCloud.data().size()) {
+				pointCloud.data().resize(2 * pointCloud.data().size());
+			}
+
+			if (p.x >= m_bboxMin.x && p.x <= m_bboxMax.x
+				&& p.y >= m_bboxMin.y && p.y <= m_bboxMax.y
+				&& p.z >= m_bboxMin.z && p.z <= m_bboxMax.z)
+			{
+				pointCloud.data()[k] = p;
+				++k;
+			}
+		}
+	}
+	else {
+		pointCloud.load(m_filename);
+	}
 	m_frameCount = static_cast<GLsizei>(pointCloud.frameCount());
+	m_pointCount = static_cast<GLsizei>(pointCloud.data().size());
 
 	// 3. Move data from PointCloud object to GlBuffer (in VRAM)
 

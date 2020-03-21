@@ -40,6 +40,7 @@ public:
 		int height;
 		std::string outputFrameBase;
 		bool isRecordEnabled = false;
+		bool saveOnDisc = true; // if false, get pixel data from gpu but don't actually write them to disc. They can be used to measure stats
 	};
 
 public:

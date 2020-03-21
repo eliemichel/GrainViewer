@@ -9,7 +9,6 @@
 in vec3 position_ws;
 in vec3 baseColor;
 in float radius;
-in float screenSpaceRadius;
 
 layout (location = 0) out vec4 gbuffer_color1;
 layout (location = 1) out uvec4 gbuffer_color2;
@@ -38,7 +37,6 @@ uniform bool uShellDepthFalloff = false;
 
 
 void main() {
-    //float r2 = screenSpaceRadius * screenSpaceRadius;
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
         discard;

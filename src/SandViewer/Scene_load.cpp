@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <regex>
 
 #include <rapidjson/document.h>
 
@@ -137,13 +138,57 @@ bool Scene::load(const std::string & filename)
 				WARN_LOG << "'quitAfterFrame' field of 'scene' must be an integer";
 			}
 		}
+
+		if (scene.HasMember("outputStats")) {
+			if (scene["outputStats"].IsString()) {
+				m_outputStats = scene["outputStats"].GetString();
+				m_outputStats = std::regex_replace(m_outputStats, std::regex("\\$BASEFILE"), env.baseFile);
+				m_outputStats = ResourceManager::resolveResourcePath(m_outputStats);
+			}
+			else {
+				WARN_LOG << "'outputStats' field of 'scene' must be a string";
+			}
+		}
+
+		if (scene.HasMember("statsCountColors")) {
+			if (scene["statsCountColors"].IsArray()) {
+				const auto & a = scene["statsCountColors"].GetArray();
+				m_statsCountColors.resize(a.Size());
+				for (rapidjson::SizeType i = 0; i < a.Size(); ++i) {
+					if (!a[i].IsArray() || a[i].GetArray().Size() != 3) {
+						WARN_LOG << "'statsCountColors' field of 'scene' must be an array of vec3";
+						continue;
+					}
+					const auto & v = a[i].GetArray();
+					m_statsCountColors[i].x = v[0].GetFloat();
+					m_statsCountColors[i].y = v[1].GetFloat();
+					m_statsCountColors[i].z = v[2].GetFloat();
+				}
+			}
+			else {
+				WARN_LOG << "'statsCountColors' field of 'scene' must be an array of vec3";
+			}
+		}
 	}
+
+	// Scene start
 
 	const glm::vec2 & res = viewportCamera()->resolution();
 	DEBUG_LOG << "reso: " << res.x << ", " << res.y;
 	m_deferredShader.setResolution(static_cast<int>(res.x), static_cast<int>(res.y));
 
 	reloadShaders();
+
+	// Start color output stats
+	if (!m_outputStats.empty()) {
+		fs::create_directories(fs::path(m_outputStats).parent_path());
+		m_outputStatsFile.open(m_outputStats);
+		m_outputStatsFile << "frame";
+		for (const auto &c : m_statsCountColors) {
+			m_outputStatsFile << ";<" << c.x << "," << c.y << "," << c.z << ">";
+		}
+		m_outputStatsFile << "\n";
+	}
 
 	DEBUG_LOG << "Loading done.";
 

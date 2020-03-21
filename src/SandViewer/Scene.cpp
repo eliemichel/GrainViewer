@@ -4,6 +4,8 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
+#include <sstream>
+
 #include <glm/glm.hpp>
 
 #include "Scene.h"
@@ -14,6 +16,7 @@
 #include "Logger.h"
 #include "AnimationManager.h"
 #include "utils/fileutils.h"
+#include "Filtering.h"
 
 #if _DEBUG
 #include "utils/debug.h"
@@ -50,13 +53,6 @@ void Scene::reloadShaders() {
 }
 
 void Scene::update(float time) {
-	// Call on post render callback for the previous frame before we update animation
-	if (m_frameIndex > -1) {
-		for (auto obj : m_objects) {
-			obj->onPostRender(time, m_frameIndex);
-		}
-	}
-
 	++m_frameIndex;
 	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
 		// If recording, slow down the game to ensure that it will play back correctly
@@ -161,8 +157,19 @@ void Scene::render() const {
 		}
 		glBlitNamedFramebuffer(camera.targetFramebuffer()->raw(), 0, 0, 0, w1, h1, 0, 0, w2, h2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
+}
 
-	recordFrame(camera);
+void Scene::onPostRender(float time)
+{
+	if (viewportCamera()) {
+		Camera & camera = *viewportCamera();
+		recordFrame(camera);
+		measureStats();
+	}
+
+	for (auto obj : m_objects) {
+		obj->onPostRender(time, m_frameIndex);
+	}
 }
 
 void Scene::clear()
@@ -192,13 +199,42 @@ std::shared_ptr<RuntimeObject> Scene::findObjectByName(const std::string& name) 
 // Private methods
 ///////////////////////////////////////////////////////////////////////////////
 
+void Scene::measureStats()
+{
+	if (m_statsCountColors.empty() || !m_outputStatsFile.is_open()) return;
+	std::vector<int> counters(m_statsCountColors.size());
+	std::vector<uint8_t> intColors;
+	for (const auto &c : m_statsCountColors) {
+		intColors.push_back(static_cast<uint8_t>(c.x * 255.0f));
+		intColors.push_back(static_cast<uint8_t>(c.y * 255.0f));
+		intColors.push_back(static_cast<uint8_t>(c.z * 255.0f));
+	}
+	size_t n = m_pixels.size() / 3;
+	size_t p = m_statsCountColors.size();
+	for (int i = 0; i < n; ++i) {
+		for (int k = 0; k < p; ++k) {
+			if (intColors[3 * k + 0] == m_pixels[3 * i + 0]
+				&& intColors[3 * k + 1] == m_pixels[3 * i + 1]
+				&& intColors[3 * k + 2] == m_pixels[3 * i + 2]) {
+				++counters[k];
+			}
+		}
+	}
+
+	m_outputStatsFile << m_frameIndex;
+	for (const auto &c : counters) {
+		m_outputStatsFile << ";" << c;
+	}
+	m_outputStatsFile << "\n";
+}
+
 void Scene::recordFrame(const Camera & camera) const
 {
 	auto& outputSettings = camera.outputSettings();
 	if (outputSettings.isRecordEnabled) {
-		char number[5];
+		char number[7];
 #ifdef _WIN32
-		sprintf_s(number, 5, "%04d", m_frameIndex);
+		sprintf_s(number, 7, "%06d", m_frameIndex);
 #else // _WIN32
 		sprintf(number, "%04d", m_frameIndex);
 #endif // _WIN32
@@ -213,13 +249,17 @@ void Scene::recordFrame(const Camera & camera) const
 			GLint destWidth = static_cast<GLint>(camera.targetFramebuffer()->width());
 			GLint destHeight = static_cast<GLint>(camera.targetFramebuffer()->height());
 			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
-			ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+			if (outputSettings.saveOnDisc) {
+				ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+			}
 		}
 		else if (outputSettings.autoOutputResolution) {
 			// output default framebuffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glReadnPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
-			ResourceManager::saveImage(filename, m_width, m_height, pixels);
+			if (outputSettings.saveOnDisc) {
+				ResourceManager::saveImage(filename, m_width, m_height, pixels);
+			}
 		}
 		else if (m_outputFramebuffer) {
 			// output dedicated output framebuffer
@@ -237,7 +277,9 @@ void Scene::recordFrame(const Camera & camera) const
 
 			m_outputFramebuffer->bind();
 			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
-			ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+			if (outputSettings.saveOnDisc) {
+				ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+			}
 		}
 	}
 }

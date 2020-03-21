@@ -187,6 +187,7 @@ namespace fs = std::filesystem;
 
 #include "ResourceManager.h"
 #include "AnimationManager.h"
+#include "utils/jsonutils.h"
 
 void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
 {
@@ -260,6 +261,8 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 			}
 		}
 	}
+
+	jrOption(json, "saveOnDisc", outputSettings().saveOnDisc, outputSettings().saveOnDisc);
 
 	if (json.HasMember("outputFrameBase") && json["outputFrameBase"].IsString()) {
 		std::string outputFrameBase = json["outputFrameBase"].GetString();

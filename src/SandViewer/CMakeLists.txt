@@ -110,6 +110,8 @@ set(All_SRC
 	Ui/SceneDialog.cpp
 	Ui/LightGizmoDialog.h
 	Ui/LightGizmoDialog.cpp
+	Ui/TransformDialog.h
+	Ui/TransformDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

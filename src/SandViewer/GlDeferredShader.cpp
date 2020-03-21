@@ -13,6 +13,7 @@
 #include "ShadowMap.h"
 #include "ResourceManager.h"
 #include "GlTexture.h"
+#include "utils/jsonutils.h"
 
 using namespace std;
 
@@ -57,6 +58,8 @@ bool GlDeferredShader::deserialize(const rapidjson::Value & json)
 			m_colormap->setWrapMode(GL_CLAMP_TO_EDGE);
 		}
 	}
+
+	jrOption(json, "transparentFilm", m_transparentFilm, m_transparentFilm);
 
 	return true;
 }

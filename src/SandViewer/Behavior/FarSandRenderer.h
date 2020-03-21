@@ -42,6 +42,10 @@ public:
 		WeightMode weightMode = WeightModeNone;
 		bool shellDepthFalloff = false;
 		bool disableBlend = false; // For debug
+
+		bool useBbox = false; // if true, remove all points out of the supplied bbox
+		glm::vec3 bboxMin;
+		glm::vec3 bboxMax;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }

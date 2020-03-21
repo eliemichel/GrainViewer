@@ -27,6 +27,9 @@ public:
 
 private:
 	std::string m_filename = "";
+	bool m_useBbox = false; // if true, remove all points out of the supplied bbox
+	glm::vec3 m_bboxMin;
+	glm::vec3 m_bboxMax;
 
 	GLsizei m_pointCount;
 	GLsizei m_frameCount;

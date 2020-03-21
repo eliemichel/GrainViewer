@@ -32,6 +32,7 @@ using namespace std;
 #include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
 #include "FarSandRendererDialog.h"
+#include "TransformDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleType(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -42,6 +43,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	handleType(SandRenderer);
 	handleType(LightGizmo);
 	handleType(FarSandRenderer);
+	handleType(TransformBehavior);
 	return nullptr;
 #undef handleType
 }
@@ -164,20 +166,26 @@ void Gui::afterLoading()
 
 void Gui::setupDialogs()
 {
-	m_dialogs.clear();
+	m_dialogGroups.clear();
 	if (m_scene) {
+		DialogGroup group;
+		group.title = "Scene";
 		auto sceneDialog = std::make_shared<SceneDialog>();
 		sceneDialog->setController(m_scene);
-		m_dialogs.push_back(sceneDialog);
+		group.dialogs.push_back(sceneDialog);
+		m_dialogGroups.push_back(group);
 
 		for (const auto& obj : m_scene->objects()) {
+			DialogGroup group;
+			group.title = obj->name;
 			IBehaviorHolder::ConstBehaviorIterator it, end;
 			for (it = obj->cbeginBehaviors(), end = obj->cendBehaviors(); it != end;  ++it) {
 				auto dialog = makeComponentDialog(it->first, it->second);
 				if (dialog) {
-					m_dialogs.push_back(dialog);
+					group.dialogs.push_back(dialog);
 				}
 			}
+			m_dialogGroups.push_back(group);
 		}
 	}
 }
@@ -201,12 +209,14 @@ void Gui::updateImGui() {
 	ImVec4 clear_color = ImColor(114, 144, 154);
 	static float f = 0.0f;
 	ImGui::SetNextWindowPos(ImVec2(0.f, 0.f));
+	ImGui::SetNextWindowSize(ImVec2(420.f, 0.f));
 	ImGui::Begin("Framerate", nullptr,
 		ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoCollapse |
 		ImGuiWindowFlags_NoTitleBar);
-	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	int frame = m_scene ? m_scene->frame() : 0;
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS) | #%d", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate, frame);
 	ImGui::End();
 
 	if (m_showPanel) {
@@ -218,9 +228,21 @@ void Gui::updateImGui() {
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
 		int dialogId = 0;
-		for (auto d : m_dialogs) {
+		for (auto & dg : m_dialogGroups) {
 			ImGui::PushID(dialogId++);
-			d->draw();
+			ImGui::Selectable(dg.title.c_str(), &dg.enabled);
+			ImGui::PopID();
+		}
+		
+		// Visible dialogs
+		dialogId = 0;
+		for (auto & dg : m_dialogGroups) {
+			ImGui::PushID(dialogId++);
+			if (dg.enabled) {
+				for (auto d : dg.dialogs) {
+					d->draw();
+				}
+			}
 			ImGui::PopID();
 		}
 		ImGui::End();
@@ -234,6 +256,10 @@ void Gui::render() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (m_scene) {
+		m_scene->onPostRender(static_cast<float>(glfwGetTime()) - m_startTime);
+	}
 }
 
 void Gui::onResize(int width, int height) {

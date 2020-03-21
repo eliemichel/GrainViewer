@@ -26,6 +26,35 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	jrOption(json, "colormap", m_colormapTextureName, m_colormapTextureName);
 	jrOption(json, "radius", m_properties.radius, m_properties.radius);
 	jrOption(json, "epsilonFactor", m_properties.epsilonFactor, m_properties.epsilonFactor);
+	jrOption(json, "useShellCulling", m_properties.useShellCulling, m_properties.useShellCulling);
+	jrOption(json, "shellDepthFalloff", m_properties.shellDepthFalloff, m_properties.shellDepthFalloff);
+	jrOption(json, "disableBlend", m_properties.disableBlend, m_properties.disableBlend);
+
+	int debugShape = m_properties.debugShape;
+	jrOption(json, "debugShape", debugShape, debugShape);
+	m_properties.debugShape = static_cast<DebugShape>(debugShape);
+
+	int weightMode = m_properties.weightMode;
+	jrOption(json, "debugShape", weightMode, weightMode);
+	m_properties.weightMode = static_cast<WeightMode>(weightMode);
+
+	if (json.HasMember("bbox")) {
+		if (json["bbox"].IsObject()) {
+			m_properties.useBbox = true;
+			auto & bbox = json["bbox"];
+			if (bbox.HasMember("xmin") && bbox["xmin"].IsNumber()) m_properties.bboxMin.x = bbox["xmin"].GetFloat();
+			if (bbox.HasMember("ymin") && bbox["ymin"].IsNumber()) m_properties.bboxMin.y = bbox["ymin"].GetFloat();
+			if (bbox.HasMember("zmin") && bbox["zmin"].IsNumber()) m_properties.bboxMin.z = bbox["zmin"].GetFloat();
+			if (bbox.HasMember("xmax") && bbox["xmax"].IsNumber()) m_properties.bboxMax.x = bbox["xmax"].GetFloat();
+			if (bbox.HasMember("ymax") && bbox["ymax"].IsNumber()) m_properties.bboxMax.y = bbox["ymax"].GetFloat();
+			if (bbox.HasMember("zmax") && bbox["zmax"].IsNumber()) m_properties.bboxMax.z = bbox["zmax"].GetFloat();
+		}
+		else {
+			ERR_LOG << "Field 'filename' of PointCloudDataBehavior must be a string";
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -136,6 +165,10 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uDebugShape", m_properties.debugShape);
 	shader.setUniform("uWeightMode", m_properties.weightMode);
 	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
+
+	shader.setUniform("uUseBbox", m_properties.useBbox);
+	shader.setUniform("uBboxMin", m_properties.bboxMin);
+	shader.setUniform("uBboxMax", m_properties.bboxMax);
 
 	GLint o = 0;
 	if (m_colormapTexture) {
