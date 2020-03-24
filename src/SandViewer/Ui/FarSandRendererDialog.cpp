@@ -23,14 +23,15 @@ void FarSandRendererDialog::draw()
 			ImGui::RadioButton("Lit Sphere", &shape, FarSandRenderer::DebugShapeLitSphere);
 			ImGui::RadioButton("Disc", &shape, FarSandRenderer::DebugShapeDisc);
 			ImGui::RadioButton("Square", &shape, FarSandRenderer::DebugShapeSquare);
+			ImGui::RadioButton("Normal Sphere", &shape, FarSandRenderer::DebugShapeNormalSphere);
 			props.debugShape = static_cast<FarSandRenderer::DebugShape>(shape);
 
-			ImGui::Checkbox("\nUse Shell Culling", &props.useShellCulling);
+			ImGui::Checkbox("Use Shell Culling", &props.useShellCulling);
 			BeginDisable(!props.useShellCulling);
 			{
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
-
 				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
+				ImGui::Checkbox("Constant Shell Depth", &props.constantShellDepth);
 
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
@@ -54,6 +55,8 @@ void FarSandRendererDialog::draw()
 
 			ImGui::Text("\nDebug");
 			ImGui::Checkbox("Disable additive blend", &props.disableBlend);
+
+			ImGui::SliderFloat("[TMP] Meta Bias", &props.metaBias, 0.0f, 1.0f, "%.4f");
 
 			EndDisable(!enabled);
 		}

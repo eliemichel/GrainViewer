@@ -39,6 +39,10 @@ uniform bool uIsShadowMapEnabled = true;
 uniform bool uTransparentFilm = false;
 uniform int uShadingMode = 0; // 0: BEAUTY, 1: NORMAL, 2: BASE_COLOR
 
+// Accumulated samples info display
+uniform float uMaxSampleCount = 100;
+uniform bool uShowSampleCount = false;
+
 #include "include/gbuffer.inc.glsl"
 
 #ifdef OLD_BRDF
@@ -128,7 +132,8 @@ void main() {
 
 	default:
 		if (fragment.material_id >= accumulatedPbrMaterial) {
-			float oneOverSampleCount = 1.0 / fragment.roughness;
+			float sampleCount = fragment.roughness;
+			float oneOverSampleCount = 1.0 / sampleCount;
 			//GFragment normalizedFragment = fragment;
 			//normalizedFragment.baseColor *= oneOverSampleCount;
 			//normalizedFragment.roughness *= oneOverSampleCount;
@@ -137,6 +142,13 @@ void main() {
 			//normalizedFragment.normal *= oneOverSampleCount;
 			//pbrShading(fragment, out_fragment);
 			out_fragment.radiance.rgb = fragment.ws_coord * oneOverSampleCount;
+			if (uShowSampleCount) {
+				if (uHasColormap) {
+					out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(sampleCount / uMaxSampleCount, 0.0, 1.0), 0.5), 0).rgb;
+				} else {
+					out_fragment.radiance.rgb = vec3(sampleCount / uMaxSampleCount);
+				}
+			}
 		}
 	}
 	//gl_FragDepth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;

@@ -3,6 +3,7 @@
 
 #pragma variant SHAPE_SPHERE
 #pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant CONSTANT_DEPTH_TEST
 
 #include "include/uniform/camera.inc.glsl"
 
@@ -21,6 +22,7 @@ const int cDebugShapeNone = -1;
 const int cDebugShapeLitSphere = 0; // directly lit sphere, not using ad-hoc lighting
 const int cDebugShapeDisc = 1;
 const int cDebugShapeSquare = 2;
+const int cDebugShapeNormalSphere = 3; // sphere colored with its normal
 uniform int uDebugShape = cDebugShapeDisc;
 
 const int cWeightNone = -1;
@@ -31,10 +33,14 @@ uniform int uWeightMode = cWeightNone;
 
 uniform float uEpsilon = 0.5;
 uniform bool uShellDepthFalloff = false;
+uniform bool uConstantShellDepth = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STAGE_EPSILON_ZBUFFER
 
+#ifndef CONSTANT_DEPTH_TEST
+layout (depth_greater) out float gl_FragDepth;
+#endif // CONSTANT_DEPTH_TEST
 
 void main() {
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -42,12 +48,13 @@ void main() {
         discard;
     }
 
+#ifndef CONSTANT_DEPTH_TEST
     // Readable version
     float linearDepth = linearizeDepth(gl_FragCoord.z);
     linearDepth += uEpsilon;
     float logDepth = unlinearizeDepth(linearDepth);
-
     gl_FragDepth = logDepth;
+#endif // CONSTANT_DEPTH_TEST
 
     GFragment fragment;
     fragment.baseColor = vec3(0.0);
@@ -88,14 +95,14 @@ void main() {
     float weight;
     switch (uWeightMode) {
     case cWeightLinear:
-        if (uDebugShape == 2) {
+        if (uDebugShape == cDebugShapeSquare) {
             weight = 1.0 - max(abs(uv.x), abs(uv.y));
         } else {
             weight = 1.0 - sqrt(sqDistToCenter);
         }
         break;
     case cWeightQuad:
-        if (uDebugShape == 2) {
+        if (uDebugShape == cDebugShapeSquare) {
             float d = max(abs(uv.x), abs(uv.y));
             weight = 1.0 - d * d;
         } else {
@@ -112,15 +119,17 @@ void main() {
     }
 
     vec3 n;
-    if (uDebugShape == cDebugShapeLitSphere) {
+    if (uDebugShape == cDebugShapeLitSphere || uDebugShape == cDebugShapeNormalSphere) {
         Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
         Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
         vec3 sphereHitPosition_ws;
-        bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, position_ws.xyz, radius * 0.5);
-        if (!intersectSphere) {
+        bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, position_ws.xyz, radius);
+        if (intersectSphere) {
+            n = normalize(sphereHitPosition_ws - position_ws);
+        } else {
             //discard;
+            n = -ray_ws.direction;
         }
-        n = normalize(sphereHitPosition_ws - position_ws);
     } else {
         n = normalize(normal);
     }
@@ -158,6 +167,8 @@ void main() {
                 f = brdf(toCam, n, toLight, surface);
                 beauty.rgb += f * vec3(3.0);
             }
+        } else if (uDebugShape == cDebugShapeNormalSphere) {
+            beauty.rgb = normalize(n) * 0.5 + 0.5;
         } else {
             beauty = baseColor;
         }

@@ -21,14 +21,19 @@
 
 bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 {
+
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	jrOption(json, "epsilonZBufferShader", m_epsilonZBufferShaderName, m_epsilonZBufferShaderName);
 	jrOption(json, "colormap", m_colormapTextureName, m_colormapTextureName);
-	jrOption(json, "radius", m_properties.radius, m_properties.radius);
-	jrOption(json, "epsilonFactor", m_properties.epsilonFactor, m_properties.epsilonFactor);
-	jrOption(json, "useShellCulling", m_properties.useShellCulling, m_properties.useShellCulling);
-	jrOption(json, "shellDepthFalloff", m_properties.shellDepthFalloff, m_properties.shellDepthFalloff);
-	jrOption(json, "disableBlend", m_properties.disableBlend, m_properties.disableBlend);
+
+#define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
+	jrPropperty(radius);
+	jrPropperty(epsilonFactor);
+	jrPropperty(useShellCulling);
+	jrPropperty(shellDepthFalloff);
+	jrPropperty(disableBlend);
+	jrPropperty(constantShellDepth);
+#undef jrProperty
 
 	int debugShape = m_properties.debugShape;
 	jrOption(json, "debugShape", debugShape, debugShape);
@@ -55,6 +60,15 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 		}
 	}
 
+	m_shaderName_Variant = m_shaderName + "_CONSTANT_DEPTH_TEST";
+	ShaderPool::AddShaderVariant(m_shaderName_Variant, m_shaderName, { "CONSTANT_DEPTH_TEST" });
+	m_epsilonZBufferShaderName_Variant = m_epsilonZBufferShaderName + "_CONSTANT_DEPTH_TEST";
+	ShaderPool::AddShaderVariant(m_epsilonZBufferShaderName_Variant, m_epsilonZBufferShaderName, { "CONSTANT_DEPTH_TEST" });
+
+	if (m_properties.constantShellDepth) {
+		WARN_LOG << "FarSandRenderer's 'constantShellDepth' property is not ready yet.";
+	}
+
 	return true;
 }
 
@@ -62,6 +76,8 @@ void FarSandRenderer::start()
 {
 	m_shader = ShaderPool::GetShader(m_shaderName);
 	m_epsilonZBufferShader = ShaderPool::GetShader(m_epsilonZBufferShaderName);
+	m_shader_Variant = ShaderPool::GetShader(m_shaderName_Variant);
+	m_epsilonZBufferShader_Variant = ShaderPool::GetShader(m_epsilonZBufferShaderName_Variant);
 	m_transform = getComponent<TransformBehavior>();
 	m_pointData = getComponent<PointCloudDataBehavior>();
 
@@ -92,7 +108,11 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		ShaderProgram & shader = *m_epsilonZBufferShader;
+		if (m_properties.constantShellDepth) {
+			glDepthRangef(depthRangeBias(camera), 1.0f);
+		}
+
+		ShaderProgram & shader = m_properties.constantShellDepth ? *m_epsilonZBufferShader_Variant : *m_epsilonZBufferShader;
 		setCommonUniforms(shader, camera);
 
 		shader.use();
@@ -123,7 +143,11 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 			glDisable(GL_BLEND);
 		}
 
-		ShaderProgram & shader = *m_shader;
+		if (m_properties.constantShellDepth) {
+			glDepthRangef(0, 1.0f - depthRangeBias(camera));
+		}
+
+		ShaderProgram & shader = m_properties.constantShellDepth ? *m_shader_Variant : *m_shader;
 		setCommonUniforms(shader, camera);
 
 		if (properties().useShellCulling && properties().shellDepthFalloff) {
@@ -139,6 +163,8 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glBindVertexArray(0);
 	}
 
+	// Reset depth range to default
+	glDepthRangef(0.0f, 1.0f);
 	glDepthMask(GL_TRUE);
 }
 
@@ -165,15 +191,33 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uDebugShape", m_properties.debugShape);
 	shader.setUniform("uWeightMode", m_properties.weightMode);
 	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
+	shader.setUniform("uUseShellCulling", m_properties.useShellCulling);
+	shader.setUniform("uConstantShellDepth", m_properties.constantShellDepth);
 
 	shader.setUniform("uUseBbox", m_properties.useBbox);
 	shader.setUniform("uBboxMin", m_properties.bboxMin);
 	shader.setUniform("uBboxMax", m_properties.bboxMax);
+
+	if (m_properties.constantShellDepth) {
+		shader.setUniform("uDepthRangeMin", 0.0f);
+		shader.setUniform("uDepthRangeMax", 1.0f - depthRangeBias(camera));
+	}
 
 	GLint o = 0;
 	if (m_colormapTexture) {
 		m_colormapTexture->bind(o);
 		shader.setUniform("uColormapTexture", o);
 		++o;
+	}
+}
+
+float FarSandRenderer::depthRangeBias(const Camera & camera) const
+{
+	if (m_properties.constantShellDepth) {
+		float eps = m_properties.epsilonFactor * m_properties.radius;
+		return eps / (camera.farDistance() - camera.nearDistance() + eps) * m_properties.metaBias;
+	}
+	else {
+		return 0.0f;
 	}
 }

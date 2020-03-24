@@ -9,6 +9,7 @@ layout(points, max_vertices = 1) out;
 in VertexData {
 	vec3 position_ws;
 	float radius;
+	uint vertexId;
 } inData[];
 
 out vec3 position_ws;
@@ -19,8 +20,12 @@ out float radius;
 #include "include/utils.inc.glsl"
 #include "include/sprite.inc.glsl"
 #include "include/random.inc.glsl"
+#include "include/zbuffer.inc.glsl"
 #include "sand/random-grains.inc.glsl"
 
+uniform bool uUseShellCulling = true;
+uniform sampler2D uDepthTexture;
+uniform sampler2D uColormapTexture;
 uniform bool uUseBbox = false;
 uniform vec3 uBboxMin;
 uniform vec3 uBboxMax;
@@ -37,18 +42,18 @@ bool inBBox(vec3 pos) {
 vec3 computeBaseColor(vec3 pos) {
 	vec3 baseColor;
 #ifdef PROCEDURAL_BASECOLOR
-	uint id = gl_VertexID;
+	uint id = inData[0].vertexId;
 	float r = randomGrainColorFactor(int(id));
     baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
 #elif defined(PROCEDURAL_BASECOLOR2) // PROCEDURAL_BASECOLOR
-	uint id = gl_VertexID;
+	uint id = inData[0].vertexId;
 	float r = randomGrainColorFactor(int(id));
 	float u = pow(0.57 - pos.x * 0.12, 3.0);
 	if (r < 0.1) u = 0.01;
 	if (r > 0.9) u = 0.99;
     baseColor = texture(uColormapTexture, vec2(u, 0.0)).rgb;
 #elif defined(PROCEDURAL_BASECOLOR3) // PROCEDURAL_BASECOLOR
-	uint id = gl_VertexID;
+	uint id = inData[0].vertexId;
 	float r = randomGrainColorFactor(int(id));
 	float u = pow(0.5 + pos.z * 0.5, 3.0);
 	if (r < 0.1) u = 0.01;
@@ -56,7 +61,7 @@ vec3 computeBaseColor(vec3 pos) {
     baseColor = texture(uColormapTexture, vec2(clamp(u + (r - 0.5) * 0.2, 0.01, 0.99), 0.0)).rgb;
 
     // Add a blue dot
-    float th = 0.1;
+    float th = 0.01;
     if (abs(atan(pos.y, pos.x)) < th && abs(atan(pos.z, pos.x)) < th) {
 	    baseColor = vec3(0.0, 0.2, 0.9);
 	}
@@ -68,21 +73,42 @@ vec3 computeBaseColor(vec3 pos) {
 	return baseColor;
 }
 
-void main() {
-	if (inBBox(inData[0].position_ws)) {
-		position_ws = inData[0].position_ws;
-		baseColor = computeBaseColor(position_ws);
-		radius = inData[0].radius;
-		
-		vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);
-		gl_Position = projectionMatrix * position_cs;
+bool depthTest(vec4 position_clipspace) {
+#ifdef STAGE_EPSILON_ZBUFFER
+	return true;
+#else // STAGE_EPSILON_ZBUFFER
+	if (!uUseShellCulling) return true;
+	vec3 fragCoord;
+	fragCoord.xy = resolution.xy * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);
+	fragCoord.z = position_clipspace.z / position_clipspace.w;
+	float d = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
+    float limitDepth = linearizeDepth(d);
+    float depth = /*linearizeDepth*/(fragCoord.z);
+    return depth >= limitDepth;
+#endif // STAGE_EPSILON_ZBUFFER
+}
 
-		float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
-		//screenSpaceDiameter = SpriteSize(radius, gl_Position);
-		//screenSpaceDiameter = SpriteSize_Botsch03_corrected(radius, position_cs);
-		gl_PointSize = screenSpaceDiameter;
-		EmitVertex();
+void main() {
+	if (!inBBox(inData[0].position_ws)) {
+		return;
 	}
+
+	position_ws = inData[0].position_ws;	
+	vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);
+	vec4 position = projectionMatrix * position_cs;
+
+	if (!depthTest(position)) {
+		return;
+	}
+
+	gl_Position = position;
+	baseColor = computeBaseColor(position_ws);
+	radius = inData[0].radius;
+	float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
+	//screenSpaceDiameter = SpriteSize(radius, gl_Position);
+	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(radius, position_cs);
+	gl_PointSize = screenSpaceDiameter;
+	EmitVertex();
 	EndPrimitive();
 }
 
