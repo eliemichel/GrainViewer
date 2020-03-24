@@ -1,9 +1,8 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant SHAPE_SPHERE
 #pragma variant STAGE_EPSILON_ZBUFFER
-#pragma variant CONSTANT_DEPTH_TEST
+#pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
 
 #include "include/uniform/camera.inc.glsl"
 
@@ -31,16 +30,23 @@ const int cWeightQuad = 1;
 const int cWeightGaussian = 2;
 uniform int uWeightMode = cWeightNone;
 
+const int cShellCullingFragDepth = 0;
+const int cShellCullingMoveAway = 1;
+const int cShellCullingDepthRange = 2;
+uniform int uShellCullingStrategy;
+
 uniform float uEpsilon = 0.5;
 uniform bool uShellDepthFalloff = false;
-uniform bool uConstantShellDepth = false;
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STAGE_EPSILON_ZBUFFER
 
-#ifndef CONSTANT_DEPTH_TEST
+// We need to use defines for toggling manipulation of gl_FragDepth, uniforms
+// are not enough because the use of gl_FragDepth is statically detected and
+// affects shader compilation.
+#ifdef USING_ShellCullingFragDepth
 layout (depth_greater) out float gl_FragDepth;
-#endif // CONSTANT_DEPTH_TEST
+#endif // USING_ShellCullingFragDepth
 
 void main() {
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -48,13 +54,13 @@ void main() {
         discard;
     }
 
-#ifndef CONSTANT_DEPTH_TEST
+#ifdef USING_ShellCullingFragDepth
     // Readable version
     float linearDepth = linearizeDepth(gl_FragCoord.z);
     linearDepth += uEpsilon;
     float logDepth = unlinearizeDepth(linearDepth);
     gl_FragDepth = logDepth;
-#endif // CONSTANT_DEPTH_TEST
+#endif // USING_ShellCullingFragDepth
 
     GFragment fragment;
     fragment.baseColor = vec3(0.0);

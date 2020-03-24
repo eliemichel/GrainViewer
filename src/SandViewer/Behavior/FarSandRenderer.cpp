@@ -32,7 +32,6 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	jrPropperty(useShellCulling);
 	jrPropperty(shellDepthFalloff);
 	jrPropperty(disableBlend);
-	jrPropperty(constantShellDepth);
 #undef jrProperty
 
 	int debugShape = m_properties.debugShape;
@@ -42,6 +41,10 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	int weightMode = m_properties.weightMode;
 	jrOption(json, "debugShape", weightMode, weightMode);
 	m_properties.weightMode = static_cast<WeightMode>(weightMode);
+
+	int shellCullingStrategy = m_properties.shellCullingStrategy;
+	jrOption(json, "debugShape", shellCullingStrategy, shellCullingStrategy);
+	m_properties.shellCullingStrategy = static_cast<ShellCullingStrategy>(shellCullingStrategy);
 
 	if (json.HasMember("bbox")) {
 		if (json["bbox"].IsObject()) {
@@ -60,14 +63,10 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 		}
 	}
 
-	m_shaderName_Variant = m_shaderName + "_CONSTANT_DEPTH_TEST";
-	ShaderPool::AddShaderVariant(m_shaderName_Variant, m_shaderName, { "CONSTANT_DEPTH_TEST" });
-	m_epsilonZBufferShaderName_Variant = m_epsilonZBufferShaderName + "_CONSTANT_DEPTH_TEST";
-	ShaderPool::AddShaderVariant(m_epsilonZBufferShaderName_Variant, m_epsilonZBufferShaderName, { "CONSTANT_DEPTH_TEST" });
-
-	if (m_properties.constantShellDepth) {
-		WARN_LOG << "FarSandRenderer's 'constantShellDepth' property is not ready yet.";
-	}
+	m_shaderName_Variant = m_shaderName + "_USING_ShellCullingFragDepth";
+	ShaderPool::AddShaderVariant(m_shaderName_Variant, m_shaderName, { "USING_ShellCullingFragDepth" });
+	m_epsilonZBufferShaderName_Variant = m_epsilonZBufferShaderName + "_USING_ShellCullingFragDepth";
+	ShaderPool::AddShaderVariant(m_epsilonZBufferShaderName_Variant, m_epsilonZBufferShaderName, { "USING_ShellCullingFragDepth" });
 
 	return true;
 }
@@ -113,11 +112,11 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		if (m_properties.constantShellDepth) {
+		if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 			glDepthRangef(depthRangeBias(camera), 1.0f);
 		}
 
-		ShaderProgram & shader = m_properties.constantShellDepth ? *m_epsilonZBufferShader_Variant : *m_epsilonZBufferShader;
+		ShaderProgram & shader = m_properties.shellCullingStrategy == ShellCullingFragDepth ? *m_epsilonZBufferShader_Variant : *m_epsilonZBufferShader;
 		setCommonUniforms(shader, camera);
 
 		shader.use();
@@ -148,11 +147,11 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 			glDisable(GL_BLEND);
 		}
 
-		if (m_properties.constantShellDepth) {
+		if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 			glDepthRangef(0, 1.0f - depthRangeBias(camera));
 		}
 
-		ShaderProgram & shader = m_properties.constantShellDepth ? *m_shader_Variant : *m_shader;
+		ShaderProgram & shader = m_properties.shellCullingStrategy == ShellCullingFragDepth ? *m_shader_Variant : *m_shader;
 		setCommonUniforms(shader, camera);
 
 		if (properties().useShellCulling && properties().shellDepthFalloff) {
@@ -198,13 +197,13 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uWeightMode", m_properties.weightMode);
 	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
 	shader.setUniform("uUseShellCulling", m_properties.useShellCulling);
-	shader.setUniform("uConstantShellDepth", m_properties.constantShellDepth);
+	shader.setUniform("uShellCullingStrategy", m_properties.shellCullingStrategy);
 
 	shader.setUniform("uUseBbox", m_properties.useBbox);
 	shader.setUniform("uBboxMin", m_properties.bboxMin);
 	shader.setUniform("uBboxMax", m_properties.bboxMax);
 
-	if (m_properties.constantShellDepth) {
+	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 		shader.setUniform("uDepthRangeMin", 0.0f);
 		shader.setUniform("uDepthRangeMax", 1.0f - depthRangeBias(camera));
 	}
@@ -219,7 +218,7 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 
 float FarSandRenderer::depthRangeBias(const Camera & camera) const
 {
-	if (m_properties.constantShellDepth) {
+	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 		float eps = m_properties.epsilonFactor * m_properties.radius;
 		return eps / (camera.farDistance() - camera.nearDistance() + eps) * m_properties.metaBias;
 	}

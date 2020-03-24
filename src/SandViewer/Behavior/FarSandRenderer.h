@@ -36,14 +36,19 @@ public:
 		WeightModeQuad = 1,
 		WeightModeGaussian = 2,
 	};
+	enum ShellCullingStrategy {
+		ShellCullingFragDepth = 0, // Write to gl_FragDepth (performance issue)
+		ShellCullingMoveAway = 1, // Move points away from camera (maybe occlusion issue with other objects)
+		ShellCullingDepthRange = 2, // Play with DepthRange for an efficient depth buffer offset, but inexact because offset is in log space
+	};
 	struct Properties {
 		float radius = 0.007f;
 		float epsilonFactor = 10.0f; // multiplied by radius
 		bool useShellCulling = true;
 		DebugShape debugShape = DebugShapeDisc;
 		WeightMode weightMode = WeightModeNone;
+		ShellCullingStrategy shellCullingStrategy = ShellCullingFragDepth;
 		bool shellDepthFalloff = false;
-		bool constantShellDepth = false; // If shell depth is constant, shell depth buffer offset can be accelerated using glDepthRange
 		bool disableBlend = false; // For debug
 
 		bool useBbox = false; // if true, remove all points out of the supplied bbox
@@ -51,7 +56,7 @@ public:
 		glm::vec3 bboxMax;
 
 		// tmp
-		float metaBias = 0.75f;
+		float metaBias = 0.75f; // for ShellCullingDepthRange
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }

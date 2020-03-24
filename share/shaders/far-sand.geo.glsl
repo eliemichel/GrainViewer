@@ -1,6 +1,7 @@
 #version 450 core
 #include "sys:defines"
 
+#pragma variant STAGE_EPSILON_ZBUFFER
 #pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2 PROCEDURAL_BASECOLOR3 BLACK_BASECOLOR
 
 layout(points) in;
@@ -8,6 +9,9 @@ layout(points, max_vertices = 1) out;
 
 in VertexData {
 	vec3 position_ws;
+#ifdef PROCEDURAL_BASECOLOR3
+	vec3 originalPosition_ws;
+#endif // PROCEDURAL_BASECOLOR3
 	float radius;
 	uint vertexId;
 } inData[];
@@ -29,6 +33,12 @@ uniform sampler2D uColormapTexture;
 uniform bool uUseBbox = false;
 uniform vec3 uBboxMin;
 uniform vec3 uBboxMax;
+uniform float uEpsilon;
+
+const int cShellCullingFragDepth = 0;
+const int cShellCullingMoveAway = 1;
+const int cShellCullingDepthRange = 2;
+uniform int uShellCullingStrategy;
 
 bool inBBox(vec3 pos) {
 	if (!uUseBbox) return true;
@@ -65,6 +75,8 @@ vec3 computeBaseColor(vec3 pos) {
     if (abs(atan(pos.y, pos.x)) < th && abs(atan(pos.z, pos.x)) < th) {
 	    baseColor = vec3(0.0, 0.2, 0.9);
 	}
+
+	baseColor = mix(baseColor, baseColor.bgr, smoothstep(0.75, 0.73, length(inData[0].originalPosition_ws)));
 #elif defined(BLACK_BASECOLOR)
 	baseColor = vec3(0.0, 0.0, 0.0);
 #else
@@ -77,7 +89,7 @@ bool depthTest(vec4 position_clipspace) {
 #ifdef STAGE_EPSILON_ZBUFFER
 	return true;
 #else // STAGE_EPSILON_ZBUFFER
-	return true;
+	return true; // TODO: early depth test
 	if (!uUseShellCulling) return true;
 	vec3 fragCoord;
 	fragCoord.xy = resolution.xy * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);
@@ -96,6 +108,14 @@ void main() {
 
 	position_ws = inData[0].position_ws;	
 	vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);
+
+#ifdef STAGE_EPSILON_ZBUFFER
+	if (uShellCullingStrategy == cShellCullingMoveAway) {
+		position_cs.xyz += uEpsilon / length(position_cs) * position_cs.xyz;
+		//position_cs.z -= 0.1;
+	}
+#endif // STAGE_EPSILON_ZBUFFER
+
 	vec4 position = projectionMatrix * position_cs;
 
 	if (!depthTest(position)) {

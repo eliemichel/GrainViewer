@@ -1,10 +1,15 @@
 #version 450 core
 #include "sys:defines"
 
+#pragma variant STAGE_EPSILON_ZBUFFER
+
 layout (location = 0) in vec4 position;
 
 out VertexData {
 	vec3 position_ws;
+#ifdef PROCEDURAL_BASECOLOR3
+	vec3 originalPosition_ws;
+#endif // PROCEDURAL_BASECOLOR3
 	float radius;
 	uint vertexId;
 } outData;
@@ -19,6 +24,9 @@ void main() {
 	vec3 p = position.xyz;
 
 #ifdef PROCEDURAL_ANIM0
+#ifdef PROCEDURAL_BASECOLOR3
+	outData.originalPosition_ws = (modelMatrix * vec4(p, 1.0)).xyz;
+#endif // PROCEDURAL_BASECOLOR3
 	p *= 1 + sin(uTime * 2.0 + p.y * 2.0) * 0.1 * sin(atan(p.x, p.z) * 10.0);
 #endif // PROCEDURAL_ANIM0
 

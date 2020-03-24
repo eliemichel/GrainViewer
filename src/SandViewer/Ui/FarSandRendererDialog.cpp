@@ -31,7 +31,6 @@ void FarSandRendererDialog::draw()
 			{
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
 				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
-				ImGui::Checkbox("Constant Shell Depth", &props.constantShellDepth);
 
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
@@ -42,10 +41,18 @@ void FarSandRendererDialog::draw()
 				//ImGui::RadioButton("Gaussian", &weightMode, FarSandRenderer::WeightModeGaussian);
 				props.weightMode = static_cast<FarSandRenderer::WeightMode>(weightMode);
 				ImGui::PopID();
+
+				int shellCullingStrategy = props.shellCullingStrategy;
+				ImGui::Text("\nShell Culling Strategy");
+				ImGui::RadioButton("Frag Depth", &shellCullingStrategy, FarSandRenderer::ShellCullingFragDepth);
+				ImGui::RadioButton("Move Away", &shellCullingStrategy, FarSandRenderer::ShellCullingMoveAway);
+				ImGui::RadioButton("Depth Range", &shellCullingStrategy, FarSandRenderer::ShellCullingDepthRange);
+				props.shellCullingStrategy = static_cast<FarSandRenderer::ShellCullingStrategy>(shellCullingStrategy);
 			}
 			EndDisable(!props.useShellCulling);
 
-			ImGui::Checkbox("\nUse Bbox Culling", &props.useBbox);
+			ImGui::Text("\n");
+			ImGui::Checkbox("Use Bbox Culling", &props.useBbox);
 			BeginDisable(!props.useBbox);
 			{
 				ImGui::SliderFloat3("Minimum", glm::value_ptr(props.bboxMin), 0.001f, 1.0f, "%.5f");
