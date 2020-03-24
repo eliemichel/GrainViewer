@@ -18,6 +18,7 @@ public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
 	void start() override;
+	void update(float time, int frame) override;
 	void render(const Camera & camera, const World & world, RenderType target) const override;
 
 public:
@@ -77,6 +78,8 @@ public:
 	std::unique_ptr<GlTexture> m_colormapTexture;
 
 	std::shared_ptr<Framebuffer> m_depthFbo;
+
+	float m_time;
 };
 
 registerBehaviorType(FarSandRenderer)

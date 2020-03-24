@@ -77,6 +77,7 @@ bool depthTest(vec4 position_clipspace) {
 #ifdef STAGE_EPSILON_ZBUFFER
 	return true;
 #else // STAGE_EPSILON_ZBUFFER
+	return true;
 	if (!uUseShellCulling) return true;
 	vec3 fragCoord;
 	fragCoord.xy = resolution.xy * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);

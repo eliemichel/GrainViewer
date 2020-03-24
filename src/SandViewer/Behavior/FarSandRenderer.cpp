@@ -86,6 +86,11 @@ void FarSandRenderer::start()
 	}
 }
 
+void FarSandRenderer::update(float time, int frame)
+{
+	m_time = time;
+}
+
 void FarSandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
 	// Sanity checks
@@ -186,6 +191,7 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("modelMatrix", modelMatrix());
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
+	shader.setUniform("uTime", m_time);
 	shader.setUniform("uRadius", m_properties.radius);
 	shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
 	shader.setUniform("uDebugShape", m_properties.debugShape);
