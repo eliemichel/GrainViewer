@@ -31,6 +31,7 @@ void FarSandRendererDialog::draw()
 			{
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
 				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
+				ImGui::Checkbox("Use Early Depth Test", &props.useEarlyDepthTest);
 
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
@@ -45,7 +46,7 @@ void FarSandRendererDialog::draw()
 				int shellCullingStrategy = props.shellCullingStrategy;
 				ImGui::Text("\nShell Culling Strategy");
 				ImGui::RadioButton("Frag Depth", &shellCullingStrategy, FarSandRenderer::ShellCullingFragDepth);
-				ImGui::RadioButton("Move Away", &shellCullingStrategy, FarSandRenderer::ShellCullingMoveAway);
+				ImGui::RadioButton("Move Away (recommended)", &shellCullingStrategy, FarSandRenderer::ShellCullingMoveAway);
 				ImGui::RadioButton("Depth Range", &shellCullingStrategy, FarSandRenderer::ShellCullingDepthRange);
 				props.shellCullingStrategy = static_cast<FarSandRenderer::ShellCullingStrategy>(shellCullingStrategy);
 			}

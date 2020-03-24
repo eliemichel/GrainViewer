@@ -112,6 +112,10 @@ set(All_SRC
 	Ui/LightGizmoDialog.cpp
 	Ui/TransformDialog.h
 	Ui/TransformDialog.cpp
+	Ui/DeferredShadingDialog.h
+	Ui/DeferredShadingDialog.cpp
+	Ui/WorldDialog.h
+	Ui/WorldDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

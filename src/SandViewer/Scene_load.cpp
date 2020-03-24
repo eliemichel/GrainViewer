@@ -14,6 +14,7 @@
 #include "EnvironmentVariables.h"
 #include "BehaviorRegistry.h"
 #include "Behavior.h"
+#include "GlDeferredShader.h"
 
 bool Scene::load(const std::string & filename)
 {
@@ -59,15 +60,15 @@ bool Scene::load(const std::string & filename)
 	}
 
 	if (root.HasMember("deferredShader")) {
-		if (!m_deferredShader.deserialize(root["deferredShader"])) {
+		if (!m_deferredShader->deserialize(root["deferredShader"])) {
 			return false;
 		}
 	}
 
-	if (!m_world.deserialize(root)) { // look at both root["world"] and root["lights"]
+	if (!m_world->deserialize(root)) { // look at both root["world"] and root["lights"]
 		return false;
 	}
-	m_world.start();
+	m_world->start();
 
 	if (root.HasMember("cameras")) {
 		auto& cameras = root["cameras"];
@@ -175,7 +176,7 @@ bool Scene::load(const std::string & filename)
 
 	const glm::vec2 & res = viewportCamera()->resolution();
 	DEBUG_LOG << "reso: " << res.x << ", " << res.y;
-	m_deferredShader.setResolution(static_cast<int>(res.x), static_cast<int>(res.y));
+	m_deferredShader->setResolution(static_cast<int>(res.x), static_cast<int>(res.y));
 
 	reloadShaders();
 

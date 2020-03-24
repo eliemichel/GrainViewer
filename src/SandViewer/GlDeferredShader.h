@@ -33,6 +33,12 @@ public:
 		RawGBuffer1,
 		RawGBuffer2,
 	};
+	struct Properties {
+		ShadingMode shadingMode = BeautyPass;
+		bool transparentFilm = false;
+		bool showSampleCount = false;
+		float maxSampleCount = 10;
+	};
 public:
 	GlDeferredShader();
 	~GlDeferredShader();
@@ -49,11 +55,12 @@ public:
 
 	void setResolution(int width, int height);
 
-	ShadingMode shadingMode() const { return m_shadingMode; }
-	void setShadingMode(ShadingMode shadingMode) { m_shadingMode = shadingMode; }
+	Properties & properties() { return m_properties; }
+	const Properties & properties() const { return m_properties; }
 
-	bool transparentFilm() const { return m_transparentFilm; }
-	void setTransparentFilm(bool transparent) { m_transparentFilm = transparent; }
+	bool hasColorMap() const { return m_colormap != nullptr; }
+	// Use only if hasColorMap is truc
+	const GlTexture & colormap() const { return *m_colormap; }
 
 private:
 	ShaderProgram m_shader;
@@ -61,7 +68,6 @@ private:
 	GLuint m_vao;
 	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
 
-	ShadingMode m_shadingMode = BeautyPass;
-	bool m_transparentFilm = false;
+	Properties m_properties;
 };
 

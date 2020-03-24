@@ -60,4 +60,5 @@ private:
 
 	bool m_imguiFocus;
 	bool m_isMouseMoveStarted;
+	int m_isControlPressed = 0;
 };

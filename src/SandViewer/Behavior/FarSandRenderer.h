@@ -46,10 +46,11 @@ public:
 		float epsilonFactor = 10.0f; // multiplied by radius
 		bool useShellCulling = true;
 		DebugShape debugShape = DebugShapeDisc;
-		WeightMode weightMode = WeightModeNone;
-		ShellCullingStrategy shellCullingStrategy = ShellCullingFragDepth;
-		bool shellDepthFalloff = false;
+		WeightMode weightMode = WeightModeLinear;
+		ShellCullingStrategy shellCullingStrategy = ShellCullingMoveAway;
+		bool shellDepthFalloff = true;
 		bool disableBlend = false; // For debug
+		bool useEarlyDepthTest = true;
 
 		bool useBbox = false; // if true, remove all points out of the supplied bbox
 		glm::vec3 bboxMin;

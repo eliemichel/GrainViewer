@@ -40,6 +40,8 @@ const int cShellCullingMoveAway = 1;
 const int cShellCullingDepthRange = 2;
 uniform int uShellCullingStrategy;
 
+uniform bool uUseEarlyDepthTest;
+
 bool inBBox(vec3 pos) {
 	if (!uUseBbox) return true;
 	else return (
@@ -85,19 +87,22 @@ vec3 computeBaseColor(vec3 pos) {
 	return baseColor;
 }
 
+// Early depth test
 bool depthTest(vec4 position_clipspace) {
 #ifdef STAGE_EPSILON_ZBUFFER
 	return true;
 #else // STAGE_EPSILON_ZBUFFER
-	return true; // TODO: early depth test
-	if (!uUseShellCulling) return true;
+	if (!uUseShellCulling || !uUseEarlyDepthTest) return true;
 	vec3 fragCoord;
 	fragCoord.xy = resolution.xy * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);
 	fragCoord.z = position_clipspace.z / position_clipspace.w;
 	float d = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
     float limitDepth = linearizeDepth(d);
-    float depth = /*linearizeDepth*/(fragCoord.z);
-    return depth >= limitDepth;
+    float depth = /*linearizeDepth*/(fragCoord.z + uNear);
+
+    // TODO: not working with cShellCullingFragDepth
+    // and working weirdly with others
+    return depth <= limitDepth;
 #endif // STAGE_EPSILON_ZBUFFER
 }
 

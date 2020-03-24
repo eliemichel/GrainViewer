@@ -17,6 +17,8 @@
 #include "AnimationManager.h"
 #include "utils/fileutils.h"
 #include "Filtering.h"
+#include "GlDeferredShader.h"
+#include "World.h"
 
 #if _DEBUG
 #include "utils/debug.h"
@@ -27,6 +29,8 @@ using namespace std;
 Scene::Scene()
 	: m_viewportCameraIndex(0)
 	, m_fps(25)
+	, m_deferredShader(std::make_shared<GlDeferredShader>())
+	, m_world(std::make_shared<World>())
 {
 	m_animationManager = std::make_shared<AnimationManager>();
 	clear();
@@ -39,13 +43,13 @@ void Scene::setResolution(int width, int height)
 	if (viewportCamera()) {
 		viewportCamera()->setResolution(width, height);
 	}
-	m_deferredShader.setResolution(width, height);
+	m_deferredShader->setResolution(width, height);
 }
 
 void Scene::reloadShaders() {
 	ShaderPool::ReloadShaders();
-	m_world.reloadShaders();
-	m_deferredShader.reloadShaders();
+	m_world->reloadShaders();
+	m_deferredShader->reloadShaders();
 
 	for (auto obj : m_objects) {
 		obj->reloadShaders();
@@ -67,7 +71,7 @@ void Scene::update(float time) {
 		viewportCamera()->update(time);
 	}
 
-	m_world.update(time);
+	m_world->update(time);
 
 	for (auto obj : m_objects) {
 		obj->update(time, m_frameIndex);
@@ -113,10 +117,10 @@ void Scene::render() const {
 	glDisable(GL_BLEND);
 	glDisable(GL_DITHER);
 
-	m_world.renderShadowMaps(camera, m_objects);
+	m_world->renderShadowMaps(camera, m_objects);
 
 	if (m_isDeferredShadingEnabled) {
-		m_deferredShader.bindFramebuffer();
+		m_deferredShader->bindFramebuffer();
 	} else if (camera.targetFramebuffer()) {
 		camera.targetFramebuffer()->bind();
 	} else {
@@ -128,9 +132,9 @@ void Scene::render() const {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	m_world.render(camera);
+	m_world->render(camera);
 	for (auto obj : m_objects) {
-		obj->render(camera, m_world, DefaultRendering);
+		obj->render(camera, *m_world, DefaultRendering);
 	}
 
 	if (m_isDeferredShadingEnabled) {
@@ -141,7 +145,7 @@ void Scene::render() const {
 		}
 		glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		m_deferredShader.render(camera, m_world, DefaultRendering);
+		m_deferredShader->render(camera, *m_world, DefaultRendering);
 	}
 
 	if (camera.targetFramebuffer()) {
@@ -176,7 +180,7 @@ void Scene::clear()
 {
 	m_objects.clear();
 	m_cameras.clear();
-	m_world.clear();
+	m_world->clear();
 	m_animationManager->clear();
 	m_frameIndex = -1;
 }

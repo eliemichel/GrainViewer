@@ -82,17 +82,17 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 
 	jrOption(json, "occlusionCullingShader", m_occlusionCullingShaderName, m_occlusionCullingShaderName);
 
-#define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
-	jrPropperty(grainRadius);
-	//jrPropperty(grainInnerRadiusRatio);
-	jrPropperty(grainMeshScale);
-	jrPropperty(instanceLimit);
-	jrPropperty(disableImpostors);
-	jrPropperty(disableInstances);
-	jrPropperty(renderAdditive);
-	jrPropperty(interpolationMode);
-	jrPropperty(samplingMode);
-	jrPropperty(debugShape);
+#define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
+	jrProperty(grainRadius);
+	//jrProperty(grainInnerRadiusRatio);
+	jrProperty(grainMeshScale);
+	jrProperty(instanceLimit);
+	jrProperty(disableImpostors);
+	jrProperty(disableInstances);
+	jrProperty(renderAdditive);
+	jrProperty(interpolationMode);
+	jrProperty(samplingMode);
+	jrProperty(debugShape);
 #undef jrProperty
 
 	// grainInnerRadiusRatio can be an array of keyframes

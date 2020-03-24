@@ -25,6 +25,8 @@
 #include "RuntimeObject.h"
 #include "ShaderPool.h"
 #include "Ui/SceneDialog.h"
+#include "Ui/DeferredShadingDialog.h"
+#include "Ui/WorldDialog.h"
 
 using namespace std;
 
@@ -168,12 +170,32 @@ void Gui::setupDialogs()
 {
 	m_dialogGroups.clear();
 	if (m_scene) {
-		DialogGroup group;
-		group.title = "Scene";
-		auto sceneDialog = std::make_shared<SceneDialog>();
-		sceneDialog->setController(m_scene);
-		group.dialogs.push_back(sceneDialog);
-		m_dialogGroups.push_back(group);
+		{/*
+			DialogGroup group;
+			group.title = "Scene";
+			auto sceneDialog = std::make_shared<SceneDialog>();
+			sceneDialog->setController(m_scene);
+			group.dialogs.push_back(sceneDialog);
+			m_dialogGroups.push_back(group);
+		*/}
+
+		{
+			DialogGroup group;
+			group.title = "Deferred Shading";
+			auto deferredShadingDialog = std::make_shared<DeferredShadingDialog>();
+			deferredShadingDialog->setController(m_scene->deferredShader());
+			group.dialogs.push_back(deferredShadingDialog);
+			m_dialogGroups.push_back(group);
+		}
+
+		{
+			DialogGroup group;
+			group.title = "World";
+			auto worldDialog = std::make_shared<WorldDialog>();
+			worldDialog->setController(m_scene->world());
+			group.dialogs.push_back(worldDialog);
+			m_dialogGroups.push_back(group);
+		}
 
 		for (const auto& obj : m_scene->objects()) {
 			DialogGroup group;
@@ -219,6 +241,16 @@ void Gui::updateImGui() {
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS) | #%d", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate, frame);
 	ImGui::End();
 
+	// Handles
+	int dialogId = 0;
+	for (auto & dg : m_dialogGroups) {
+		ImGui::PushID(dialogId++);
+		for (auto d : dg.dialogs) {
+			d->drawHandles(0, 0, m_windowWidth, m_windowHeight);
+		}
+		ImGui::PopID();
+	}
+
 	if (m_showPanel) {
 		ImGui::SetNextWindowSize(ImVec2(m_panelWidth, m_windowHeight));
 		ImGui::SetNextWindowPos(ImVec2(m_windowWidth - m_panelWidth, 0.f));
@@ -228,22 +260,33 @@ void Gui::updateImGui() {
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
 		int dialogId = 0;
+		bool pressed;
 		for (auto & dg : m_dialogGroups) {
-			ImGui::PushID(dialogId++);
-			ImGui::Selectable(dg.title.c_str(), &dg.enabled);
+			ImGui::PushID(dialogId);
+			dialogId += dg.dialogs.size();
+			pressed = ImGui::Selectable(dg.title.c_str(), &dg.enabled);
+			if (pressed && m_isControlPressed == 0) {
+				// Select exclusive
+				for (auto & other : m_dialogGroups) {
+					other.enabled = &other == &dg;
+				}
+			}
 			ImGui::PopID();
 		}
 		
 		// Visible dialogs
 		dialogId = 0;
 		for (auto & dg : m_dialogGroups) {
-			ImGui::PushID(dialogId++);
 			if (dg.enabled) {
+				ImGui::PushID(dialogId++);
 				for (auto d : dg.dialogs) {
 					d->draw();
 				}
+				ImGui::PopID();
 			}
-			ImGui::PopID();
+			else {
+				dialogId += dg.dialogs.size();
+			}
 		}
 		ImGui::End();
 	}
@@ -326,17 +369,31 @@ void Gui::onCursorPosition(double x, double y) {
 }
 
 void Gui::onKey(int key, int scancode, int action, int mods) {
-	if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
-		if (auto window = m_window.lock()) {
-			glfwSetWindowShouldClose(window->glfw(), GL_TRUE);
+	if (action == GLFW_PRESS) {
+		switch (key) {
+		case GLFW_KEY_ESCAPE:
+			if (auto window = m_window.lock()) {
+				glfwSetWindowShouldClose(window->glfw(), GL_TRUE);
+			}
+			break;
+
+		case GLFW_KEY_LEFT_CONTROL:
+		case GLFW_KEY_RIGHT_CONTROL:
+			++m_isControlPressed;
+			break;
 		}
 	}
 
-	if (m_imguiFocus) {
-		return;
+	if (action == GLFW_RELEASE) {
+		switch (key) {
+		case GLFW_KEY_LEFT_CONTROL:
+		case GLFW_KEY_RIGHT_CONTROL:
+			--m_isControlPressed;
+			break;
+		}
 	}
 
-	if (action == GLFW_PRESS) {
+	if (action == GLFW_PRESS && !m_imguiFocus) {
 		switch (key) {
 		case GLFW_KEY_ESCAPE:
 			if (auto window = m_window.lock()) {
@@ -347,10 +404,15 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 		case GLFW_KEY_P:
 			m_showPanel = !m_showPanel;
 			break;
+
+		case GLFW_KEY_LEFT_CONTROL:
+		case GLFW_KEY_RIGHT_CONTROL:
+			++m_isControlPressed;
+			break;
 		}
 	}
 
-	if (action == GLFW_PRESS && m_scene) {
+	if (action == GLFW_PRESS && !m_imguiFocus && m_scene) {
 		switch (key) {
 		case GLFW_KEY_R:
 			if (mods & GLFW_MOD_CONTROL) {

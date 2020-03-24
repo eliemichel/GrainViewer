@@ -14,6 +14,7 @@
 #include "ResourceManager.h"
 #include "GlTexture.h"
 #include "utils/jsonutils.h"
+#include "Framebuffer.h"
 
 using namespace std;
 
@@ -59,7 +60,15 @@ bool GlDeferredShader::deserialize(const rapidjson::Value & json)
 		}
 	}
 
-	jrOption(json, "transparentFilm", m_transparentFilm, m_transparentFilm);
+#define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
+	jrProperty(transparentFilm);
+	jrProperty(showSampleCount);
+	jrProperty(maxSampleCount);
+#undef jrProperty
+
+	int shadingMode = m_properties.shadingMode;
+	jrOption(json, "shadingMode", shadingMode, shadingMode);
+	m_properties.shadingMode = static_cast<ShadingMode>(shadingMode);
 
 	return true;
 }
@@ -126,8 +135,10 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	}
 
 	m_shader.setUniform("uIsShadowMapEnabled", world.isShadowMapEnabled());
-	m_shader.setUniform("uShadingMode", m_shadingMode);
-	m_shader.setUniform("uTransparentFilm", m_transparentFilm);
+	m_shader.setUniform("uShadingMode", m_properties.shadingMode);
+	m_shader.setUniform("uTransparentFilm", m_properties.transparentFilm);
+	m_shader.setUniform("uShowSampleCount", m_properties.showSampleCount);
+	m_shader.setUniform("uMaxSampleCount", m_properties.maxSampleCount);
 
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
 	if (m_colormap) {

@@ -16,7 +16,16 @@
  */
 class Dialog {
 public:
+	/**
+	 * Draw panel (in right-hand side bar).
+	 */
 	virtual void draw() {}
+
+	/**
+	 * Draw on top of 3D render
+	 * x, y, w, h is the viewport rect
+	 */
+	virtual void drawHandles(float x, float y, float w, float h) {}
 };
 
 template <typename T> struct DialogFactory { static std::shared_ptr<Dialog> MakeShared() { return std::make_shared<Dialog>(); } };

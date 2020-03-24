@@ -40,7 +40,7 @@ uniform bool uTransparentFilm = false;
 uniform int uShadingMode = 0; // 0: BEAUTY, 1: NORMAL, 2: BASE_COLOR
 
 // Accumulated samples info display
-uniform float uMaxSampleCount = 100;
+uniform float uMaxSampleCount = 40;
 uniform bool uShowSampleCount = false;
 
 #include "include/gbuffer.inc.glsl"

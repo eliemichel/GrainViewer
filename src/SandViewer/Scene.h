@@ -20,9 +20,10 @@
 
 #include "Camera.h"
 #include "TurntableCamera.h"
-#include "World.h"
-#include "GlDeferredShader.h"
+#include "Framebuffer.h"
 
+class World;
+class GlDeferredShader;
 class AnimationManager;
 class RuntimeObject;
 
@@ -46,8 +47,8 @@ public:
 	std::shared_ptr<Camera> viewportCamera() const;
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
 
-	World & world() { return m_world; }
-	GlDeferredShader & deferredShader() { return m_deferredShader; }
+	std::shared_ptr<World> world() { return m_world; }
+	std::shared_ptr<GlDeferredShader> deferredShader() { return m_deferredShader; }
 
 	bool mustQuit() const { return m_mustQuit;  }
 	int frame() const { return m_frameIndex; }
@@ -60,8 +61,8 @@ private:
 
 private:
 	std::string m_filename;
-	World m_world;
-	GlDeferredShader m_deferredShader;
+	std::shared_ptr<World> m_world;
+	std::shared_ptr<GlDeferredShader> m_deferredShader;
 	int m_viewportCameraIndex;
 	std::vector<std::shared_ptr<Camera>> m_cameras;
 	std::vector<std::shared_ptr<RuntimeObject>> m_objects;

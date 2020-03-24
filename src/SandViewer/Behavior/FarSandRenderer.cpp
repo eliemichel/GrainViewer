@@ -26,12 +26,13 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	jrOption(json, "epsilonZBufferShader", m_epsilonZBufferShaderName, m_epsilonZBufferShaderName);
 	jrOption(json, "colormap", m_colormapTextureName, m_colormapTextureName);
 
-#define jrPropperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
-	jrPropperty(radius);
-	jrPropperty(epsilonFactor);
-	jrPropperty(useShellCulling);
-	jrPropperty(shellDepthFalloff);
-	jrPropperty(disableBlend);
+#define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
+	jrProperty(radius);
+	jrProperty(epsilonFactor);
+	jrProperty(useShellCulling);
+	jrProperty(shellDepthFalloff);
+	jrProperty(disableBlend);
+	jrProperty(useEarlyDepthTest);
 #undef jrProperty
 
 	int debugShape = m_properties.debugShape;
@@ -198,6 +199,7 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
 	shader.setUniform("uUseShellCulling", m_properties.useShellCulling);
 	shader.setUniform("uShellCullingStrategy", m_properties.shellCullingStrategy);
+	shader.setUniform("uUseEarlyDepthTest", m_properties.useEarlyDepthTest);
 
 	shader.setUniform("uUseBbox", m_properties.useBbox);
 	shader.setUniform("uBboxMin", m_properties.bboxMin);
