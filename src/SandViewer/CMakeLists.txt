@@ -92,6 +92,8 @@ set(All_SRC
 	utils/jsonutils.cpp
 	utils/guiutils.h
 	utils/guiutils.cpp
+	utils/mathutils.h
+	utils/mathutils.cpp
 
 	Ui/Dialog.h
 	Ui/Widgets.h

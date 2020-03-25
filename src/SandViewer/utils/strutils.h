@@ -33,3 +33,5 @@ bool startsWith(const std::string & s, const std::string & postfix);
 bool endsWith(const std::string & s, const std::string & postfix);
 
 std::string replaceAll(std::string str, const std::string& search, const std::string& replace);
+
+std::string bitname(int flags, int flagCount);

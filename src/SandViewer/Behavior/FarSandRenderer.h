@@ -51,34 +51,43 @@ public:
 		bool shellDepthFalloff = true;
 		bool disableBlend = false; // For debug
 		bool useEarlyDepthTest = true;
+		bool noDiscardInEpsilonZPass = false;
+		bool extraInitPass = false;
 
 		bool useBbox = false; // if true, remove all points out of the supplied bbox
 		glm::vec3 bboxMin;
 		glm::vec3 bboxMax;
-
-		// tmp
-		float metaBias = 0.75f; // for ShellCullingDepthRange
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
 
 private:
+	// When adding flag, don't forget to add the corresponding define in the
+	// definition of s_shaderVariantDefines in cpp file.
+	enum ShaderVariantFlags {
+		ShaderVariantEpsilonZPass = 1 << 0,
+		ShaderVariantNoDiscard = 1 << 1,
+		ShaderVariantNoColor = 1 << 2,
+		ShaderVariantFragDepth = 1 << 3,
+		ShaderVariantExtraInitPass = 1 << 4, // Add an extra initialisation before accumulation to avoid uninitialized pixels when using ShaderVariantNoDiscard
+		_ShaderVariantFlagsCount = 1 << 5,
+	};
+	typedef int ShaderVariantFlagSet;
+	static const std::vector<std::string> s_shaderVariantDefines;
+
+private:
 	glm::mat4 modelMatrix() const;
 	void setCommonUniforms(ShaderProgram & shader, const Camera & camera) const;
-	float FarSandRenderer::depthRangeBias(const Camera & camera) const;
+	float depthRangeBias(const Camera & camera) const;
+	std::shared_ptr<ShaderProgram> getShader(ShaderVariantFlagSet flags) const;
 
 public:
 	std::string m_shaderName = "FarSand";
-	std::string m_epsilonZBufferShaderName = "FarSandEpsilonZBuffer";
-	std::string m_shaderName_Variant;
-	std::string m_epsilonZBufferShaderName_Variant;
 	std::string m_colormapTextureName = "";
 	Properties m_properties;
 
-	std::shared_ptr<ShaderProgram> m_shader;
-	std::shared_ptr<ShaderProgram> m_epsilonZBufferShader;
-	std::shared_ptr<ShaderProgram> m_shader_Variant;
-	std::shared_ptr<ShaderProgram> m_epsilonZBufferShader_Variant;
+	// One shader by combination of flags
+	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<PointCloudDataBehavior> m_pointData;
 	std::unique_ptr<GlTexture> m_colormapTexture;

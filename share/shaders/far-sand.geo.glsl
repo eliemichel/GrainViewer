@@ -2,6 +2,7 @@
 #include "sys:defines"
 
 #pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
 #pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2 PROCEDURAL_BASECOLOR3 BLACK_BASECOLOR
 
 layout(points) in;
@@ -94,15 +95,13 @@ bool depthTest(vec4 position_clipspace) {
 #else // STAGE_EPSILON_ZBUFFER
 	if (!uUseShellCulling || !uUseEarlyDepthTest) return true;
 	vec3 fragCoord;
-	fragCoord.xy = resolution.xy * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);
+	vec2 res = resolution.xy - vec2(0.0, 0.0);
+	fragCoord.xy = res * (position_clipspace.xy / position_clipspace.w * 0.5 + 0.5);
+	fragCoord.xy = clamp(fragCoord.xy, vec2(0.5), res - vec2(0.5));
 	fragCoord.z = position_clipspace.z / position_clipspace.w;
-	float d = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
-    float limitDepth = linearizeDepth(d);
-    float depth = /*linearizeDepth*/(fragCoord.z + uNear);
+	float limitDepth = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
 
-    // TODO: not working with cShellCullingFragDepth
-    // and working weirdly with others
-    return depth <= limitDepth;
+    return fragCoord.z <= limitDepth;
 #endif // STAGE_EPSILON_ZBUFFER
 }
 
@@ -133,7 +132,16 @@ void main() {
 	float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
 	//screenSpaceDiameter = SpriteSize(radius, gl_Position);
 	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(radius, position_cs);
+
+#if defined(STAGE_EPSILON_ZBUFFER) && defined(NO_DISCARD_IN_EPSILON_ZBUFFER)
+	// During Epsilon ZBuffer pass, we must not use discard in fragment shader
+	// for performance reasons, and we prefer to have false negative than false
+	// positive, hence we reduce the (square) point to fit inside the splatted
+	// disc.
+	gl_PointSize = screenSpaceDiameter * HALF_SQRT2;
+#else // STAGE_EPSILON_ZBUFFER && NO_DISCARD_IN_EPSILON_ZBUFFER
 	gl_PointSize = screenSpaceDiameter;
+#endif // STAGE_EPSILON_ZBUFFER && NO_DISCARD_IN_EPSILON_ZBUFFER
 	EmitVertex();
 	EndPrimitive();
 }

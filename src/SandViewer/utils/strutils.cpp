@@ -54,3 +54,14 @@ std::string replaceAll(std::string str, const std::string& search, const std::st
 	}
 	return str;
 }
+
+std::string bitname(int flags, int flagCount)
+{
+	std::string text(flagCount, '0');
+	for (int f = 0; f < flagCount; ++f) {
+		if ((flags & (1 << f)) != 0) {
+			text[f] = '1';
+		}
+	}
+	return text;
+}

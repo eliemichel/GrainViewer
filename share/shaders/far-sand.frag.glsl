@@ -2,6 +2,9 @@
 #include "sys:defines"
 
 #pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
+#pragma variant NO_COLOR_OUTPUT
+#pragma variant STAGE_EXTRA_INIT
 #pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
 
 #include "include/uniform/camera.inc.glsl"
@@ -49,10 +52,12 @@ layout (depth_greater) out float gl_FragDepth;
 #endif // USING_ShellCullingFragDepth
 
 void main() {
+#ifndef NO_DISCARD_IN_EPSILON_ZBUFFER
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
         discard;
     }
+#endif // NO_DISCARD_IN_EPSILON_ZBUFFER
 
 #ifdef USING_ShellCullingFragDepth
     // Readable version
@@ -62,20 +67,27 @@ void main() {
     gl_FragDepth = logDepth;
 #endif // USING_ShellCullingFragDepth
 
-    GFragment fragment;
-    fragment.baseColor = vec3(0.0);
-    fragment.normal = vec3(0.0);
-    fragment.ws_coord = vec3(0.0);
-    fragment.material_id = 0;
-    fragment.roughness = 0.0;
-    fragment.metallic = 0.0;
-    fragment.emission = vec3(0.0);
-    fragment.alpha = 0.0;
-    packGFragment(fragment, gbuffer_color1, gbuffer_color2, gbuffer_color3);
+#ifndef NO_COLOR_OUTPUT
+    // Init for accumulation
+    gbuffer_color1 = vec4(0.0);
+#endif // NO_COLOR_OUTPUT
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#else // STAGE_EPSILON_ZBUFFER
+#elif defined(STAGE_EXTRA_INIT) // STAGE_EXTRA_INIT
+
+void main() {
+    vec2 uv = gl_PointCoord * 2.0 - 1.0;
+    if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
+        discard;
+    }
+
+    // Init for accumulation
+    gbuffer_color1 = vec4(0.0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+#else // STAGE
 
 uniform float height = 0.0;
 uniform float metallic = 0.0;

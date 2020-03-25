@@ -3,6 +3,7 @@
 
 const float pi = 3.1415926535897932384626433832795;
 const float PI = 3.1415926535897932384626433832795;
+const float HALF_SQRT2 = 0.7071067811865476;
 
 vec3 color2normal(in vec4 color) {
     return normalize(vec3(color) * 2.0 - vec3(1.0));

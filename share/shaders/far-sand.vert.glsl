@@ -27,7 +27,8 @@ void main() {
 #ifdef PROCEDURAL_BASECOLOR3
 	outData.originalPosition_ws = (modelMatrix * vec4(p, 1.0)).xyz;
 #endif // PROCEDURAL_BASECOLOR3
-	p *= 1 + sin(uTime * 2.0 + p.y * 2.0) * 0.1 * sin(atan(p.x, p.z) * 10.0);
+	float t = uTime * 0.;
+	p *= 1 + sin(t * 2.0 + p.y * 2.0) * 0.1 * sin(atan(p.x, p.z) * 10.0);
 #endif // PROCEDURAL_ANIM0
 
 	outData.radius = uRadius;

@@ -10,6 +10,7 @@ void FarSandRendererDialog::draw()
 		if (ImGui::CollapsingHeader("FarSandRenderer", ImGuiTreeNodeFlags_DefaultOpen)) {
 			bool enabled = cont->isEnabled();
 			int id = 0; // for disambiguation
+
 			ImGui::Checkbox("Enabled", &enabled);
 			cont->setEnabled(enabled);
 
@@ -32,6 +33,8 @@ void FarSandRendererDialog::draw()
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
 				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
 				ImGui::Checkbox("Use Early Depth Test", &props.useEarlyDepthTest);
+				ImGui::Checkbox("No Discard In Epsilon ZPass", &props.noDiscardInEpsilonZPass);
+				ImGui::Checkbox("Extra Init Pass", &props.extraInitPass);
 
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
@@ -63,8 +66,6 @@ void FarSandRendererDialog::draw()
 
 			ImGui::Text("\nDebug");
 			ImGui::Checkbox("Disable additive blend", &props.disableBlend);
-
-			ImGui::SliderFloat("[TMP] Meta Bias", &props.metaBias, 0.0f, 1.0f, "%.4f");
 
 			EndDisable(!enabled);
 		}

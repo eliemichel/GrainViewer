@@ -5,6 +5,8 @@
 #include <glad/modernglad.h>
 
 #include "utils/jsonutils.h"
+#include "utils/mathutils.h"
+#include "utils/strutils.h"
 #include "FarSandRenderer.h"
 #include "TransformBehavior.h"
 #include "ShaderPool.h"
@@ -15,6 +17,14 @@
 #include "GlTexture.h"
 #include "Framebuffer.h"
 
+const std::vector<std::string> FarSandRenderer::s_shaderVariantDefines = {
+	"STAGE_EPSILON_ZBUFFER",
+	"NO_DISCARD_IN_EPSILON_ZBUFFER",
+	"NO_COLOR_OUTPUT",
+	"USING_ShellCullingFragDepth",
+	"STAGE_EXTRA_INIT",
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,7 +33,6 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 {
 
 	jrOption(json, "shader", m_shaderName, m_shaderName);
-	jrOption(json, "epsilonZBufferShader", m_epsilonZBufferShaderName, m_epsilonZBufferShaderName);
 	jrOption(json, "colormap", m_colormapTextureName, m_colormapTextureName);
 
 #define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
@@ -33,6 +42,8 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	jrProperty(shellDepthFalloff);
 	jrProperty(disableBlend);
 	jrProperty(useEarlyDepthTest);
+	jrProperty(noDiscardInEpsilonZPass);
+	jrProperty(extraInitPass);
 #undef jrProperty
 
 	int debugShape = m_properties.debugShape;
@@ -63,21 +74,11 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 			return false;
 		}
 	}
-
-	m_shaderName_Variant = m_shaderName + "_USING_ShellCullingFragDepth";
-	ShaderPool::AddShaderVariant(m_shaderName_Variant, m_shaderName, { "USING_ShellCullingFragDepth" });
-	m_epsilonZBufferShaderName_Variant = m_epsilonZBufferShaderName + "_USING_ShellCullingFragDepth";
-	ShaderPool::AddShaderVariant(m_epsilonZBufferShaderName_Variant, m_epsilonZBufferShaderName, { "USING_ShellCullingFragDepth" });
-
 	return true;
 }
 
 void FarSandRenderer::start()
 {
-	m_shader = ShaderPool::GetShader(m_shaderName);
-	m_epsilonZBufferShader = ShaderPool::GetShader(m_epsilonZBufferShaderName);
-	m_shader_Variant = ShaderPool::GetShader(m_shaderName_Variant);
-	m_epsilonZBufferShader_Variant = ShaderPool::GetShader(m_epsilonZBufferShaderName_Variant);
 	m_transform = getComponent<TransformBehavior>();
 	m_pointData = getComponent<PointCloudDataBehavior>();
 
@@ -96,8 +97,6 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 	// Sanity checks
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
-	if (!m_shader->isValid()) return;
-	if (!m_epsilonZBufferShader->isValid()) return;
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
@@ -106,18 +105,24 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
 	//auto depthFbo = camera.getExtraFramebuffer(true /* depthOnly */);
 
+	const auto & props = properties();
+
 	// 1. Render epsilon depth buffer
-	if (properties().useShellCulling) {
+	if (props.useShellCulling) {
 		//depthFbo->bind();
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
+		if (props.shellCullingStrategy == ShellCullingDepthRange) {
 			glDepthRangef(depthRangeBias(camera), 1.0f);
 		}
 
-		ShaderProgram & shader = m_properties.shellCullingStrategy == ShellCullingFragDepth ? *m_epsilonZBufferShader_Variant : *m_epsilonZBufferShader;
+		ShaderVariantFlagSet flags = ShaderVariantEpsilonZPass;
+		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
+		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+		if (props.extraInitPass) flags |= ShaderVariantNoColor;
+		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
 		shader.use();
@@ -128,7 +133,29 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glTextureBarrier();
 	}
 
-	// 2. Render points cumulatively
+	// 2. Optional extra init pass
+	if (props.useShellCulling && props.extraInitPass) {
+		glDepthMask(GL_FALSE);
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
+		
+		if (props.shellCullingStrategy == ShellCullingDepthRange) {
+			glDepthRangef(0, 1.0f - depthRangeBias(camera));
+		}
+
+		ShaderVariantFlagSet flags = ShaderVariantExtraInitPass;
+		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
+		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+		ShaderProgram & shader = *getShader(flags);
+		setCommonUniforms(shader, camera);
+
+		shader.use();
+		glBindVertexArray(pointData->vao());
+		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
+		glBindVertexArray(0);
+	}
+
+	// 3. Render points cumulatively
 	{
 		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
 		//glBindFramebuffer(GL_READ_FRAMEBUFFER, readFboId);
@@ -148,14 +175,17 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 			glDisable(GL_BLEND);
 		}
 
-		if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
+		if (props.shellCullingStrategy == ShellCullingDepthRange) {
 			glDepthRangef(0, 1.0f - depthRangeBias(camera));
 		}
 
-		ShaderProgram & shader = m_properties.shellCullingStrategy == ShellCullingFragDepth ? *m_shader_Variant : *m_shader;
+		ShaderVariantFlagSet flags = 0;
+		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
+		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
-		if (properties().useShellCulling && properties().shellDepthFalloff) {
+		if (props.useShellCulling && props.shellDepthFalloff) {
 			GLint depthTexture;
 			glGetNamedFramebufferAttachmentParameteriv(drawFboId, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthTexture);
 			glBindTextureUnit(7, static_cast<GLuint>(depthTexture));
@@ -200,6 +230,8 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("uUseShellCulling", m_properties.useShellCulling);
 	shader.setUniform("uShellCullingStrategy", m_properties.shellCullingStrategy);
 	shader.setUniform("uUseEarlyDepthTest", m_properties.useEarlyDepthTest);
+	shader.setUniform("uNoDiscardInEpsilonZPass", m_properties.noDiscardInEpsilonZPass);
+	shader.setUniform("uExtraInitPass", m_properties.extraInitPass);
 
 	shader.setUniform("uUseBbox", m_properties.useBbox);
 	shader.setUniform("uBboxMin", m_properties.bboxMin);
@@ -222,9 +254,32 @@ float FarSandRenderer::depthRangeBias(const Camera & camera) const
 {
 	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 		float eps = m_properties.epsilonFactor * m_properties.radius;
-		return eps / (camera.farDistance() - camera.nearDistance() + eps) * m_properties.metaBias;
+		return eps / (camera.farDistance() - camera.nearDistance() + eps);
 	}
 	else {
 		return 0.0f;
 	}
+}
+
+std::shared_ptr<ShaderProgram> FarSandRenderer::getShader(ShaderVariantFlagSet flags) const
+{
+	if (m_shaders.empty()) {
+		m_shaders.resize(_ShaderVariantFlagsCount);
+	}
+
+	if (!m_shaders[flags]) {
+		// Lazy loading of shader variants
+		int nFlags = ilog2(_ShaderVariantFlagsCount);
+		std::string variantName = m_shaderName + "_ShaderVariantFlags_" + bitname(flags, nFlags);
+		std::vector<std::string> defines;
+		for (int f = 0; f < nFlags; ++f) {
+			if ((flags & (1 << f)) != 0) {
+				defines.push_back(s_shaderVariantDefines[f]);
+			}
+		}
+		DEBUG_LOG << "loading variant " << variantName;
+		ShaderPool::AddShaderVariant(variantName, m_shaderName, defines);
+		m_shaders[flags] = ShaderPool::GetShader(variantName);
+	}
+	return m_shaders[flags];
 }

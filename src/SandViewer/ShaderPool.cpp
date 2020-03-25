@@ -19,6 +19,11 @@ void ShaderPool::AddShaderVariant(const std::string & shaderName, const std::str
 	s_instance.addShaderVariant(shaderName, baseShaderName, define);
 }
 
+void ShaderPool::AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines)
+{
+	s_instance.addShaderVariant(shaderName, baseShaderName, defines);
+}
+
 std::shared_ptr<ShaderProgram> ShaderPool::GetShader(const std::string & shaderName)
 {
 	return s_instance.getShader(shaderName);
@@ -94,19 +99,36 @@ void ShaderPool::addShader(const std::string & shaderName, const std::string & b
 
 void ShaderPool::addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define)
 {
+	std::vector<std::string> d = { define };
+	addShaderVariant(shaderName, baseShaderName, d);
+}
+
+void ShaderPool::addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines)
+{
 	auto baseShader = getShader(baseShaderName);
 	if (!baseShader) {
 		WARN_LOG << "Cannot add variant to unexistant shader: " << baseShaderName;
 		return;
 	}
 
-	if (baseShader->getDefines().count(define) > 0) {
-		m_shaders[shaderName] = baseShader;
+	bool alreadyDefined = true;
+	for (const auto & def : defines) {
+		if (baseShader->getDefines().count(def) == 0) {
+			alreadyDefined = false;
+			break;
+		}
 	}
-	else {
+
+	if (alreadyDefined) {
+		m_shaders[shaderName] = baseShader;
+	} else {
 		m_shaders[shaderName] = std::make_shared<ShaderProgram>(baseShader->shaderName());
 		m_shaders[shaderName]->copy(*baseShader);
-		m_shaders[shaderName]->define(define);
+		for (const auto & def : defines) {
+			if (baseShader->getDefines().count(def) == 0) {
+				m_shaders[shaderName]->define(def);
+			}
+		}
 		m_shaders[shaderName]->load();
 	}
 }

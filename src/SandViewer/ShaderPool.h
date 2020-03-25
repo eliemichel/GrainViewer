@@ -19,6 +19,7 @@ public:
 	 * shader called baseShaderName.
 	 */
 	static void AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define);
+	static void AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines);
 
 	/**
 	 * Get a shader from the pool by its name.
@@ -44,6 +45,7 @@ private:
 
 	void addShader(const std::string& shaderName, const std::string& baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string>& defines = {});
 	void addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define);
+	void addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines);
 	std::shared_ptr<ShaderProgram> getShader(const std::string & shaderName);
 	void reloadShaders();
 	bool deserialize(const rapidjson::Value & json);
