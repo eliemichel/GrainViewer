@@ -380,7 +380,9 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	std::vector<png_byte> pixels;
 
 	switch (internalformat) {
+	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
+	case GL_DEPTH_COMPONENT32:
 	{
 		GLsizei byteCount = w * h * d;
 		pixels = std::vector<png_byte>(byteCount, 0);
@@ -439,7 +441,9 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 	std::vector<png_byte> pixels;
 
 	switch (internalformat) {
+	case GL_DEPTH_COMPONENT16:
 	case GL_DEPTH_COMPONENT24:
+	case GL_DEPTH_COMPONENT32:
 	{
 		GLsizei pixelCount = w * h * d;
 		std::vector<float> pixels = std::vector<float>(pixelCount, 0);
@@ -465,7 +469,7 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
 		for (int i = 0; i < header.num_channels; i++) {
 			header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of input image
-			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
+			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of output image to be stored in .EXR
 		}
 
 		const char* err = nullptr;
@@ -525,7 +529,7 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 		header.requested_pixel_types = (int *)malloc(sizeof(int) * header.num_channels);
 		for (int i = 0; i < header.num_channels; i++) {
 			header.pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of input image
-			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_HALF; // pixel type of output image to be stored in .EXR
+			header.requested_pixel_types[i] = TINYEXR_PIXELTYPE_FLOAT; // pixel type of output image to be stored in .EXR
 		}
 
 		const char* err = nullptr;

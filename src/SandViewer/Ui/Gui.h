@@ -47,6 +47,18 @@ private:
 	};
 
 private:
+	template<typename DialogType, typename ControllerType>
+	void addDialogGroup(std::string title, std::shared_ptr<ControllerType> controller)
+	{
+		DialogGroup group;
+		group.title = title;
+		auto dialog = std::make_shared<DialogType>();
+		dialog->setController(controller);
+		group.dialogs.push_back(dialog);
+		m_dialogGroups.push_back(group);
+	}
+
+private:
 	std::weak_ptr<Window> m_window;
 	std::shared_ptr<Scene> m_scene;
 	std::vector<DialogGroup> m_dialogGroups;

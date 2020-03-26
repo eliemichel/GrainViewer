@@ -78,6 +78,7 @@ private:
 private:
 	glm::mat4 modelMatrix() const;
 	void setCommonUniforms(ShaderProgram & shader, const Camera & camera) const;
+	void setDepthUniform(ShaderProgram & shader) const;
 	float depthRangeBias(const Camera & camera) const;
 	std::shared_ptr<ShaderProgram> getShader(ShaderVariantFlagSet flags) const;
 

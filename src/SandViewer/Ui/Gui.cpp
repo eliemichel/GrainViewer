@@ -170,32 +170,9 @@ void Gui::setupDialogs()
 {
 	m_dialogGroups.clear();
 	if (m_scene) {
-		{/*
-			DialogGroup group;
-			group.title = "Scene";
-			auto sceneDialog = std::make_shared<SceneDialog>();
-			sceneDialog->setController(m_scene);
-			group.dialogs.push_back(sceneDialog);
-			m_dialogGroups.push_back(group);
-		*/}
-
-		{
-			DialogGroup group;
-			group.title = "Deferred Shading";
-			auto deferredShadingDialog = std::make_shared<DeferredShadingDialog>();
-			deferredShadingDialog->setController(m_scene->deferredShader());
-			group.dialogs.push_back(deferredShadingDialog);
-			m_dialogGroups.push_back(group);
-		}
-
-		{
-			DialogGroup group;
-			group.title = "World";
-			auto worldDialog = std::make_shared<WorldDialog>();
-			worldDialog->setController(m_scene->world());
-			group.dialogs.push_back(worldDialog);
-			m_dialogGroups.push_back(group);
-		}
+		addDialogGroup<SceneDialog>("Scene", m_scene);
+		addDialogGroup<DeferredShadingDialog>("Deferred Shading", m_scene->deferredShader());
+		addDialogGroup<WorldDialog>("World", m_scene->world());
 
 		for (const auto& obj : m_scene->objects()) {
 			DialogGroup group;

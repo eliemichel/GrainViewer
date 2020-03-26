@@ -55,9 +55,18 @@ public:
 
 	std::shared_ptr<RuntimeObject> findObjectByName(const std::string& name);
 
+	void takeScreenshot() const;
+
 private:
-	void recordFrame(const Camera & camera) const;
 	void measureStats();
+	// TODO: This should be in another section of the code
+	enum RecordFormat {
+		RecordExr,
+		RecordPng,
+	};
+	void recordFrame(const Camera & camera, const std::string & filename, RecordFormat format) const;
+	// Record frame only if enabled in camera options
+	void recordFrame(const Camera & camera) const;
 
 private:
 	std::string m_filename;
@@ -70,9 +79,11 @@ private:
 	bool m_isDeferredShadingEnabled = true;
 
 	// Framebuffer used before writing image if the output resolution is different from camera resolution
-	std::unique_ptr<Framebuffer> m_outputFramebuffer;
+	mutable std::unique_ptr<Framebuffer> m_outputFramebuffer; // lazyly allocated in recordFrame
 	int m_frameIndex = -1;
+	// TODO: wrap those data into proper logic/class
 	std::vector<uint8_t> m_pixels;
+	mutable std::vector<GLfloat> m_floatPixels; // for EXR screenshots
 
 	float m_fps;
 	int m_quitAfterFrame = -1; // -1 to deactivate this feature, otherwise automatically quit the program after the specified frame (usefull for batch rendering)

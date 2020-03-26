@@ -10,6 +10,9 @@ void SceneDialog::draw()
 {
 	if (auto cont = m_cont.lock()) {
 		if (ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+			if (ImGui::Button("Take Screenshot")) {
+				cont->takeScreenshot();
+			}
 		}
 	}
 }

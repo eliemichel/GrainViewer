@@ -7,7 +7,6 @@ uniform float uDepthRangeMin = 0.0f;
 uniform float uDepthRangeMax = 1.0f;
 
 float linearizeDepth(float logDepth) {
-	return (2.0 * uNear * uFar) / (uFar + uNear - (logDepth * 2.0 - 1.0) * (uFar - uNear));
 	float in01 = (logDepth - uDepthRangeMin) / (uDepthRangeMax - uDepthRangeMin);
 	return (2.0 * uNear * uFar) / (uFar + uNear - (in01 * 2.0 - 1.0) * (uFar - uNear));
 }

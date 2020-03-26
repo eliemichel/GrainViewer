@@ -113,20 +113,20 @@ void main() {
 	position_ws = inData[0].position_ws;	
 	vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);
 
+	vec4 offset = vec4(0.0);
 #ifdef STAGE_EPSILON_ZBUFFER
 	if (uShellCullingStrategy == cShellCullingMoveAway) {
-		position_cs.xyz += uEpsilon / length(position_cs) * position_cs.xyz;
-		//position_cs.z -= 0.1;
+		offset.xyz = uEpsilon * normalize(position_cs.xyz);
 	}
 #endif // STAGE_EPSILON_ZBUFFER
 
-	vec4 position = projectionMatrix * position_cs;
+	vec4 position_clipspace = projectionMatrix * (position_cs + offset);
 
-	if (!depthTest(position)) {
+	if (!depthTest(position_clipspace)) {
 		return;
 	}
 
-	gl_Position = position;
+	gl_Position = position_clipspace;
 	baseColor = computeBaseColor(position_ws);
 	radius = inData[0].radius;
 	float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);

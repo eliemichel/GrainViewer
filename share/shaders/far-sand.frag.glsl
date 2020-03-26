@@ -3,7 +3,7 @@
 
 #pragma variant STAGE_EPSILON_ZBUFFER
 #pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
-#pragma variant NO_COLOR_OUTPUT
+#pragma variant NO_COLOR_OUTPUT // used when there is an EXTRA_INIT pass then
 #pragma variant STAGE_EXTRA_INIT
 #pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
 

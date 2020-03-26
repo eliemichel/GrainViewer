@@ -51,11 +51,11 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	m_properties.debugShape = static_cast<DebugShape>(debugShape);
 
 	int weightMode = m_properties.weightMode;
-	jrOption(json, "debugShape", weightMode, weightMode);
+	jrOption(json, "weightMode", weightMode, weightMode);
 	m_properties.weightMode = static_cast<WeightMode>(weightMode);
 
 	int shellCullingStrategy = m_properties.shellCullingStrategy;
-	jrOption(json, "debugShape", shellCullingStrategy, shellCullingStrategy);
+	jrOption(json, "shellCullingStrategy", shellCullingStrategy, shellCullingStrategy);
 	m_properties.shellCullingStrategy = static_cast<ShellCullingStrategy>(shellCullingStrategy);
 
 	if (json.HasMember("bbox")) {
@@ -100,16 +100,10 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
-	GLint drawFboId = 0, readFboId = 0;
-	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &readFboId);
-	//auto depthFbo = camera.getExtraFramebuffer(true /* depthOnly */);
-
 	const auto & props = properties();
 
 	// 1. Render epsilon depth buffer
 	if (props.useShellCulling) {
-		//depthFbo->bind();
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
@@ -129,8 +123,6 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glBindVertexArray(pointData->vao());
 		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
 		glBindVertexArray(0);
-
-		glTextureBarrier();
 	}
 
 	// 2. Optional extra init pass
@@ -149,6 +141,11 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
+		if (props.useShellCulling && props.useEarlyDepthTest) {
+			glTextureBarrier();
+			setDepthUniform(shader);
+		}
+
 		shader.use();
 		glBindVertexArray(pointData->vao());
 		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
@@ -157,8 +154,6 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 
 	// 3. Render points cumulatively
 	{
-		//glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
-		//glBindFramebuffer(GL_READ_FRAMEBUFFER, readFboId);
 		if (properties().useShellCulling) {
 			glDepthMask(GL_FALSE);
 			glEnable(GL_DEPTH_TEST);
@@ -185,11 +180,9 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
-		if (props.useShellCulling && props.shellDepthFalloff) {
-			GLint depthTexture;
-			glGetNamedFramebufferAttachmentParameteriv(drawFboId, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthTexture);
-			glBindTextureUnit(7, static_cast<GLuint>(depthTexture));
-			shader.setUniform("uDepthTexture", 7);
+		if (props.useShellCulling && (props.shellDepthFalloff || props.useEarlyDepthTest)) {
+			glTextureBarrier();
+			setDepthUniform(shader);
 		}
 
 		shader.use();
@@ -248,6 +241,16 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 		shader.setUniform("uColormapTexture", o);
 		++o;
 	}
+}
+
+void FarSandRenderer::setDepthUniform(ShaderProgram & shader) const
+{
+	GLint depthTexture;
+	GLint drawFboId = 0;
+	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+	glGetNamedFramebufferAttachmentParameteriv(drawFboId, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthTexture);
+	glBindTextureUnit(7, static_cast<GLuint>(depthTexture));
+	shader.setUniform("uDepthTexture", 7);
 }
 
 float FarSandRenderer::depthRangeBias(const Camera & camera) const

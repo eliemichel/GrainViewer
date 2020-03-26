@@ -5,6 +5,7 @@
 // **************************************************
 
 #include <sstream>
+#include <chrono>
 
 #include <glm/glm.hpp>
 
@@ -199,6 +200,17 @@ std::shared_ptr<RuntimeObject> Scene::findObjectByName(const std::string& name) 
 	return nullptr;
 }
 
+void Scene::takeScreenshot() const
+{
+	using namespace std::chrono;
+	std::time_t now = system_clock::to_time_t(system_clock::now());
+	std::ostringstream ss;
+	ss << "SandViewer_";
+	ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+	ss << ".exr";
+	recordFrame(*viewportCamera(), ss.str(), RecordExr);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Private methods
 ///////////////////////////////////////////////////////////////////////////////
@@ -232,18 +244,57 @@ void Scene::measureStats()
 	m_outputStatsFile << "\n";
 }
 
-void Scene::recordFrame(const Camera & camera) const
+void Scene::recordFrame(const Camera & camera, const std::string & filename, RecordFormat format) const
 {
 	auto& outputSettings = camera.outputSettings();
-	if (outputSettings.isRecordEnabled) {
-		char number[7];
-#ifdef _WIN32
-		sprintf_s(number, 7, "%06d", m_frameIndex);
-#else // _WIN32
-		sprintf(number, "%04d", m_frameIndex);
-#endif // _WIN32
-		auto filename = outputSettings.outputFrameBase + number + ".png";
+	
+	switch (format) {
+	case RecordExr:
+	{
+		if (outputSettings.autoOutputResolution && camera.targetFramebuffer()) {
+			m_floatPixels.resize(3 * viewportCamera()->targetFramebuffer()->width() * viewportCamera()->targetFramebuffer()->height());
+		}
+		else if (outputSettings.autoOutputResolution) {
+			m_floatPixels.resize(3 * m_width * m_height);
+		}
+		else if (m_outputFramebuffer) {
+			m_floatPixels.resize(3 * m_outputFramebuffer->width() * m_outputFramebuffer->height());
+		}
 
+		const void* pixels = static_cast<const void*>(m_floatPixels.data());
+		GLsizei bufSize = static_cast<GLsizei>(m_floatPixels.size() * sizeof(GLfloat));
+
+		if (outputSettings.autoOutputResolution && camera.targetFramebuffer()) {
+			ResourceManager::saveTexture_tinyexr(filename, camera.targetFramebuffer()->colorTexture(0));
+		}
+		else {
+			if (!m_outputFramebuffer) {
+				DEBUG_LOG << "alloc output fbo";
+				// Even in autoOutputResolution, we need this framebuffer actually.
+				const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
+				m_outputFramebuffer = std::make_unique<Framebuffer>(m_width, m_height, colorLayerInfos);
+			}
+
+			// output dedicated output framebuffer
+			GLuint sourceFbo = 0;
+			GLint sourceWidth = m_width;
+			GLint sourceHeight = m_height;
+			if (camera.targetFramebuffer()) {
+				sourceFbo = camera.targetFramebuffer()->raw();
+				sourceWidth = static_cast<GLint>(camera.resolution().x);
+				sourceHeight = static_cast<GLint>(camera.resolution().y);
+			}
+			GLint destWidth = static_cast<GLint>(m_outputFramebuffer->width());
+			GLint destHeight = static_cast<GLint>(m_outputFramebuffer->height());
+			glBlitNamedFramebuffer(sourceFbo, m_outputFramebuffer->raw(), 0, 0, sourceWidth, sourceHeight, 0, 0, destWidth, destHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+			DEBUG_LOG << "save output fbo of size " << m_outputFramebuffer->width() << "x" << m_outputFramebuffer->height();
+			ResourceManager::saveTexture_tinyexr(filename, m_outputFramebuffer->colorTexture(0));
+		}
+	}
+	case RecordPng:
+	default:
+	{
 		const void* pixels = static_cast<const void*>(m_pixels.data());
 		GLsizei bufSize = static_cast<GLsizei>(m_pixels.size() * sizeof(uint8_t));
 
@@ -285,5 +336,22 @@ void Scene::recordFrame(const Camera & camera) const
 				ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
 			}
 		}
+	}
+	}
+}
+
+void Scene::recordFrame(const Camera & camera) const
+{
+	auto& outputSettings = camera.outputSettings();
+	if (outputSettings.isRecordEnabled) {
+		char number[7];
+#ifdef _WIN32
+		sprintf_s(number, 7, "%06d", m_frameIndex);
+#else // _WIN32
+		sprintf(number, "%04d", m_frameIndex);
+#endif // _WIN32
+		std::string filename = outputSettings.outputFrameBase + number + ".png";
+
+		recordFrame(camera, filename, RecordPng);
 	}
 }
