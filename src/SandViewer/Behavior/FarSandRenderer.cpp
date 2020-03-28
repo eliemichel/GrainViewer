@@ -17,6 +17,8 @@
 #include "GlTexture.h"
 #include "Framebuffer.h"
 
+registerBehaviorType(FarSandRenderer)
+
 const std::vector<std::string> FarSandRenderer::s_shaderVariantDefines = {
 	"STAGE_EPSILON_ZBUFFER",
 	"NO_DISCARD_IN_EPSILON_ZBUFFER",

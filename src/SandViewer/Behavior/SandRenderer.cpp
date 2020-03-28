@@ -17,6 +17,8 @@
 #include "AnimationManager.h"
 #include "EnvironmentVariables.h"
 
+registerBehaviorType(SandRenderer)
+
 #define MAKE_STR(contents) (std::ostringstream() << contents).str()
 
 ///////////////////////////////////////////////////////////////////////////////

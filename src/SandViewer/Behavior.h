@@ -9,11 +9,12 @@
 #include "World.h"
 #include "EnvironmentVariables.h"
 #include "IBehaviorHolder.h"
+#include "BehaviorRegistry.h"
 #include "utils/tplutils.h" // for ENABLE_TYPENAME
 
 class AnimationManager;
 
-#define registerBehaviorType(T) ENABLE_TYPENAME(T)
+#define registerBehaviorType(T) static bool behavior_name ## _entry = BehaviorRegistry::add(#T, [](){ return new T(); });
 
 /**
  * There is a little mix of "Behavior" and "Component" to mean the same thing. TODO: clean that

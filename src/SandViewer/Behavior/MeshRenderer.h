@@ -42,5 +42,3 @@ private:
 	std::vector<Material> m_materials;
 };
 
-registerBehaviorType(MeshRenderer)
-

@@ -28,5 +28,3 @@ private:
 	std::unique_ptr<GlBuffer> m_elementBuffer1;
 	std::unique_ptr<GlBuffer> m_elementBuffer2;
 };
-
-registerBehaviorType(TestPrefixSumRenderer)

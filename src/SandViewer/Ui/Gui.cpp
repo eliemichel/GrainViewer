@@ -240,7 +240,7 @@ void Gui::updateImGui() {
 		bool pressed;
 		for (auto & dg : m_dialogGroups) {
 			ImGui::PushID(dialogId);
-			dialogId += dg.dialogs.size();
+			dialogId += static_cast<int>(dg.dialogs.size());
 			pressed = ImGui::Selectable(dg.title.c_str(), &dg.enabled);
 			if (pressed && m_isControlPressed == 0) {
 				// Select exclusive
@@ -262,7 +262,7 @@ void Gui::updateImGui() {
 				ImGui::PopID();
 			}
 			else {
-				dialogId += dg.dialogs.size();
+				dialogId += static_cast<int>(dg.dialogs.size());
 			}
 		}
 		ImGui::End();

@@ -26,6 +26,14 @@ public:
 		return behavior;
 	}
 
+	// self is a shared pointer to *this
+	template<typename BehaviorType>
+	static std::shared_ptr<BehaviorType> addBehavior(std::shared_ptr<IBehaviorHolder>& self, std::shared_ptr<BehaviorType> behavior, const std::string & type) {
+		behavior->setParent(self);
+		self->m_behaviors.insert(std::pair(type, behavior)); //<std::string, std::shared_ptr<Behavior>>
+		return behavior;
+	}
+
 	template<typename BehaviorType>
 	std::weak_ptr<BehaviorType> getBehavior() {
 		const char *type = TypeName<BehaviorType>().Get();

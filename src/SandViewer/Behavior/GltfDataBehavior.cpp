@@ -7,6 +7,8 @@
 #include "TransformBehavior.h"
 #include "ShaderPool.h"
 
+registerBehaviorType(GltfDataBehavior)
+
 static const std::vector<std::string> stdVertexAttribs{ "POSITION", "NORMAL", "TANGENT", "TEXCOORD_0", "TEXCOORD_1", "COLOR_0", "JOINTS_0", "WEIGHTS_0" };
 #define BUFFER_OFFSET(offset) static_cast<void*>(static_cast<char*>(nullptr) + offset)
 

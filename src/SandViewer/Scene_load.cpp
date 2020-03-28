@@ -111,8 +111,7 @@ bool Scene::load(const std::string & filename)
 					continue;
 				}
 				const std::string & type = behaviorJson["type"].GetString();
-				std::shared_ptr<Behavior> b;
-				BehaviorRegistry::addBehavior(b, obj, type);
+				std::shared_ptr<Behavior> b = BehaviorRegistry::addBehavior(obj, type);
 				if (b) {
 					b->deserialize(behaviorJson, env, m_animationManager);
 					if (behaviorJson.HasMember("enabled") && behaviorJson["enabled"].IsBool()) {

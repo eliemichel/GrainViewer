@@ -12,6 +12,7 @@
 in vec3 position_ws;
 in vec3 baseColor;
 in float radius;
+in float screenSpaceDiameter;
 
 layout (location = 0) out vec4 gbuffer_color1;
 layout (location = 1) out uvec4 gbuffer_color2;
@@ -53,9 +54,11 @@ layout (depth_greater) out float gl_FragDepth;
 
 void main() {
 #ifndef NO_DISCARD_IN_EPSILON_ZBUFFER
-    vec2 uv = gl_PointCoord * 2.0 - 1.0;
-    if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
-        discard;
+    if (screenSpaceDiameter > 1) {
+        vec2 uv = gl_PointCoord * 2.0 - 1.0;
+        if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
+            discard;
+        }
     }
 #endif // NO_DISCARD_IN_EPSILON_ZBUFFER
 
@@ -106,8 +109,10 @@ uniform sampler2D uDepthTexture;
 void main() {
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     float sqDistToCenter = dot(uv, uv);
-    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
-        discard;
+    if (screenSpaceDiameter > 1) {
+        if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
+            discard;
+        }
     }
 
     float weight;

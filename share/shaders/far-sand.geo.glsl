@@ -20,6 +20,7 @@ in VertexData {
 out vec3 position_ws;
 out vec3 baseColor;
 out float radius;
+out float screenSpaceDiameter;
 
 #include "include/uniform/camera.inc.glsl"
 #include "include/utils.inc.glsl"
@@ -129,7 +130,7 @@ void main() {
 	gl_Position = position_clipspace;
 	baseColor = computeBaseColor(position_ws);
 	radius = inData[0].radius;
-	float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
+	screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
 	//screenSpaceDiameter = SpriteSize(radius, gl_Position);
 	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(radius, position_cs);
 

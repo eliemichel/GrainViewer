@@ -9,6 +9,8 @@
 #include "ShaderPool.h"
 #include "GlBuffer.h"
 
+registerBehaviorType(LightGizmo)
+
 bool LightGizmo::deserialize(const rapidjson::Value& json)
 {
 	if (json.HasMember("shader")) {

@@ -8,6 +8,8 @@
 #include "ResourceManager.h"
 #include "AnimationManager.h"
 
+registerBehaviorType(TransformBehavior)
+
 bool TransformBehavior::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
 {
 	if (json.HasMember("postTransform") && json["postTransform"].IsArray()) {
