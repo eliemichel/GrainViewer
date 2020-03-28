@@ -25,3 +25,5 @@ private:
 	glm::mat4 m_transform;
 	glm::mat4 m_preTransform = glm::mat4(1);
 };
+
+registerBehaviorType(TransformBehavior)

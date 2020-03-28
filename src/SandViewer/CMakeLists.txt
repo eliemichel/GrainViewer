@@ -178,7 +178,6 @@ set(LIBS
 	libpng
 	tinygltf
 	nanoflann
-	refl-cpp
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)

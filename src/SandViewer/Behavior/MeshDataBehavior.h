@@ -53,3 +53,5 @@ private:
 	GLuint m_vao;
 };
 
+registerBehaviorType(MeshDataBehavior)
+

@@ -71,3 +71,5 @@ private:
 	GLuint m_physicsTreeHeadPointerImage;
 	GLuint m_physicsTreeNodeBuffer;
 };
+
+registerBehaviorType(ImpostorCloudRenderer)

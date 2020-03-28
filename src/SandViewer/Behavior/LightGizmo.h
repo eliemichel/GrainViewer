@@ -4,9 +4,9 @@
 
 #include "Behavior.h"
 #include "ShaderProgram.h"
-#include "GlBuffer.h"
 
 class ShaderProgram;
+class GlBuffer;
 
 class LightGizmo : public Behavior {
 public:
@@ -22,4 +22,6 @@ private:
 	std::unique_ptr<GlBuffer> m_vertexBuffer;
 	GLuint m_vao;
 };
+
+registerBehaviorType(LightGizmo)
 

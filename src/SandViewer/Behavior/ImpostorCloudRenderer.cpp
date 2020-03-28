@@ -10,8 +10,6 @@
 #include "ShaderPool.h"
 #include "bufferFillers.h"
 
-registerBehaviorType(ImpostorCloudRenderer)
-
 void ImpostorCloudRenderer::renderWithShader(const Camera & camera, const World & world, const ShaderProgram & shader) const
 {
 	glm::mat4 viewModelMatrix = camera.viewMatrix() * m_modelMatrix;

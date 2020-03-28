@@ -174,3 +174,5 @@ private:
 
 	float m_time;
 };
+
+registerBehaviorType(SandRenderer)

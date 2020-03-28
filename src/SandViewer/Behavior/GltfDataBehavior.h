@@ -47,3 +47,5 @@ private:
 	std::weak_ptr<TransformBehavior> m_transform;
 };
 
+registerBehaviorType(GltfDataBehavior)
+

@@ -37,3 +37,5 @@ private:
 	GLuint m_vao;
 };
 
+registerBehaviorType(PointCloudDataBehavior)
+
