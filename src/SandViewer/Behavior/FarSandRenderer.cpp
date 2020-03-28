@@ -7,6 +7,7 @@
 #include "utils/jsonutils.h"
 #include "utils/mathutils.h"
 #include "utils/strutils.h"
+#include "utils/behaviorutils.h"
 #include "FarSandRenderer.h"
 #include "TransformBehavior.h"
 #include "ShaderPool.h"
@@ -35,28 +36,7 @@ bool FarSandRenderer::deserialize(const rapidjson::Value & json)
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	jrOption(json, "colormap", m_colormapTextureName, m_colormapTextureName);
 
-#define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
-	jrProperty(radius);
-	jrProperty(epsilonFactor);
-	jrProperty(useShellCulling);
-	jrProperty(shellDepthFalloff);
-	jrProperty(disableBlend);
-	jrProperty(useEarlyDepthTest);
-	jrProperty(noDiscardInEpsilonZPass);
-	jrProperty(extraInitPass);
-#undef jrProperty
-
-	int debugShape = m_properties.debugShape;
-	jrOption(json, "debugShape", debugShape, debugShape);
-	m_properties.debugShape = static_cast<DebugShape>(debugShape);
-
-	int weightMode = m_properties.weightMode;
-	jrOption(json, "weightMode", weightMode, weightMode);
-	m_properties.weightMode = static_cast<WeightMode>(weightMode);
-
-	int shellCullingStrategy = m_properties.shellCullingStrategy;
-	jrOption(json, "shellCullingStrategy", shellCullingStrategy, shellCullingStrategy);
-	m_properties.shellCullingStrategy = static_cast<ShellCullingStrategy>(shellCullingStrategy);
+	autoDeserialize(json, m_properties);
 
 	if (json.HasMember("bbox")) {
 		if (json["bbox"].IsObject()) {
@@ -214,22 +194,11 @@ void FarSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & c
 	shader.setUniform("modelMatrix", modelMatrix());
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
-	shader.setUniform("uTime", m_time);
-	shader.setUniform("uRadius", m_properties.radius);
+	autoSetUniforms(shader, m_properties);
+
 	shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
-	shader.setUniform("uDebugShape", m_properties.debugShape);
-	shader.setUniform("uWeightMode", m_properties.weightMode);
-	shader.setUniform("uShellDepthFalloff", m_properties.shellDepthFalloff);
-	shader.setUniform("uUseShellCulling", m_properties.useShellCulling);
-	shader.setUniform("uShellCullingStrategy", m_properties.shellCullingStrategy);
-	shader.setUniform("uUseEarlyDepthTest", m_properties.useEarlyDepthTest);
-	shader.setUniform("uNoDiscardInEpsilonZPass", m_properties.noDiscardInEpsilonZPass);
-	shader.setUniform("uExtraInitPass", m_properties.extraInitPass);
-
-	shader.setUniform("uUseBbox", m_properties.useBbox);
-	shader.setUniform("uBboxMin", m_properties.bboxMin);
-	shader.setUniform("uBboxMax", m_properties.bboxMax);
-
+	shader.setUniform("uTime", m_time);
+	
 	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
 		shader.setUniform("uDepthRangeMin", 0.0f);
 		shader.setUniform("uDepthRangeMax", 1.0f - depthRangeBias(camera));

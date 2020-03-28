@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <refl.hpp>
 #include "Behavior.h"
 
 class TransformBehavior;
@@ -97,5 +98,22 @@ public:
 
 	float m_time;
 };
+
+REFL_TYPE(FarSandRenderer::Properties)
+REFL_FIELD(radius)
+REFL_FIELD(epsilonFactor)
+REFL_FIELD(useShellCulling)
+REFL_FIELD(debugShape)
+REFL_FIELD(weightMode)
+REFL_FIELD(shellCullingStrategy)
+REFL_FIELD(shellDepthFalloff)
+REFL_FIELD(disableBlend)
+REFL_FIELD(useEarlyDepthTest)
+REFL_FIELD(noDiscardInEpsilonZPass)
+REFL_FIELD(extraInitPass)
+REFL_FIELD(useBbox)
+REFL_FIELD(bboxMin)
+REFL_FIELD(bboxMax)
+REFL_END
 
 registerBehaviorType(FarSandRenderer)

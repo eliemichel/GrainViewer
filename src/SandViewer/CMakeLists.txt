@@ -94,6 +94,7 @@ set(All_SRC
 	utils/guiutils.cpp
 	utils/mathutils.h
 	utils/mathutils.cpp
+	utils/behaviorutils.h
 
 	Ui/Dialog.h
 	Ui/Widgets.h
@@ -178,6 +179,7 @@ set(LIBS
 	libpng
 	tinygltf
 	nanoflann
+	refl-cpp
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
