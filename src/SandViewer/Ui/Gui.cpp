@@ -240,7 +240,7 @@ void Gui::updateImGui() {
 		bool pressed;
 		for (auto & dg : m_dialogGroups) {
 			ImGui::PushID(dialogId);
-			dialogId += dg.dialogs.size();
+			dialogId += static_cast<int>(dg.dialogs.size());
 			pressed = ImGui::Selectable(dg.title.c_str(), &dg.enabled);
 			if (pressed && m_isControlPressed == 0) {
 				// Select exclusive
@@ -262,7 +262,7 @@ void Gui::updateImGui() {
 				ImGui::PopID();
 			}
 			else {
-				dialogId += dg.dialogs.size();
+				dialogId += static_cast<int>(dg.dialogs.size());
 			}
 		}
 		ImGui::End();
@@ -334,7 +334,8 @@ void Gui::onMouseButton(int button, int action, int mods) {
 }
 
 void Gui::onCursorPosition(double x, double y) {
-	m_imguiFocus = x >= m_windowWidth - m_panelWidth && m_showPanel && !m_isMouseMoveStarted;
+	double limit = static_cast<double>(m_windowWidth) - static_cast<double>(m_panelWidth);
+	m_imguiFocus = x >= limit && m_showPanel && !m_isMouseMoveStarted;
 
 	if (m_imguiFocus) {
 		return;

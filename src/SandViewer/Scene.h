@@ -64,6 +64,8 @@ private:
 		RecordExr,
 		RecordPng,
 	};
+	// Return the number of pixels in output images
+	size_t getOutputPixelCount(const Camera& camera) const;
 	void recordFrame(const Camera & camera, const std::string & filename, RecordFormat format) const;
 	// Record frame only if enabled in camera options
 	void recordFrame(const Camera & camera) const;

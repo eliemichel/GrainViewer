@@ -89,15 +89,7 @@ void Scene::update(float time) {
 			}
 		}
 
-		if (s.autoOutputResolution && viewportCamera()->targetFramebuffer()) {
-			m_pixels.resize(3 * viewportCamera()->targetFramebuffer()->width() * viewportCamera()->targetFramebuffer()->height());
-		}
-		else if (s.autoOutputResolution) {
-			m_pixels.resize(3 * m_width * m_height);
-		}
-		else if (m_outputFramebuffer) {
-			m_pixels.resize(3 * m_outputFramebuffer->width() * m_outputFramebuffer->height());
-		}
+		m_pixels.resize(3 * getOutputPixelCount(*viewportCamera()));
 	}
 
 	m_mustQuit = m_quitAfterFrame >= 0 && m_frameIndex > m_quitAfterFrame;
@@ -206,7 +198,14 @@ void Scene::takeScreenshot() const
 	std::time_t now = system_clock::to_time_t(system_clock::now());
 	std::ostringstream ss;
 	ss << "SandViewer_";
+#ifdef WIN32
+	tm t;
+	localtime_s(&t, &now);
+	ss << std::put_time(&t, "%Y-%m-%d_%H-%M-%S");
+#else // WIN32
 	ss << std::put_time(std::localtime(&now), "%Y-%m-%d_%H-%M-%S");
+#endif // WIN32
+
 	ss << ".exr";
 	recordFrame(*viewportCamera(), ss.str(), RecordExr);
 }
@@ -227,8 +226,8 @@ void Scene::measureStats()
 	}
 	size_t n = m_pixels.size() / 3;
 	size_t p = m_statsCountColors.size();
-	for (int i = 0; i < n; ++i) {
-		for (int k = 0; k < p; ++k) {
+	for (size_t i = 0; i < n; ++i) {
+		for (size_t k = 0; k < p; ++k) {
 			if (intColors[3 * k + 0] == m_pixels[3 * i + 0]
 				&& intColors[3 * k + 1] == m_pixels[3 * i + 1]
 				&& intColors[3 * k + 2] == m_pixels[3 * i + 2]) {
@@ -244,6 +243,25 @@ void Scene::measureStats()
 	m_outputStatsFile << "\n";
 }
 
+size_t Scene::getOutputPixelCount(const Camera& camera) const
+{
+	auto& outputSettings = camera.outputSettings();
+	size_t w = 0, h = 0;
+	if (outputSettings.autoOutputResolution && camera.targetFramebuffer()) {
+		w = static_cast<size_t>(camera.targetFramebuffer()->width());
+		h = static_cast<size_t>(camera.targetFramebuffer()->height());
+	}
+	else if (outputSettings.autoOutputResolution) {
+		w = static_cast<size_t>(m_width);
+		h = static_cast<size_t>(m_height);
+	}
+	else if (m_outputFramebuffer) {
+		w = static_cast<size_t>(m_outputFramebuffer->width());
+		h = static_cast<size_t>(m_outputFramebuffer->height());
+	}
+	return w * h;
+}
+
 void Scene::recordFrame(const Camera & camera, const std::string & filename, RecordFormat format) const
 {
 	auto& outputSettings = camera.outputSettings();
@@ -251,15 +269,7 @@ void Scene::recordFrame(const Camera & camera, const std::string & filename, Rec
 	switch (format) {
 	case RecordExr:
 	{
-		if (outputSettings.autoOutputResolution && camera.targetFramebuffer()) {
-			m_floatPixels.resize(3 * viewportCamera()->targetFramebuffer()->width() * viewportCamera()->targetFramebuffer()->height());
-		}
-		else if (outputSettings.autoOutputResolution) {
-			m_floatPixels.resize(3 * m_width * m_height);
-		}
-		else if (m_outputFramebuffer) {
-			m_floatPixels.resize(3 * m_outputFramebuffer->width() * m_outputFramebuffer->height());
-		}
+		m_floatPixels.resize(3 * getOutputPixelCount(camera));
 
 		const void* pixels = static_cast<const void*>(m_floatPixels.data());
 		GLsizei bufSize = static_cast<GLsizei>(m_floatPixels.size() * sizeof(GLfloat));

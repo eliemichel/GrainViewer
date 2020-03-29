@@ -41,7 +41,8 @@ using std::placeholders::_2;
 class GlBuffer {
 public:
 	inline GlBuffer(GLenum target)
-		: m_target(target)
+		: m_buffer(0 /* todo: replace with invalid id */)
+		, m_target(target)
 		, m_isAllocated(false)
 	{}
 	~GlBuffer();
@@ -132,17 +133,17 @@ private:
 
 private:
 	typedef struct {
-		GLint size;
-		GLenum type;
-		GLuint divisor;
-		GLsizei byteOffset;
+		GLint size = 0;
+		GLenum type = GL_ARRAY_BUFFER;
+		GLuint divisor = 1;
+		GLsizei byteOffset = 0;
 	} BlockAttribute;
 
 	typedef struct {
-		size_t nbElements;
-		GLsizei stride;
-		GLsizei endByteOffset;
-		std::vector<BlockAttribute> attributes;
+		size_t nbElements = 0;
+		GLsizei stride = 0;
+		GLsizei endByteOffset = 0;
+		std::vector<BlockAttribute> attributes = {};
 	} Block;
 
 private:

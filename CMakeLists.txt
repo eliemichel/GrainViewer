@@ -20,7 +20,7 @@
 # from, out of or in connection with the software or the use or other dealings
 # in the Software.
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.7)
 project(SandViewer)
 
 include(cmake/utils.cmake)
