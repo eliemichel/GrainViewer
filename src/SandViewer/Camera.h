@@ -98,7 +98,8 @@ public:
 
 	void updateMousePosition(float x, float y);
 
-	void deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations);
+	virtual void deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations);
+	virtual std::ostream & serialize(std::ostream & out);
 
 	/**
 	 * Get a framebuffer that has the same resolution as the camera, to be used

@@ -8,6 +8,9 @@ public:
 
 	void update(float time) override {}
 
+	void deserialize(const rapidjson::Value& json, const EnvironmentVariables& env, std::shared_ptr<AnimationManager> animations) override;
+	std::ostream& serialize(std::ostream& out) override;
+
 protected:
 	void updateDeltaMouseRotation(float x1, float y1, float x2, float y2) override;
 	void updateDeltaMouseZoom(float x1, float y1, float x2, float y2) override;

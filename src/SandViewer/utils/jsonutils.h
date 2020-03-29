@@ -10,6 +10,7 @@
 #include <vector>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
@@ -43,6 +44,11 @@ template<> inline bool _read(std::string & target, const rapidjson::Value& json)
 template<> inline bool _read(glm::vec3 & target, const rapidjson::Value& json) {
 	if (!json.IsArray() || json.Size() != 3) return false;
 	for (int k = 0 ; k < 3 ; ++k) target[k] = json[k].GetFloat();
+	return true;
+}
+template<> inline bool _read(glm::quat & target, const rapidjson::Value& json) {
+	if (!json.IsArray() || json.Size() != 4) return false;
+	for (int k = 0; k < 4; ++k) target[k] = json[k].GetFloat();
 	return true;
 }
 

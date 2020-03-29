@@ -174,6 +174,34 @@ void Camera::updateProjectionMatrix()
 	}
 }
 
+glm::vec3 Camera::projectSphere(glm::vec3 center, float radius) const
+{
+	// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
+	glm::vec3 o = (viewMatrix() * glm::vec4(center, 1.0f));
+
+	glm::mat2 R = glm::mat2(o.x, o.y, -o.y, o.x);
+
+	float r2 = radius * radius;
+	float fl = focalLength();
+	float ox2 = o.x * o.x;
+	float oy2 = o.y * o.y;
+	float oz2 = o.z * o.z;
+	float fp = fl * fl * r2 * (ox2 + oy2 + oz2 - r2) / (oz2 - r2);
+	float outerRadius = sqrt(abs(fp / (r2 - oz2)));
+
+	glm::vec2 circleCenter = glm::vec2(o.x, o.y) * o.z * fl / (oz2 - r2);
+
+	float pixelRadius = outerRadius * m_uniforms.resolution.y;
+	glm::vec2 pixelCenter = circleCenter * m_uniforms.resolution.y * glm::vec2(-1.0f, 1.0f) + m_uniforms.resolution * 0.5f;
+
+	return glm::vec3(pixelCenter, pixelRadius);
+}
+
+float Camera::linearDepth(float zbufferDepth) const
+{
+	return (2.0f * m_uniforms.uNear * m_uniforms.uFar) / (m_uniforms.uFar + m_uniforms.uNear - (zbufferDepth * 2.0f - 1.0f) * (m_uniforms.uFar - m_uniforms.uNear));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Serialization
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,7 +219,6 @@ namespace fs = std::filesystem;
 
 void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariables & env, std::shared_ptr<AnimationManager> animations)
 {
-
 	if (json.HasMember("resolution")) {
 		auto& resolutionJson = json["resolution"];
 		if (resolutionJson.IsString()) {
@@ -405,6 +432,12 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 	}
 }
 
+std::ostream& Camera::serialize(std::ostream& out)
+{
+	out << "Camera {}";
+	return out;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Framebuffer pool
 ///////////////////////////////////////////////////////////////////////////////
@@ -418,32 +451,4 @@ std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(bool depthOnly) const
 void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
 {
 	// TODO
-}
-
-glm::vec3 Camera::projectSphere(glm::vec3 center, float radius) const
-{
-	// http://www.iquilezles.org/www/articles/sphereproj/sphereproj.htm
-	glm::vec3 o = (viewMatrix() * glm::vec4(center, 1.0f));
-
-	glm::mat2 R = glm::mat2(o.x, o.y, -o.y, o.x);
-
-	float r2 = radius * radius;
-	float fl = focalLength();
-	float ox2 = o.x * o.x;
-	float oy2 = o.y * o.y;
-	float oz2 = o.z * o.z;
-	float fp = fl * fl * r2 * (ox2 + oy2 + oz2 - r2) / (oz2 - r2);
-	float outerRadius = sqrt(abs(fp / (r2 - oz2)));
-
-	glm::vec2 circleCenter = glm::vec2(o.x, o.y) * o.z * fl / (oz2 - r2);
-
-	float pixelRadius = outerRadius * m_uniforms.resolution.y;
-	glm::vec2 pixelCenter = circleCenter * m_uniforms.resolution.y * glm::vec2(-1.0f, 1.0f) + m_uniforms.resolution * 0.5f;
-
-	return glm::vec3(pixelCenter, pixelRadius);
-}
-
-float Camera::linearDepth(float zbufferDepth) const
-{
-	return (2.0f * m_uniforms.uNear * m_uniforms.uFar) / (m_uniforms.uFar + m_uniforms.uNear - (zbufferDepth * 2.0f - 1.0f) * (m_uniforms.uFar - m_uniforms.uNear));
 }

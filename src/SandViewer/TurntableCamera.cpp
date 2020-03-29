@@ -3,6 +3,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/matrix_access.hpp>
 
+#include "utils/jsonutils.h"
 #include "TurntableCamera.h"
 
 using glm::vec3;
@@ -73,4 +74,40 @@ void TurntableCamera::tilt(float theta) {
 	m_quat *= quat(static_cast<float>(cos(theta / 2.f)), static_cast<float>(sin(theta / 2.f)) * zAxis);
 	updateViewMatrix();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Serialization
+///////////////////////////////////////////////////////////////////////////////
+
+void TurntableCamera::deserialize(const rapidjson::Value& json, const EnvironmentVariables& env, std::shared_ptr<AnimationManager> animations)
+{
+	Camera::deserialize(json, env, animations);
+
+	if (json.HasMember("turntable") && json["turntable"].IsObject()) {
+		auto& turntableJson = json["turntable"];
+
+		jrOption(turntableJson, "center", m_center, m_center);
+		jrOption(turntableJson, "quat", m_quat, m_quat);
+		jrOption(turntableJson, "zoom", m_zoom, m_zoom);
+		jrOption(turntableJson, "sensitivity", m_sensitivity, m_sensitivity);
+		jrOption(turntableJson, "zoomSensitivity", m_zoomSensitivity, m_zoomSensitivity);
+
+		updateViewMatrix();
+	}
+}
+
+std::ostream& TurntableCamera::serialize(std::ostream& out)
+{
+	out
+		<< "\"turntable\": {\n"
+		<< "  \"center\": [" << m_center[0] << ", " << m_center[1] << ", " << m_center[2] << "],\n"
+		<< "  \"quat\": [" << m_quat[0] << ", " << m_quat[1] << ", " << m_quat[2] << ", " << m_quat[3] << "],\n"
+		<< "  \"zoom\": " << m_zoom << ",\n"
+		<< "  \"sensitivity\": " << m_sensitivity << ",\n"
+		<< "  \"zoomSensitivity\": " << m_zoomSensitivity << "\n"
+		<< "}"
+		;
+	return out;
+}
+
 

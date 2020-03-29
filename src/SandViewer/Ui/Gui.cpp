@@ -427,6 +427,10 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 						<< "," << m[1][0] << "," << m[1][1] << "," << m[1][2] << "," << m[1][3]
 						<< "," << m[2][0] << "," << m[2][1] << "," << m[2][2] << "," << m[2][3]
 						<< "," << m[3][0] << "," << m[3][1] << "," << m[3][2] << "," << m[3][3] << "]";
+
+					std::ostringstream ss;
+					m_scene->viewportCamera()->serialize(ss);
+					DEBUG_LOG << ss.str();
 				}
 			}
 			break;
