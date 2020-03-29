@@ -50,7 +50,7 @@ GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint 
 // private classes for serialization only
 class MaterialModel {
 public:
-	bool readJson(const rapidjson::Value & json) { JREADp(baseColor); JREADp(metallic); JREADp(roughness); JREADp(baseColorMap); JREADp(normalMap); JREADp(metallicRoughnessMap); return true; }
+	bool deserialize(const rapidjson::Value & json) { JREADp(baseColor); JREADp(metallic); JREADp(roughness); JREADp(baseColorMap); JREADp(normalMap); JREADp(metallicRoughnessMap); return true; }
 
 	glm::vec3 baseColor;
 	float metallic;

@@ -17,8 +17,6 @@
 #include "AnimationManager.h"
 #include "EnvironmentVariables.h"
 
-#define MAKE_STR(contents) (std::ostringstream() << contents).str()
-
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,8 +24,7 @@
 // private classes for serialization only
 class SandRendererModel {
 public:
-	bool readJson(const rapidjson::Value & json) { JREAD(baseColor); JREAD(normalAlpha); JREAD(metallicRoughness); return true; }
-	void writeJson(JsonWriter & writer) const { writer.StartObject(); JWRITE(baseColor); JWRITE(normalAlpha); JWRITE(metallicRoughness); writer.EndObject(); }
+	bool deserialize(const rapidjson::Value & json) { JREAD(baseColor); JREAD(normalAlpha); JREAD(metallicRoughness); return true; }
 
 	const std::string & baseColor() const { return m_baseColor; }
 	const std::string & normalAlpha() const { return m_normalAlpha; }

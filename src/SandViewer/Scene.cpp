@@ -174,6 +174,7 @@ void Scene::clear()
 	m_objects.clear();
 	m_cameras.clear();
 	m_world->clear();
+	m_deferredShader = std::make_shared<GlDeferredShader>();
 	m_animationManager->clear();
 	m_frameIndex = -1;
 }

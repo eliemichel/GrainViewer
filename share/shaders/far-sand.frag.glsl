@@ -7,18 +7,14 @@
 #pragma variant STAGE_EXTRA_INIT
 #pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
 
-#include "include/uniform/camera.inc.glsl"
+in FragmentData {
+    vec3 position_ws;
+    vec3 baseColor;
+    float radius;
+} inData;
 
-in vec3 position_ws;
-in vec3 baseColor;
-in float radius;
-
-layout (location = 0) out vec4 gbuffer_color1;
-layout (location = 1) out uvec4 gbuffer_color2;
-layout (location = 2) out uvec4 gbuffer_color3;
-
-#include "include/gbuffer.inc.glsl"
-#include "include/zbuffer.inc.glsl"
+#define OUT_GBUFFER
+#include "include/gbuffer2.inc.glsl"
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeLitSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -40,6 +36,10 @@ uniform int uShellCullingStrategy;
 
 uniform float uEpsilon = 0.5;
 uniform bool uShellDepthFalloff = false;
+
+#include "include/uniform/camera.inc.glsl"
+
+#include "include/zbuffer.inc.glsl"
 
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef STAGE_EPSILON_ZBUFFER
@@ -69,7 +69,7 @@ void main() {
 
 #ifndef NO_COLOR_OUTPUT
     // Init for accumulation
-    gbuffer_color1 = vec4(0.0);
+    gbuffer_color0 = vec4(0.0);
 #endif // NO_COLOR_OUTPUT
 }
 
@@ -83,7 +83,7 @@ void main() {
     }
 
     // Init for accumulation
-    gbuffer_color1 = vec4(0.0);
+    gbuffer_color0 = vec4(0.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,9 +141,9 @@ void main() {
         Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
         Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
         vec3 sphereHitPosition_ws;
-        bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, position_ws.xyz, radius);
+        bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, inData.position_ws.xyz, inData.radius);
         if (intersectSphere) {
-            n = normalize(sphereHitPosition_ws - position_ws);
+            n = normalize(sphereHitPosition_ws - inData.position_ws);
         } else {
             //discard;
             n = -ray_ws.direction;
@@ -153,9 +153,9 @@ void main() {
     }
 
     GFragment fragment;
-    fragment.baseColor = baseColor.rgb;
+    fragment.baseColor = inData.baseColor.rgb;
     fragment.normal = n;
-    fragment.ws_coord = position_ws;
+    fragment.ws_coord = inData.position_ws;
     fragment.material_id = accumulatedPbrMaterial;
     fragment.roughness = roughness;
     fragment.metallic = metallic;
@@ -170,7 +170,7 @@ void main() {
         if (uDebugShape == cDebugShapeLitSphere) {
             // Ad-hoc lighting, just to test
             vec3 camPos_ws = vec3(inverseViewMatrix[3]);
-            vec3 toCam = normalize(camPos_ws - position_ws);
+            vec3 toCam = normalize(camPos_ws - inData.position_ws);
 
             SurfaceAttributes surface;
             surface.baseColor = fragment.baseColor;
@@ -178,9 +178,8 @@ void main() {
             surface.roughness = fragment.roughness;
             surface.reflectance = 0.7;
 
-
             for (int k = 0 ; k < 1 ; ++k) {
-                vec3 toLight = normalize(vec3(5.0, 5.0, 5.0) - position_ws);
+                vec3 toLight = normalize(vec3(5.0, 5.0, 5.0) - inData.position_ws);
                 vec3 f = vec3(0.0);
                 f = brdf(toCam, n, toLight, surface);
                 beauty.rgb += f * vec3(3.0);
@@ -188,7 +187,7 @@ void main() {
         } else if (uDebugShape == cDebugShapeNormalSphere) {
             beauty.rgb = normalize(n) * 0.5 + 0.5;
         } else {
-            beauty = baseColor;
+            beauty = inData.baseColor;
         }
 
         if (uShellDepthFalloff) {
@@ -204,7 +203,7 @@ void main() {
         fragment.ws_coord = beauty * weight;
     }
 
-    packGFragment(fragment, gbuffer_color1, gbuffer_color2, gbuffer_color3);
+    autoPackGFragment(fragment);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

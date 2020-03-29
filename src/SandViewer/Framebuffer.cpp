@@ -7,11 +7,41 @@
 #include <cmath>
 #include <algorithm>
 
+#include <rapidjson/document.h>
+
 #include "Framebuffer.h"
 #include "Logger.h"
 
 using namespace std;
 
+bool ColorLayerInfo::deserialize(const rapidjson::Value& json)
+{
+	if (json.IsInt()) {
+		format = json.GetInt();
+	}
+	else if (json.IsString()) {
+		std::string formatName = json.GetString();
+		if (formatName == "GL_RGBA32F") {
+			format = GL_RGBA32F;
+		}
+		else if (formatName == "GL_RGBA16F") {
+			format = GL_RGBA16F;
+		}
+		else if (formatName == "GL_RGBA32UI") {
+			format = GL_RGBA32UI;
+		}
+		else if (formatName == "GL_RGBA16UI") {
+			format = GL_RGBA16UI;
+		}
+		else {
+			ERR_LOG << "Unsupported color attachment format: " << formatName;
+			return false;
+		}
+	}
+
+	attachement = GL_COLOR_ATTACHMENT0;
+	return true;
+}
 
 Framebuffer::Framebuffer(size_t width, size_t height, const vector<ColorLayerInfo> & colorLayerInfos, bool mipmapDepthBuffer)
 	: m_width(static_cast<GLsizei>(width))

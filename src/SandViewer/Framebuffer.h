@@ -8,22 +8,22 @@
 
 #include "Shader.h"
 
-// TODO: take as parameter
-constexpr GLsizei MAX_DISPLAY_WIDTH = 2560;
-constexpr GLsizei MAX_DISPLAY_HEIGHT = 1600;
+#include <rapidjson/document.h>
 
-typedef struct {
+struct ColorLayerInfo {
 	GLenum format;  // GL_RGBA32F, GL_RGBA32UI...
 	GLenum attachement; // GL_COLOR_ATTACHMENT0, ...
-} ColorLayerInfo;
+
+	bool deserialize(const rapidjson::Value& json);
+};
 
 class Framebuffer {
 public:
 	/**
 	 * @param mipmapDepthBuffer Turn it on when implementing Hierarchical Z Buffer
 	 */
-	Framebuffer(size_t width = MAX_DISPLAY_WIDTH,
-		        size_t height = MAX_DISPLAY_HEIGHT,
+	Framebuffer(size_t width,
+		        size_t height,
 		        const std::vector<ColorLayerInfo> & colorLayerInfos = {},
 		        bool mipmapDepthBuffer = false);
 	~Framebuffer();

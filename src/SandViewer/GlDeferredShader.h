@@ -10,6 +10,7 @@
 #include <memory>
 
 #include <rapidjson/document.h>
+#include <refl.hpp>
 
 #include "ShaderProgram.h"
 #include "Framebuffer.h"
@@ -45,7 +46,7 @@ public:
 
 	void addShaderDefine(const std::string & def) { m_shader.define(def); }
 
-	void bindFramebuffer() const { m_framebuffer.bind(); };
+	void bindFramebuffer() const { m_framebuffer->bind(); };
 
 	bool deserialize(const rapidjson::Value & json);
 	void reloadShaders();
@@ -63,11 +64,29 @@ public:
 	const GlTexture & colormap() const { return *m_colormap; }
 
 private:
+	// Lazy init: it's const but mutates m_framebuffer anyway
+	void lazyInitFramebuffer() const;
+
+private:
 	ShaderProgram m_shader;
-	Framebuffer m_framebuffer;
+	mutable std::unique_ptr<Framebuffer> m_framebuffer; // mutable because lazily initialized
 	GLuint m_vao;
 	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
 
+	int m_width = 1920;
+	int m_height = 1080;
 	Properties m_properties;
+
+	std::vector<ColorLayerInfo> m_attachments = {
+		{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
+		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT1 },
+		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT2 },
+	};
 };
 
+REFL_TYPE(GlDeferredShader::Properties)
+REFL_FIELD(shadingMode)
+REFL_FIELD(transparentFilm)
+REFL_FIELD(showSampleCount)
+REFL_FIELD(maxSampleCount)
+REFL_END

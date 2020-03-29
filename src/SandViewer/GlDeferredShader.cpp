@@ -13,20 +13,22 @@
 #include "ShadowMap.h"
 #include "ResourceManager.h"
 #include "GlTexture.h"
+#include "utils/strutils.h"
 #include "utils/jsonutils.h"
+#include "utils/behaviorutils.h"
 #include "Framebuffer.h"
 
 using namespace std;
 
 GlDeferredShader::GlDeferredShader()
 	: m_shader("deferred-shader")
-	, m_framebuffer(MAX_DISPLAY_WIDTH, MAX_DISPLAY_HEIGHT, {
-		{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
-		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT1 },
-		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT2 },
-	})
 {
 	glCreateVertexArrays(1, &m_vao);
+}
+
+void GlDeferredShader::lazyInitFramebuffer() const
+{
+	m_framebuffer = std::make_unique<Framebuffer>(m_width, m_height, m_attachments);
 }
 
 GlDeferredShader::~GlDeferredShader()
@@ -38,37 +40,27 @@ bool GlDeferredShader::deserialize(const rapidjson::Value & json)
 {
 	if (!json.IsObject()) return false;
 
-	if (json.HasMember("defines")) {
-		auto& defines = json["defines"];
-		if (!defines.IsArray()) {
-			ERR_LOG << "'defines' must be an array";
-		}
-		else {
-			for (rapidjson::SizeType i = 0; i < defines.Size(); i++) {
-				addShaderDefine(defines[i].GetString());
-			}
+	std::vector<std::string> defines;
+	if (jrOption(json, "defines", defines)) {
+		for (const auto& def : defines) {
+			addShaderDefine(def);
 		}
 	}
 
-	if (json.HasMember("colormap")) {
-		auto& colormap = json["colormap"];
-		if (!colormap.IsString()) {
-			ERR_LOG << "'colormap' must be a file path";
-		} else {
-			m_colormap = ResourceManager::loadTexture(colormap.GetString());
-			m_colormap->setWrapMode(GL_CLAMP_TO_EDGE);
-		}
+	std::string colormapFilename;
+	if (jrOption(json, "colormap", colormapFilename)) {
+		m_colormap = ResourceManager::loadTexture(colormapFilename);
+		m_colormap->setWrapMode(GL_CLAMP_TO_EDGE);
 	}
 
-#define jrProperty(prop) jrOption(json, #prop, m_properties.prop, m_properties.prop)
-	jrProperty(transparentFilm);
-	jrProperty(showSampleCount);
-	jrProperty(maxSampleCount);
-#undef jrProperty
+	autoDeserialize(json, m_properties);
 
-	int shadingMode = m_properties.shadingMode;
-	jrOption(json, "shadingMode", shadingMode, shadingMode);
-	m_properties.shadingMode = static_cast<ShadingMode>(shadingMode);
+	jrOption(json, "attachments", m_attachments, m_attachments);
+	GLenum i = 0;
+	for (auto & att : m_attachments) {
+		att.attachement = GL_COLOR_ATTACHMENT0 + i;
+		++i;
+	}
 
 	return true;
 }
@@ -86,6 +78,8 @@ void GlDeferredShader::update(float time)
 
 void GlDeferredShader::render(const Camera & camera, const World & world, RenderType target) const
 {
+	if (!m_framebuffer) lazyInitFramebuffer();
+
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDepthMask(GL_TRUE);
@@ -95,50 +89,41 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.use();
 	m_shader.bindUniformBlock("Camera", camera.ubo());
 
-	size_t o = 0;
-	glBindTextureUnit(0, m_framebuffer.colorTexture(0));
-	glBindTextureUnit(1, m_framebuffer.colorTexture(1));
-	glBindTextureUnit(2, m_framebuffer.colorTexture(2));
-	glBindTextureUnit(3, m_framebuffer.depthTexture());
-	o += 4;
+	GLint o = 0;
+	for (int i = 0; i < m_framebuffer->colorTextureCount(); ++i) {
+		m_shader.setUniform(MAKE_STR("gbuffer" << i), o);
+		glBindTextureUnit(static_cast<GLuint>(o), m_framebuffer->colorTexture(i));
+		++o;
+	}
+
+	m_shader.setUniform("in_depth", o);
+	glBindTextureUnit(static_cast<GLuint>(o), m_framebuffer->depthTexture());
+	++o;
 
 	// TODO: Use UBO, move to World
 	auto lights = world.lights();
 	for (size_t k = 0; k < lights.size(); ++k) {
-		ostringstream oss1;
-		oss1 << "light[" << k << "].position_ws";
-		m_shader.setUniform(oss1.str(), lights[k]->position());
-		ostringstream oss2;
-		oss2 << "light[" << k << "].color";
-		m_shader.setUniform(oss2.str(), lights[k]->color());
-		ostringstream oss3;
-		oss3 << "light[" << k << "].matrix";
-		m_shader.setUniform(oss3.str(), lights[k]->shadowMap().camera().projectionMatrix() * lights[k]->shadowMap().camera().viewMatrix());
-		ostringstream oss4;
-		oss4 << "light[" << k << "].isRich";
-		m_shader.setUniform(oss4.str(), lights[k]->isRich() ? 1 : 0);
-		ostringstream oss45;
-		oss45 << "light[" << k << "].hasShadowMap";
-		m_shader.setUniform(oss45.str(), lights[k]->hasShadowMap() ? 1 : 0);
-		ostringstream oss5;
-		oss5 << "light[" << k << "].shadowMap";
-		m_shader.setUniform(oss5.str(), static_cast<GLint>(o));
+		std::string prefix = MAKE_STR("light[" << k << "].");
+		m_shader.setUniform(prefix + "position_ws", lights[k]->position());
+		m_shader.setUniform(prefix + "color", lights[k]->color());
+		m_shader.setUniform(prefix + "matrix", lights[k]->shadowMap().camera().projectionMatrix() * lights[k]->shadowMap().camera().viewMatrix());
+		m_shader.setUniform(prefix + "isRich", lights[k]->isRich() ? 1 : 0);
+		m_shader.setUniform(prefix + "hasShadowMap", lights[k]->hasShadowMap() ? 1 : 0);
+		m_shader.setUniform(prefix + "shadowMap", o);
 		glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().depthTexture());
 		++o;
 		if (lights[k]->isRich()) {
 			ostringstream oss6;
 			oss6 << "light[" << k << "].richShadowMap";
-			m_shader.setUniform(oss6.str(), static_cast<GLint>(o));
+			m_shader.setUniform(oss6.str(), o);
 			glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().colorTexture(0));
 			++o;
 		}
 	}
 
 	m_shader.setUniform("uIsShadowMapEnabled", world.isShadowMapEnabled());
-	m_shader.setUniform("uShadingMode", m_properties.shadingMode);
-	m_shader.setUniform("uTransparentFilm", m_properties.transparentFilm);
-	m_shader.setUniform("uShowSampleCount", m_properties.showSampleCount);
-	m_shader.setUniform("uMaxSampleCount", m_properties.maxSampleCount);
+
+	autoSetUniforms(m_shader, m_properties);
 
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
 	if (m_colormap) {
@@ -154,5 +139,11 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 
 void GlDeferredShader::setResolution(int width, int height)
 {
-	m_framebuffer.setResolution(width, height);
+	m_width = width;
+	m_height = height;
+	if (!m_framebuffer) {
+		lazyInitFramebuffer();
+	} else {
+		m_framebuffer->setResolution(width, height);
+	}
 }

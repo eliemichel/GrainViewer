@@ -17,9 +17,11 @@ in VertexData {
 	uint vertexId;
 } inData[];
 
-out vec3 position_ws;
-out vec3 baseColor;
-out float radius;
+out FragmentData {
+	vec3 position_ws;
+	vec3 baseColor;
+	float radius;
+} outData;
 
 #include "include/uniform/camera.inc.glsl"
 #include "include/utils.inc.glsl"
@@ -110,8 +112,8 @@ void main() {
 		return;
 	}
 
-	position_ws = inData[0].position_ws;	
-	vec4 position_cs = viewMatrix * vec4(position_ws, 1.0);
+	outData.position_ws = inData[0].position_ws;	
+	vec4 position_cs = viewMatrix * vec4(outData.position_ws, 1.0);
 
 	vec4 offset = vec4(0.0);
 #ifdef STAGE_EPSILON_ZBUFFER
@@ -127,11 +129,11 @@ void main() {
 	}
 
 	gl_Position = position_clipspace;
-	baseColor = computeBaseColor(position_ws);
-	radius = inData[0].radius;
-	float screenSpaceDiameter = SpriteSize_Botsch03(radius, position_cs);
-	//screenSpaceDiameter = SpriteSize(radius, gl_Position);
-	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(radius, position_cs);
+	outData.baseColor = computeBaseColor(outData.position_ws);
+	outData.radius = inData[0].radius;
+	float screenSpaceDiameter = SpriteSize_Botsch03(outData.radius, position_cs);
+	//screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);
+	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(outData.radius, position_cs);
 
 #if defined(STAGE_EPSILON_ZBUFFER) && defined(NO_DISCARD_IN_EPSILON_ZBUFFER)
 	// During Epsilon ZBuffer pass, we must not use discard in fragment shader

@@ -15,11 +15,11 @@ in vec2 uv_coords;
 
 layout (location = 0) out vec4 out_color;
 
-layout (binding = 0) uniform sampler2D gbuffer1;
-layout (binding = 1) uniform usampler2D gbuffer2;
-layout (binding = 2) uniform usampler2D gbuffer3;
-layout (binding = 3) uniform sampler2D in_depth;
-layout (binding = 4) uniform samplerCubeArray filteredCubemaps;
+#define IN_GBUFFER
+#include "include/gbuffer2.inc.glsl"
+
+layout (binding = 7) uniform sampler2D in_depth;
+layout (binding = 8) uniform samplerCubeArray filteredCubemaps;
 
 uniform sampler2D iblBsdfLut;
 uniform sampler3D iridescenceLut;
@@ -43,7 +43,6 @@ uniform int uShadingMode = 0; // 0: BEAUTY, 1: NORMAL, 2: BASE_COLOR
 uniform float uMaxSampleCount = 40;
 uniform bool uShowSampleCount = false;
 
-#include "include/gbuffer.inc.glsl"
 
 #ifdef OLD_BRDF
 #include "include/bsdf-old.inc.glsl"
@@ -95,7 +94,7 @@ void pbrShading(const in GFragment fragment, out OutputFragment out_fragment)
 
 void main() {
 	GFragment fragment;
-	unpackGFragment(gbuffer1, gbuffer2, gbuffer3, ivec2(gl_FragCoord.xy), fragment);
+	autoUnpackGFragment(ivec2(gl_FragCoord.xy), fragment);
 
 	OutputFragment out_fragment;
 	switch (fragment.material_id) {
@@ -201,14 +200,14 @@ void main() {
 		break;
 	}
 	case 7: // RAW_GBUFFER1
-		out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
+		out_fragment.radiance.rgb = texelFetch(gbuffer0, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}
 		out_fragment.radiance.a = 1.0;
 		break;
 	case 8: // RAW_GBUFFER2
-		out_fragment.radiance.rgb = texelFetch(gbuffer2, ivec2(gl_FragCoord.xy), 0).rgb;
+		out_fragment.radiance.rgb = texelFetch(gbuffer1, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}
@@ -216,7 +215,7 @@ void main() {
 		//out_fragment.radiance.rgb = 0.5 + 0.5 * cos(2.*3.1416 * (clamp(1.-out_fragment.radiance.r, 0.0, 1.0) * .5 + vec3(.0,.33,.67)));
 		break;
 	case 9: // RAW_GBUFFER3
-		out_fragment.radiance.rgb = texelFetch(gbuffer3, ivec2(gl_FragCoord.xy), 0).rgb;
+		out_fragment.radiance.rgb = texelFetch(gbuffer2, ivec2(gl_FragCoord.xy), 0).rgb;
 		if (uHasColormap) {
 			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(out_fragment.radiance.r, 0.0, 1.0), 0.5), 0).rgb;
 		}

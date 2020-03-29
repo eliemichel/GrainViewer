@@ -25,7 +25,18 @@ typedef rapidjson::Writer<rapidjson::OStreamWrapper> JsonWriter;
 bool jrString(const rapidjson::Value& json, const std::string & key, std::string & target, const std::string & parentName);
 
 template<typename T> inline bool _read(T & target, const rapidjson::Value& json) {
-	return json.IsObject() && target.readJson(json);
+	return /*json.IsObject() &&*/ target.deserialize(json);
+}
+template<typename T> inline bool _read(std::vector<T>& target, const rapidjson::Value& json) {
+	if (!json.IsArray()) return false;
+	target.resize(json.Size());
+	for (int k = 0; k < static_cast<int>(json.Size()); ++k) {
+		if (!_read(target[k], json[k])) {
+			target.resize(0);
+			return false;
+		}
+	}
+	return true;
 }
 template<> inline bool _read(float & target, const rapidjson::Value& json) {
 	return json.IsNumber() && ((target = json.GetFloat()) || true);

@@ -140,8 +140,7 @@ void ImpostorCloudRenderer::updateShader(ShaderProgram & shader, float time) {
 // private classes for serialization only
 class MultiViewImpostorCloudModel {
 public:
-	bool readJson(const rapidjson::Value & json) { JREAD(albedo); JREAD(normal); JREAD(depth); return true; }
-	void writeJson(JsonWriter & writer) const { writer.StartObject(); JWRITE(albedo); JWRITE(normal); JWRITE(depth); writer.EndObject(); }
+	bool deserialize(const rapidjson::Value & json) { JREAD(albedo); JREAD(normal); JREAD(depth); return true; }
 
 	const std::string & albedo() const { return m_albedo; }
 	const std::string & normal() const { return m_normal; }
