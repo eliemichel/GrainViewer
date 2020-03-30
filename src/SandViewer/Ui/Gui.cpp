@@ -34,6 +34,7 @@ using namespace std;
 #include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
 #include "FarSandRendererDialog.h"
+#include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleType(T) \
@@ -45,6 +46,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	handleType(SandRenderer);
 	handleType(LightGizmo);
 	handleType(FarSandRenderer);
+	handleType(UberSandRenderer);
 	handleType(TransformBehavior);
 	return nullptr;
 #undef handleType

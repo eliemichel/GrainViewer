@@ -82,6 +82,8 @@ set(All_SRC
 	Behavior/LightGizmo.cpp
 	Behavior/FarSandRenderer.h
 	Behavior/FarSandRenderer.cpp
+	Behavior/UberSandRenderer.h
+	Behavior/UberSandRenderer.cpp
 	Behavior/PointCloudDataBehavior.h
 	Behavior/PointCloudDataBehavior.cpp
 
@@ -95,7 +97,9 @@ set(All_SRC
 	utils/mathutils.h
 	utils/mathutils.cpp
 	utils/behaviorutils.h
+	utils/behaviorutils.cpp
 	utils/ScopedFramebufferOverride.h
+	utils/ReflectionAttributes.h
 
 	Ui/Dialog.h
 	Ui/Widgets.h
@@ -110,6 +114,8 @@ set(All_SRC
 	Ui/SandRendererDialog.cpp
 	Ui/FarSandRendererDialog.h
 	Ui/FarSandRendererDialog.cpp
+	Ui/UberSandRendererDialog.h
+	Ui/UberSandRendererDialog.cpp
 	Ui/SceneDialog.h
 	Ui/SceneDialog.cpp
 	Ui/LightGizmoDialog.h

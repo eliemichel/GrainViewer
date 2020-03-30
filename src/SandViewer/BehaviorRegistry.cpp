@@ -11,6 +11,7 @@
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
 #include "Behavior/FarSandRenderer.h"
+#include "Behavior/UberSandRenderer.h"
 #include "Behavior/GltfDataBehavior.h"
 
 void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
@@ -25,6 +26,7 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
 	handleType(FarSandRenderer);
+	handleType(UberSandRenderer);
 	handleType(GltfDataBehavior);
 #undef handleType
 }

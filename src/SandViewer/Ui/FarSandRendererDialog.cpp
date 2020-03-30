@@ -67,8 +67,8 @@ void FarSandRendererDialog::draw()
 			ImGui::Checkbox("Use Bbox Culling", &props.useBbox);
 			BeginDisable(!props.useBbox);
 			{
-				ImGui::SliderFloat3("Minimum", glm::value_ptr(props.bboxMin), 0.001f, 1.0f, "%.5f");
-				ImGui::SliderFloat3("Maximum", glm::value_ptr(props.bboxMax), 0.001f, 1.0f, "%.5f");
+				ImGui::SliderFloat3("Minimum", glm::value_ptr(props.bboxMin), -1.0f, 1.0f, "%.5f");
+				ImGui::SliderFloat3("Maximum", glm::value_ptr(props.bboxMax), -1.0f, 1.0f, "%.5f");
 			}
 			EndDisable(!props.useBbox);
 
