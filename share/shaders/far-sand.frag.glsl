@@ -28,6 +28,9 @@ uniform int uShellCullingStrategy;
 uniform float uEpsilon = 0.5;
 uniform bool uShellDepthFalloff = false;
 
+uniform bool uCheckboardSprites;
+uniform bool uShowSampleCount;
+
 #include "include/uniform/camera.inc.glsl"
 
 #include "include/zbuffer.inc.glsl"
@@ -91,14 +94,19 @@ void main() {
 
     GFragment fragment;
     initGFragment(fragment);
+
     fragment.baseColor = in_color.rgb * weightNormalization;
     fragment.material_id = pbrMaterial;
-    //fragment.material_id = forwardBaseColorMaterial;
     fragment.normal = in_normal.xyz * weightNormalization;
 
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
     vec3 cs_coord = linearizeDepth(d) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
+
+    if (uShowSampleCount) {
+        fragment.material_id = colormapDebugMaterial;
+        fragment.baseColor = vec3(in_color.a);
+    }
 
     autoPackGFragment(fragment);
 }
@@ -165,35 +173,44 @@ in FragmentData {
     vec3 position_ws;
     vec3 baseColor;
     float radius;
+    float screenSpaceDiameter;
 } inData;
 
 uniform float height = 0.0;
 uniform float metallic = 0.0;
-uniform float roughness = 0.4;
+uniform float roughness = 1.4;
 uniform float occlusion = 1.0;
 uniform vec3 emission = vec3(0.0, 0.0, 0.0);
 uniform vec3 normal = vec3(0.5, 0.5, 1.0);
 uniform float normal_mapping = 0.0;
 
 uniform sampler2D uDepthTexture;
+uniform float uTime;
 
 #include "include/utils.inc.glsl"
 #include "include/raytracing.inc.glsl"
 #include "include/bsdf.inc.glsl"
 
 void main() {
+    vec2 correctedPointCoord = (ceil(gl_PointCoord.xy * inData.screenSpaceDiameter) - 0.5) / inData.screenSpaceDiameter;
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     float sqDistToCenter = dot(uv, uv);
-    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
-        discard;
-    }
 
     float weight = computeWeight(uv, sqDistToCenter);
 
+    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
+        //discard;
+    }
+    float antialiasing = 1.0;
+    if (uDebugShape != cDebugShapeSquare) {
+        antialiasing = smoothstep(1.0, 0.8, sqDistToCenter);
+    }
+    weight *= antialiasing;
+
     vec3 n;
+    Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+    Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
     if (uDebugShape == cDebugShapeLitSphere || uDebugShape == cDebugShapeNormalSphere) {
-        Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-        Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
         vec3 sphereHitPosition_ws;
         bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, inData.position_ws.xyz, inData.radius);
         if (intersectSphere) {
@@ -202,8 +219,17 @@ void main() {
             //discard;
             n = -ray_ws.direction;
         }
+        //n = mix(-ray_ws.direction, n, antialiasing);
+    } else if (uDebugShape == cDebugShapeDisc) {
+        if (antialiasing > 0.0) {
+            n = mat3(inverseViewMatrix) * vec3(uv, sqrt(1.0 - sqDistToCenter));
+            n = mix(-ray_ws.direction, n, antialiasing);
+        } else {
+            n = -ray_ws.direction;
+        }
+        //n = mat3(inverseViewMatrix) * vec3(uv, sqrt(max(0.0, 1.0 - sqDistToCenter)));
     } else {
-        n = normalize(normal);
+        n = mat3(inverseViewMatrix) * normalize(-ray_cs.direction);
     }
 
     out_color.rgb = inData.baseColor.rgb;
@@ -214,27 +240,15 @@ void main() {
     if (uDebugShape != -1) {
         vec3 beauty = vec3(0.0, 0.0, 0.0);
 
-        if (uDebugShape == cDebugShapeLitSphere) {
-            // Ad-hoc lighting, just to test
-            vec3 camPos_ws = vec3(inverseViewMatrix[3]);
-            vec3 toCam = normalize(camPos_ws - inData.position_ws);
-
-            SurfaceAttributes surface;
-            surface.baseColor = out_color.rgb;
-            surface.reflectance = 0.7;
-            surface.metallic = metallic;
-            surface.roughness = roughness;
-
-            for (int k = 0 ; k < 1 ; ++k) {
-                vec3 toLight = normalize(vec3(5.0, 5.0, 5.0) - inData.position_ws);
-                vec3 f = vec3(0.0);
-                f = brdf(toCam, n, toLight, surface);
-                beauty.rgb += f * vec3(3.0);
-            }
-        } else if (uDebugShape == cDebugShapeNormalSphere) {
+        if (uDebugShape == cDebugShapeNormalSphere) {
             beauty.rgb = normalize(n) * 0.5 + 0.5;
         } else {
             beauty = inData.baseColor;
+        }
+
+        // DEBUG checkerboard for mipmap test
+        if (uCheckboardSprites) {
+            beauty = vec3(abs(step(uv.x, 0.0) - step(uv.y, 0.0)));
         }
 
         // TODO: move to computeWeight
@@ -251,6 +265,10 @@ void main() {
         out_color.a = weight;
         out_normal.xyz = n * weight;
     }
+
+    if (uShowSampleCount) {
+        out_color.a = clamp(ceil(antialiasing), 0, 1);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -263,6 +281,7 @@ in FragmentData {
     vec3 position_ws;
     vec3 baseColor;
     float radius;
+    float screenSpaceDiameter;
 } inData;
 
 uniform float height = 0.0;

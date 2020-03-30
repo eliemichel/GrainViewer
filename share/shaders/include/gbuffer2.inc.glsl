@@ -35,7 +35,8 @@ const uint iridescentMaterial = 7;
 const uint worldMaterial = 8;
 const uint iblMaterial = 9;
 const uint farCloudTestMaterial = 10;
-const uint accumulatedPbrMaterial = 11; // must always be last, cause with accumulation it is actually more than this value
+const uint colormapDebugMaterial = 11;
+const uint accumulatedPbrMaterial = 12; // must always be last, cause with accumulation it is actually more than this value
 
 //////////////////////////////////////////////////////
 // GFragment methods

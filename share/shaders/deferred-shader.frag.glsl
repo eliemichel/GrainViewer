@@ -129,6 +129,16 @@ void main() {
 		out_fragment.radiance = vec4(fragment.baseColor, 1.0);
 		break;
 
+	case colormapDebugMaterial:
+	{
+		float sampleCount = fragment.baseColor.r;
+		if (uHasColormap) {
+			out_fragment.radiance.rgb = textureLod(uColormap, vec2(clamp(sampleCount / uMaxSampleCount, 0.0, 1.0), 0.5), 0).rgb;
+		} else {
+			out_fragment.radiance.rgb = vec3(sampleCount / uMaxSampleCount);
+		}
+	}
+
 	default:
 		if (fragment.material_id >= accumulatedPbrMaterial) {
 			float sampleCount = fragment.roughness;

@@ -198,7 +198,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 	}
 
 	// 4. Blit extra fbo to gbuffer
-	if (props.extraFbo) {
+	if (props.useShellCulling && props.extraFbo) {
 		scoppedFramebufferOverride.restore();
 		glTextureBarrier();
 		glDepthMask(GL_TRUE);

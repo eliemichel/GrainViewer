@@ -50,7 +50,6 @@ public:
 		WeightMode weightMode = WeightModeLinear;
 		ShellCullingStrategy shellCullingStrategy = ShellCullingMoveAway;
 		bool shellDepthFalloff = true;
-		bool disableBlend = false; // For debug
 		bool useEarlyDepthTest = true;
 		bool noDiscardInEpsilonZPass = false;
 		bool extraInitPass = false;
@@ -59,6 +58,11 @@ public:
 		bool useBbox = false; // if true, remove all points out of the supplied bbox
 		glm::vec3 bboxMin;
 		glm::vec3 bboxMax;
+
+		// For debug
+		bool disableBlend = false;
+		bool checkboardSprites = false;
+		bool showSampleCount = false;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
@@ -111,7 +115,6 @@ REFL_FIELD(debugShape)
 REFL_FIELD(weightMode)
 REFL_FIELD(shellCullingStrategy)
 REFL_FIELD(shellDepthFalloff)
-REFL_FIELD(disableBlend)
 REFL_FIELD(useEarlyDepthTest)
 REFL_FIELD(noDiscardInEpsilonZPass)
 REFL_FIELD(extraInitPass)
@@ -119,6 +122,9 @@ REFL_FIELD(extraFbo)
 REFL_FIELD(useBbox)
 REFL_FIELD(bboxMin)
 REFL_FIELD(bboxMax)
+REFL_FIELD(disableBlend)
+REFL_FIELD(checkboardSprites)
+REFL_FIELD(showSampleCount)
 REFL_END
 
 registerBehaviorType(FarSandRenderer)

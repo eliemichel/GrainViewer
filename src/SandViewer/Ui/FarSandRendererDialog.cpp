@@ -21,7 +21,7 @@ void FarSandRendererDialog::draw()
 			int shape = props.debugShape;
 			ImGui::Text("\nShape");
 			ImGui::RadioButton("None", &shape, FarSandRenderer::DebugShapeNone);
-			ImGui::RadioButton("Lit Sphere", &shape, FarSandRenderer::DebugShapeLitSphere);
+			ImGui::RadioButton("Raytraced Sphere", &shape, FarSandRenderer::DebugShapeLitSphere);
 			ImGui::RadioButton("Disc", &shape, FarSandRenderer::DebugShapeDisc);
 			ImGui::RadioButton("Square", &shape, FarSandRenderer::DebugShapeSquare);
 			ImGui::RadioButton("Normal Sphere", &shape, FarSandRenderer::DebugShapeNormalSphere);
@@ -74,6 +74,8 @@ void FarSandRendererDialog::draw()
 
 			ImGui::Text("\nDebug");
 			ImGui::Checkbox("Disable additive blend", &props.disableBlend);
+			ImGui::Checkbox("Checkboard Sprites", &props.checkboardSprites);
+			ImGui::Checkbox("Show Sample Count", &props.showSampleCount);
 
 			EndDisable(!enabled);
 		}

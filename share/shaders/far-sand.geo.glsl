@@ -44,6 +44,7 @@ out FragmentData {
 	vec3 position_ws;
 	vec3 baseColor;
 	float radius;
+	float screenSpaceDiameter;
 } outData;
 
 #include "include/uniform/camera.inc.glsl"
@@ -126,7 +127,7 @@ bool depthTest(vec4 position_clipspace) {
 	fragCoord.z = position_clipspace.z / position_clipspace.w;
 	float limitDepth = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
 
-    return fragCoord.z <= limitDepth;
+	return fragCoord.z <= limitDepth;
 #endif // STAGE_EPSILON_ZBUFFER
 }
 
@@ -154,18 +155,18 @@ void main() {
 	gl_Position = position_clipspace;
 	outData.baseColor = computeBaseColor(outData.position_ws);
 	outData.radius = inData[0].radius;
-	float screenSpaceDiameter = SpriteSize_Botsch03(outData.radius, position_cs);
-	//screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);
-	//screenSpaceDiameter = SpriteSize_Botsch03_corrected(outData.radius, position_cs);
+	outData.screenSpaceDiameter = SpriteSize_Botsch03(outData.radius, position_cs);
+	//outData.screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);
+	//outData.screenSpaceDiameter = SpriteSize_Botsch03_corrected(outData.radius, position_cs);
 
 #if defined(STAGE_EPSILON_ZBUFFER) && defined(NO_DISCARD_IN_EPSILON_ZBUFFER)
 	// During Epsilon ZBuffer pass, we must not use discard in fragment shader
 	// for performance reasons, and we prefer to have false negative than false
 	// positive, hence we reduce the (square) point to fit inside the splatted
 	// disc.
-	gl_PointSize = screenSpaceDiameter * HALF_SQRT2;
+	gl_PointSize = outData.screenSpaceDiameter * HALF_SQRT2;
 #else // STAGE_EPSILON_ZBUFFER && NO_DISCARD_IN_EPSILON_ZBUFFER
-	gl_PointSize = screenSpaceDiameter;
+	gl_PointSize = outData.screenSpaceDiameter;
 #endif // STAGE_EPSILON_ZBUFFER && NO_DISCARD_IN_EPSILON_ZBUFFER
 	EmitVertex();
 	EndPrimitive();
