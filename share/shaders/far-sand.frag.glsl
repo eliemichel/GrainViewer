@@ -86,7 +86,9 @@ uniform sampler2D uFboDepthTexture;
 // This stage gathers additive measures and turn them into regular g-buffer fragments
 void main() {
     float d = texelFetch(uFboDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
-    gl_FragDepth = d; // maybe add back uEpsilon here -- benchmark-me
+    gl_FragDepth = d;
+    // add back uEpsilon here -- benchmark-me
+    //gl_FragDepth = unlinearizeDepth(linearizeDepth(d) - uEpsilon);
 
     vec4 in_color = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
     vec4 in_normal = texelFetch(uFboColor1Texture, ivec2(gl_FragCoord.xy), 0);
@@ -100,7 +102,7 @@ void main() {
     fragment.normal = in_normal.xyz * weightNormalization;
 
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-    vec3 cs_coord = linearizeDepth(d) * ray_cs.direction;
+    vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
 
     if (uShowSampleCount) {

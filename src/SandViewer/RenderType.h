@@ -1,8 +1,8 @@
 #pragma once
 
-enum RenderType
+enum class RenderType
 {
-	DirectRendering,
-	DefaultRendering,
-	ShadowMapRendering,
+	Direct,
+	Default,
+	ShadowMap,
 };

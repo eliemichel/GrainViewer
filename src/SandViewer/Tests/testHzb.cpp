@@ -54,7 +54,7 @@ bool testHzb()
 	hierarchicalDepthBuffer.bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	occlusionGeometry->render(*scene->viewportCamera(), *scene->world(), DirectRendering);
+	occlusionGeometry->render(*scene->viewportCamera(), *scene->world(), RenderType::Direct);
 
 	Filtering::MipmapDepthBuffer(hierarchicalDepthBuffer);
 
@@ -131,7 +131,7 @@ bool testHzb()
 			}
 		}
 		if (!culling) {
-			obj->render(camera, *scene->world(), DirectRendering);
+			obj->render(camera, *scene->world(), RenderType::Direct);
 		}
 	}
 

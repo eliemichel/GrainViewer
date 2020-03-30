@@ -127,7 +127,7 @@ void Scene::render() const {
 
 	m_world->render(camera);
 	for (auto obj : m_objects) {
-		obj->render(camera, *m_world, DefaultRendering);
+		obj->render(camera, *m_world, RenderType::Default);
 	}
 
 	if (m_isDeferredShadingEnabled) {
@@ -138,7 +138,7 @@ void Scene::render() const {
 		}
 		glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		m_deferredShader->render(camera, *m_world, DefaultRendering);
+		m_deferredShader->render(camera, *m_world, RenderType::Default);
 	}
 
 	if (camera.targetFramebuffer()) {

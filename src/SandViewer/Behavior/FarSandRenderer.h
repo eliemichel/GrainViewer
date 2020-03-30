@@ -85,6 +85,7 @@ private:
 	static const std::vector<std::string> s_shaderVariantDefines;
 
 private:
+	void renderToShadowMap(const Camera& camera, const World& world, RenderType target) const;
 	glm::mat4 modelMatrix() const;
 	void setCommonUniforms(ShaderProgram & shader, const Camera & camera) const;
 	void setDepthUniform(ShaderProgram & shader) const;

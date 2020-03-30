@@ -153,7 +153,7 @@ void World::renderShadowMaps(const Camera & camera, const std::vector<std::share
 		glEnable(GL_DEPTH_TEST);
 
 		for (const auto& obj : objects) {
-			obj->render(light->shadowMap().camera(), *this, ShadowMapRendering);
+			obj->render(light->shadowMap().camera(), *this, RenderType::ShadowMap);
 		}
 	}
 

@@ -78,6 +78,11 @@ void FarSandRenderer::update(float time, int frame)
 
 void FarSandRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
+	if (target == RenderType::ShadowMap) {
+		renderToShadowMap(camera, world, target);
+		return;
+	}
+
 	// Sanity checks
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
@@ -237,6 +242,34 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 ///////////////////////////////////////////////////////////////////////////////
 // private members
 ///////////////////////////////////////////////////////////////////////////////
+
+void FarSandRenderer::renderToShadowMap(const Camera& camera, const World& world, RenderType target) const
+{
+	// Sanity checks
+	auto pointData = m_pointData.lock();
+	if (!pointData) return;
+
+	glEnable(GL_PROGRAM_POINT_SIZE);
+
+	const auto& props = properties();
+
+	// 1. Render epsilon depth buffer
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+
+	ShaderVariantFlagSet flags = ShaderVariantEpsilonZPass;
+	if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+	flags |= ShaderVariantNoColor;
+	ShaderProgram& shader = *getShader(flags);
+	setCommonUniforms(shader, camera);
+
+	shader.setUniform("uEpsilon", 0);
+
+	shader.use();
+	glBindVertexArray(pointData->vao());
+	glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
+	glBindVertexArray(0);
+}
 
 glm::mat4 FarSandRenderer::modelMatrix() const {
 	if (auto transform = m_transform.lock()) {

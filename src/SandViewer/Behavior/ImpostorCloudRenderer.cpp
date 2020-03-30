@@ -268,7 +268,7 @@ void ImpostorCloudRenderer::update(float time)
 
 void ImpostorCloudRenderer::render(const Camera & camera, const World & world, RenderType target) const
 {
-	const ShaderProgram & shader = (target == ShadowMapRendering) ? *m_shadowMapShader : *m_shader;
+	const ShaderProgram & shader = (target == RenderType::ShadowMap) ? *m_shadowMapShader : *m_shader;
 	renderWithShader(camera, world, shader);
 }
 

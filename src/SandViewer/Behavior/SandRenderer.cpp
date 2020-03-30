@@ -528,7 +528,7 @@ void SandRenderer::renderImpostors(const Camera & camera, const World & world, R
 			glDisable(GL_BLEND);
 		}
 
-		const ShaderProgram & shader = target == ShadowMapRendering ? *m_shadowMapImpostorShader : *m_impostorShader;
+		const ShaderProgram & shader = target == RenderType::ShadowMap ? *m_shadowMapImpostorShader : *m_impostorShader;
 		shader.use();
 
 		// Set uniforms

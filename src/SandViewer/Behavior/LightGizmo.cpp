@@ -74,7 +74,7 @@ void LightGizmo::start()
 
 void LightGizmo::render(const Camera& camera, const World& world, RenderType target) const
 {
-	if (target == ShadowMapRendering) return;
+	if (target == RenderType::ShadowMap) return;
 	if (!m_shader->isValid()) return;
 
 	const auto& lights = world.lights();
