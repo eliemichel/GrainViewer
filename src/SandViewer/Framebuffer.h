@@ -49,6 +49,9 @@ public:
 	 */
 	GLsizei depthLevels() const;
 
+	void deactivateColorAttachments();
+	void activateColorAttachments();
+
 private:
 	void init();
 	void destroy();

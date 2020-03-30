@@ -42,6 +42,11 @@ public:
 		bool isRecordEnabled = false;
 		bool saveOnDisc = true; // if false, get pixel data from gpu but don't actually write them to disc. They can be used to measure stats
 	};
+	enum class ExtraFramebufferOption {
+		Rgba32fDepth = 0,
+		Depth = 1,
+		_Count,
+	};
 
 public:
 	Camera();
@@ -108,7 +113,7 @@ public:
 	 * every frame.
 	 * TODO: implement a proper dynamic framebuffer pool mechanism
 	 */
-	std::shared_ptr<Framebuffer> getExtraFramebuffer(bool depthOnly = false) const;
+	std::shared_ptr<Framebuffer> getExtraFramebuffer(ExtraFramebufferOption option = ExtraFramebufferOption::Rgba32fDepth) const;
 	void releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const;
 
 	/**
@@ -185,7 +190,7 @@ protected:
 	// fixed resolution and can be bound by the render pipeline
 	std::shared_ptr<Framebuffer> m_targetFramebuffer;
 
-	std::vector<std::shared_ptr<Framebuffer>> m_extraFramebuffers;
+	mutable std::vector<std::shared_ptr<Framebuffer>> m_extraFramebuffers; // lazy initialized
 
 	OutputSettings m_outputSettings;
 	ProjectionType m_projectionType;

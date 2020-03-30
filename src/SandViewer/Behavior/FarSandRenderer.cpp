@@ -8,6 +8,7 @@
 #include "utils/mathutils.h"
 #include "utils/strutils.h"
 #include "utils/behaviorutils.h"
+#include "utils/ScopedFramebufferOverride.h"
 #include "FarSandRenderer.h"
 #include "TransformBehavior.h"
 #include "ShaderPool.h"
@@ -17,6 +18,7 @@
 #include "ResourceManager.h"
 #include "GlTexture.h"
 #include "Framebuffer.h"
+#include "PostEffect.h"
 
 const std::vector<std::string> FarSandRenderer::s_shaderVariantDefines = {
 	"STAGE_EPSILON_ZBUFFER",
@@ -24,6 +26,7 @@ const std::vector<std::string> FarSandRenderer::s_shaderVariantDefines = {
 	"NO_COLOR_OUTPUT",
 	"USING_ShellCullingFragDepth",
 	"STAGE_EXTRA_INIT",
+	"STAGE_BLIT_TO_MAIN_FBO",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -82,8 +85,20 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 
 	const auto & props = properties();
 
+	ScopedFramebufferOverride scoppedFramebufferOverride; // to restore fbo binding
+	std::shared_ptr<Framebuffer> fbo;
+	if (props.extraFbo) {
+		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+	}
+
 	// 1. Render epsilon depth buffer
 	if (props.useShellCulling) {
+		if (props.extraFbo) {
+			fbo->deactivateColorAttachments();
+			fbo->bind();
+			glClear(GL_DEPTH_BUFFER_BIT);
+		}
+
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
@@ -103,14 +118,21 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glBindVertexArray(pointData->vao());
 		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
 		glBindVertexArray(0);
+
+		if (props.extraFbo) {
+			// Replaces optional extra init pass
+			fbo->activateColorAttachments();
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			glClear(GL_COLOR_BUFFER_BIT);
+		}
 	}
 
 	// 2. Optional extra init pass
-	if (props.useShellCulling && props.extraInitPass) {
+	if (!props.extraFbo && props.useShellCulling && props.extraInitPass) {
 		glDepthMask(GL_FALSE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
-		
+
 		if (props.shellCullingStrategy == ShellCullingDepthRange) {
 			glDepthRangef(0, 1.0f - depthRangeBias(camera));
 		}
@@ -118,7 +140,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderVariantFlagSet flags = ShaderVariantExtraInitPass;
 		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
 		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
-		ShaderProgram & shader = *getShader(flags);
+		ShaderProgram& shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
 		if (props.useShellCulling && props.useEarlyDepthTest) {
@@ -169,6 +191,33 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		glBindVertexArray(pointData->vao());
 		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
 		glBindVertexArray(0);
+	}
+
+	// 4. Blit extra fbo to gbuffer
+	if (props.extraFbo) {
+		scoppedFramebufferOverride.restore();
+
+		ShaderVariantFlagSet flags = ShaderVariantBlitToMainFbo;
+		ShaderProgram& shader = *getShader(flags);
+
+		glTextureBarrier();
+
+		// Bind depth buffer for reading
+		setDepthUniform(shader);
+
+		// Bind secondary FBO textures
+		GLint o = 0;
+		for (int i = 0; i < fbo->colorTextureCount(); ++i) {
+			glBindTextureUnit(static_cast<GLuint>(o), fbo->colorTexture(i));
+			shader.setUniform("uFboColor0Texture", o);
+			++o;
+		}
+		glBindTextureUnit(static_cast<GLuint>(o), fbo->depthTexture());
+		shader.setUniform("uFboDepthTexture", o);
+		++o;
+
+		shader.use();
+		PostEffect::DrawWithDepthTest();
 	}
 
 	// Reset depth range to default

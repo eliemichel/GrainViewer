@@ -28,6 +28,7 @@ Camera::Camera()
 	, m_orthographicScale(1.0f)
 	, m_freezeResolution(false)
 	, m_projectionType(PerspectiveProjection)
+	, m_extraFramebuffers(static_cast<int>(ExtraFramebufferOption::_Count))
 {
 	initUbo();
 	//updateUbo();  // included in setResolution
@@ -68,15 +69,8 @@ void Camera::setResolution(glm::vec2 resolution)
 	// Resize extra framebuffers
 	size_t width = static_cast<size_t>(m_uniforms.resolution.x);
 	size_t height = static_cast<size_t>(m_uniforms.resolution.y);
-	if (m_extraFramebuffers.size() == 0) {
-		const std::vector<ColorLayerInfo> colorLayerInfos = { { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
-		m_extraFramebuffers.push_back(std::make_shared<Framebuffer>(width, height, colorLayerInfos));
-		const std::vector<ColorLayerInfo> colorLayerInfos2 = {};
-		m_extraFramebuffers.push_back(std::make_shared<Framebuffer>(width, height, colorLayerInfos2));
-	}
-	else {
-		m_extraFramebuffers[0]->setResolution(width, height);
-		m_extraFramebuffers[1]->setResolution(width, height);
+	for (auto& fbo : m_extraFramebuffers) {
+		if (fbo) fbo->setResolution(width, height);
 	}
 
 	updateUbo();
@@ -442,13 +436,30 @@ std::ostream& Camera::serialize(std::ostream& out)
 // Framebuffer pool
 ///////////////////////////////////////////////////////////////////////////////
 
-std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(bool depthOnly) const
+std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(ExtraFramebufferOption option) const
 {
-	// TODO
-	return m_extraFramebuffers[depthOnly ? 1 : 0];
+	// TODO: add mutex
+	auto& fbo = m_extraFramebuffers[static_cast<int>(option)];
+	// Lazy construction
+	if (!fbo) {
+		int width = static_cast<int>(m_uniforms.resolution.x);
+		int height = static_cast<int>(m_uniforms.resolution.y);
+		std::vector<ColorLayerInfo> colorLayerInfos;
+		switch (option)
+		{
+		case ExtraFramebufferOption::Rgba32fDepth:
+			colorLayerInfos = std::vector<ColorLayerInfo>{ { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
+			break;
+		case ExtraFramebufferOption::Depth:
+			colorLayerInfos = std::vector<ColorLayerInfo>{};
+			break;
+		}
+		fbo = std::make_shared<Framebuffer>(width, height, colorLayerInfos);
+	}
+	return fbo;
 }
 
 void Camera::releaseExtraFramebuffer(std::shared_ptr<Framebuffer>) const
 {
-	// TODO
+	// TODO: release mutexes
 }

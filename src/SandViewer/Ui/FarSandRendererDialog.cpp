@@ -27,15 +27,13 @@ void FarSandRendererDialog::draw()
 			ImGui::RadioButton("Normal Sphere", &shape, FarSandRenderer::DebugShapeNormalSphere);
 			props.debugShape = static_cast<FarSandRenderer::DebugShape>(shape);
 
+			ImGui::Spacing();
 			ImGui::Checkbox("Use Shell Culling", &props.useShellCulling);
 			BeginDisable(!props.useShellCulling);
 			{
 				ImGui::SliderFloat("Shell Thickness", &props.epsilonFactor, 0.01f, 20.0f, "%.5f");
 				ImGui::Checkbox("Depth-based Falloff", &props.shellDepthFalloff);
-				ImGui::Checkbox("Use Early Depth Test", &props.useEarlyDepthTest);
-				ImGui::Checkbox("No Discard In Epsilon ZPass", &props.noDiscardInEpsilonZPass);
-				ImGui::Checkbox("Extra Init Pass", &props.extraInitPass);
-
+				
 				int weightMode = props.weightMode;
 				ImGui::PushID(id++);
 				ImGui::Text("\nWeight Mode");
@@ -46,12 +44,22 @@ void FarSandRendererDialog::draw()
 				props.weightMode = static_cast<FarSandRenderer::WeightMode>(weightMode);
 				ImGui::PopID();
 
+
 				int shellCullingStrategy = props.shellCullingStrategy;
 				ImGui::Text("\nShell Culling Strategy");
 				ImGui::RadioButton("Frag Depth", &shellCullingStrategy, FarSandRenderer::ShellCullingFragDepth);
 				ImGui::RadioButton("Move Away (recommended)", &shellCullingStrategy, FarSandRenderer::ShellCullingMoveAway);
 				ImGui::RadioButton("Depth Range", &shellCullingStrategy, FarSandRenderer::ShellCullingDepthRange);
 				props.shellCullingStrategy = static_cast<FarSandRenderer::ShellCullingStrategy>(shellCullingStrategy);
+
+				ImGui::Checkbox("Use Early Depth Test", &props.useEarlyDepthTest);
+				ImGui::Checkbox("No Discard In Epsilon ZPass", &props.noDiscardInEpsilonZPass);
+				ImGui::Checkbox("Use Extra Fbo", &props.extraFbo);
+				BeginDisable(props.extraFbo);
+				{
+					ImGui::Checkbox("Extra Init Pass", &props.extraInitPass);
+				}
+				EndDisable(props.extraFbo);
 			}
 			EndDisable(!props.useShellCulling);
 

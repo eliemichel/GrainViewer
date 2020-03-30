@@ -1,9 +1,32 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant STAGE_EPSILON_ZBUFFER STAGE_BLIT_TO_MAIN_FBO
 #pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
 #pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2 PROCEDURAL_BASECOLOR3 BLACK_BASECOLOR
+
+///////////////////////////////////////////////////////////////////////////////
+#ifdef STAGE_BLIT_TO_MAIN_FBO
+#extension GL_EXT_geometry_shader4 : enable // to use gl_PositionIn[]
+
+in vec2 vertUv[];
+out vec2 uv;
+
+layout(triangles) in;
+layout(triangle_strip, max_vertices = 3) out;
+
+// this is just a passthrough geo shader
+void main() {
+	for (int i = 0; i < gl_VerticesIn; i++) {
+		gl_Position = gl_PositionIn[i];
+		uv = vertUv[i];
+		EmitVertex();
+	}
+	EndPrimitive();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+#else // STAGE_BLIT_TO_MAIN_FBO
 
 layout(points) in;
 layout(points, max_vertices = 1) out;
@@ -148,3 +171,5 @@ void main() {
 	EndPrimitive();
 }
 
+///////////////////////////////////////////////////////////////////////////////
+#endif // STAGE_BLIT_TO_MAIN_FBO

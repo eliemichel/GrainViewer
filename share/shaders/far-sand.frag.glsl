@@ -1,20 +1,10 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant STAGE_EPSILON_ZBUFFER STAGE_BLIT_TO_MAIN_FBO STAGE_EXTRA_INIT
 #pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
 #pragma variant NO_COLOR_OUTPUT // used when there is an EXTRA_INIT pass then
-#pragma variant STAGE_EXTRA_INIT
 #pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
-
-in FragmentData {
-    vec3 position_ws;
-    vec3 baseColor;
-    float radius;
-} inData;
-
-#define OUT_GBUFFER
-#include "include/gbuffer2.inc.glsl"
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeLitSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -42,7 +32,43 @@ uniform bool uShellDepthFalloff = false;
 #include "include/zbuffer.inc.glsl"
 
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef STAGE_EPSILON_ZBUFFER
+#if defined(STAGE_BLIT_TO_MAIN_FBO)
+
+#define OUT_GBUFFER
+#include "include/gbuffer2.inc.glsl"
+
+// depth attachement of the target fbo
+// (roughly safe to use despite feedback loops because we know that there is
+// exactly one fragment per pixel)
+//uniform sampler2D uDepthTexture; // nope, depth test used as is, just write to gl_FragDepth
+
+// attachments of the secondary fbo
+uniform sampler2D uFboColor0Texture;
+uniform sampler2D uFboDepthTexture;
+
+// Problem: semi transparency requires to read from current color attachment
+// but this creates dangerous feedback loops
+// (glBlend cannot be used because of packing)
+
+void main() {
+    float d = texelFetch(uFboDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
+    gl_FragDepth = d;
+
+    vec4 color0 = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
+
+    GFragment fragment;
+    initGFragment(fragment);
+    fragment.baseColor = color0.rgb / color0.a;
+    fragment.material_id = pbrMaterial;
+    fragment.material_id = forwardBaseColorMaterial;
+
+    autoPackGFragment(fragment);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+#elif defined(STAGE_EPSILON_ZBUFFER)
+
+layout (location = 0) out vec4 color0;
 
 // We need to use defines for toggling manipulation of gl_FragDepth, uniforms
 // are not enough because the use of gl_FragDepth is statically detected and
@@ -69,12 +95,14 @@ void main() {
 
 #ifndef NO_COLOR_OUTPUT
     // Init for accumulation
-    gbuffer_color0 = vec4(0.0);
+    color0 = vec4(0.0);
 #endif // NO_COLOR_OUTPUT
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 #elif defined(STAGE_EXTRA_INIT) // STAGE_EXTRA_INIT
+
+layout (location = 0) out vec4 color0;
 
 void main() {
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
@@ -83,11 +111,20 @@ void main() {
     }
 
     // Init for accumulation
-    gbuffer_color0 = vec4(0.0);
+    color0 = vec4(0.0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#else // STAGE
+#else // STAGE_DEFAULT
+
+#define OUT_GBUFFER
+#include "include/gbuffer2.inc.glsl"
+
+in FragmentData {
+    vec3 position_ws;
+    vec3 baseColor;
+    float radius;
+} inData;
 
 uniform float height = 0.0;
 uniform float metallic = 0.0;
@@ -207,4 +244,4 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // STAGE_EPSILON_ZBUFFER
+#endif // STAGE

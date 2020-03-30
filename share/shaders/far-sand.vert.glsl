@@ -1,9 +1,22 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant STAGE_EPSILON_ZBUFFER
+#pragma variant STAGE_EPSILON_ZBUFFER STAGE_BLIT_TO_MAIN_FBO
 
 layout (location = 0) in vec4 position;
+
+///////////////////////////////////////////////////////////////////////////////
+#ifdef STAGE_BLIT_TO_MAIN_FBO
+
+// just a regular post effect
+out vec2 vertUv;
+void main() {
+	gl_Position = vec4(position.xyz, 1.0);
+	vertUv = position.xy * .5 + .5;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+#else // STAGE_BLIT_TO_MAIN_FBO
 
 out VertexData {
 	vec3 position_ws;
@@ -36,3 +49,5 @@ void main() {
 	outData.vertexId = gl_VertexID;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+#endif // STAGE_BLIT_TO_MAIN_FBO

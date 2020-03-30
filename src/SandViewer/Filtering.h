@@ -4,6 +4,7 @@
 #include "GlTexture.h"
 #include "Framebuffer.h"
 #include "Framebuffer2.h"
+#include "PostEffect.h"
 
 class ShaderProgram;
 
@@ -13,21 +14,6 @@ struct LeanTexture {
 
 	LeanTexture(GLenum target) : lean1(target), lean2(target) {}
 };
-
-/**
- * A large quad covering the whole screen
- */
-class PostEffect
-{
-public:
-	PostEffect();
-	~PostEffect();
-	void draw(bool disableDepthTest = true);
-private:
-	GLuint m_vao;
-	GLuint m_vbo;
-};
-
 
 class MipmapDepthBufferGenerator : public PostEffect
 {
@@ -73,7 +59,6 @@ public:
 
 private:
 	static std::unique_ptr<MipmapDepthBufferGenerator> s_mipmapDepthBufferGenerator;
-	static std::unique_ptr<PostEffect> s_postEffectQuad;
 	static std::unique_ptr<Framebuffer2> s_postEffectFramebuffer;
 	static std::unique_ptr<Framebuffer2> s_postEffectDepthOnlyFramebuffer;
 };

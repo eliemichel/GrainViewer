@@ -54,6 +54,7 @@ public:
 		bool useEarlyDepthTest = true;
 		bool noDiscardInEpsilonZPass = false;
 		bool extraInitPass = false;
+		bool extraFbo = true; // use an extra fbo for pre-rendering... seems like the best option
 
 		bool useBbox = false; // if true, remove all points out of the supplied bbox
 		glm::vec3 bboxMin;
@@ -71,7 +72,8 @@ private:
 		ShaderVariantNoColor = 1 << 2,
 		ShaderVariantFragDepth = 1 << 3,
 		ShaderVariantExtraInitPass = 1 << 4, // Add an extra initialisation before accumulation to avoid uninitialized pixels when using ShaderVariantNoDiscard
-		_ShaderVariantFlagsCount = 1 << 5,
+		ShaderVariantBlitToMainFbo = 1 << 5,
+		_ShaderVariantFlagsCount = 1 << 6,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;
@@ -111,6 +113,7 @@ REFL_FIELD(disableBlend)
 REFL_FIELD(useEarlyDepthTest)
 REFL_FIELD(noDiscardInEpsilonZPass)
 REFL_FIELD(extraInitPass)
+REFL_FIELD(extraFbo)
 REFL_FIELD(useBbox)
 REFL_FIELD(bboxMin)
 REFL_FIELD(bboxMax)

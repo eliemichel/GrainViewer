@@ -95,6 +95,7 @@ set(All_SRC
 	utils/mathutils.h
 	utils/mathutils.cpp
 	utils/behaviorutils.h
+	utils/ScopedFramebufferOverride.h
 
 	Ui/Dialog.h
 	Ui/Widgets.h
@@ -157,6 +158,8 @@ set(All_SRC
 	TurntableCamera.cpp
 	World.h
 	World.cpp
+	PostEffect.h
+	PostEffect.cpp
 
 	bufferFillers.h
 	bufferFillers.cpp
@@ -255,6 +258,8 @@ set(GenerateLeanMaps_SRC
 	Framebuffer2.cpp
 	Filtering.h
 	Filtering.cpp
+	PostEffect.h
+	PostEffect.cpp
 )
 
 set(GenerateLeanMaps_LIBS

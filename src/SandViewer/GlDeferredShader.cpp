@@ -113,9 +113,7 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 		glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().depthTexture());
 		++o;
 		if (lights[k]->isRich()) {
-			ostringstream oss6;
-			oss6 << "light[" << k << "].richShadowMap";
-			m_shader.setUniform(oss6.str(), o);
+			m_shader.setUniform(prefix + "richShadowMap", o);
 			glBindTextureUnit(static_cast<GLuint>(o), lights[k]->shadowMap().colorTexture(0));
 			++o;
 		}

@@ -21,6 +21,39 @@ struct GFragment {
 
 };
 
+//////////////////////////////////////////////////////
+// Reserved material IDs
+
+const uint noMaterial = 0;
+const uint skyboxMaterial = 1;
+const uint forwardAlbedoMaterial = 2;
+const uint forwardBaseColorMaterial = 3;
+const uint forwardNormalMaterial = 4;
+const uint pbrMaterial = 5;
+const uint pbrMetallicRoughnessMaterial = 6;
+const uint iridescentMaterial = 7;
+const uint worldMaterial = 8;
+const uint iblMaterial = 9;
+const uint farCloudTestMaterial = 10;
+const uint accumulatedPbrMaterial = 11; // must always be last, cause with accumulation it is actually more than this value
+
+//////////////////////////////////////////////////////
+// GFragment methods
+
+void initGFragment(out GFragment fragment) {
+    fragment.baseColor = vec3(0.0);
+    fragment.material_id = pbrMaterial;
+    fragment.normal = vec3(0.0);
+    fragment.ws_coord = vec3(0.0);
+    fragment.roughness = 0.0;
+    fragment.metallic = 0.0;
+    fragment.emission = vec3(0.0);
+    fragment.alpha = 0.0;
+    fragment.count = 0;
+    fragment.lean1 = vec4(0.0);
+    fragment.lean2 = vec4(0.0);
+}
+
 /**
  * Apply mix to all components of a GFragment
  */
@@ -96,22 +129,6 @@ void packGFragment(
 		fragment.count
 	);
 }
-
-//////////////////////////////////////////////////////
-// Reserved material IDs
-
-const uint noMaterial = 0;
-const uint skyboxMaterial = 1;
-const uint forwardAlbedoMaterial = 2;
-const uint forwardBaseColorMaterial = 3;
-const uint forwardNormalMaterial = 4;
-const uint pbrMaterial = 5;
-const uint pbrMetallicRoughnessMaterial = 6;
-const uint iridescentMaterial = 7;
-const uint worldMaterial = 8;
-const uint iblMaterial = 9;
-const uint farCloudTestMaterial = 10;
-const uint accumulatedPbrMaterial = 11; // must always be last, cause with accumulation it is actually more than this value
 
 /////////////////////////////////////////////////////////////////////
 #ifdef OUT_GBUFFER

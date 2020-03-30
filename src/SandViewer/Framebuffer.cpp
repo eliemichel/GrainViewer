@@ -86,14 +86,10 @@ void Framebuffer::init() {
 	}
 
 	if (m_colorLayerInfos.empty()) {
-		glNamedFramebufferDrawBuffer(m_framebufferId, GL_NONE);
+		deactivateColorAttachments();
 	}
 	else {
-		vector<GLenum> drawBuffers(m_colorLayerInfos.size());
-		for (size_t k = 0; k < m_colorLayerInfos.size(); ++k) {
-			drawBuffers[k] = m_colorLayerInfos[k].attachement;
-		}
-		glNamedFramebufferDrawBuffers(m_framebufferId, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
+		activateColorAttachments();
 	}
 
 	if (glCheckNamedFramebufferStatus(m_framebufferId, GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -125,4 +121,18 @@ void Framebuffer::setResolution(size_t width, size_t height)
 
 GLsizei Framebuffer::depthLevels() const {
 	return m_depthLevels;
+}
+
+void Framebuffer::deactivateColorAttachments()
+{
+	glNamedFramebufferDrawBuffer(m_framebufferId, GL_NONE);
+}
+
+void Framebuffer::activateColorAttachments()
+{
+	vector<GLenum> drawBuffers(m_colorLayerInfos.size());
+	for (size_t k = 0; k < m_colorLayerInfos.size(); ++k) {
+		drawBuffers[k] = m_colorLayerInfos[k].attachement;
+	}
+	glNamedFramebufferDrawBuffers(m_framebufferId, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
 }

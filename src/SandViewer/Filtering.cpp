@@ -5,7 +5,6 @@
 #include "ShaderPool.h"
 
 std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
-std::unique_ptr<PostEffect> Filtering::s_postEffectQuad;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectFramebuffer;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectDepthOnlyFramebuffer;
 
@@ -61,7 +60,6 @@ std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sour
 void Filtering::Blit(GlTexture & destination, GLuint source, const ShaderProgram & shader)
 {
 	// Init on first use
-	if (!s_postEffectQuad) s_postEffectQuad = std::make_unique<PostEffect>();
 	if (!s_postEffectFramebuffer)
 	{
 		s_postEffectFramebuffer = std::make_unique<Framebuffer2>();
@@ -76,7 +74,7 @@ void Filtering::Blit(GlTexture & destination, GLuint source, const ShaderProgram
 	glBindTextureUnit(0, source);
 	shader.setUniform("uMainTexture", 0);
 	glViewport(0, 0, destination.width(), destination.height());
-	s_postEffectQuad->draw();
+	PostEffect::Draw();
 
 	glTextureBarrier();
 }
@@ -89,7 +87,6 @@ void Filtering::Blit(GlTexture & destination, const GlTexture & source, const Sh
 void Filtering::BlitDepth(GlTexture & destination, GLuint source, const ShaderProgram & shader)
 {
 	// Init on first use
-	if (!s_postEffectQuad) s_postEffectQuad = std::make_unique<PostEffect>();
 	if (!s_postEffectDepthOnlyFramebuffer)
 	{
 		s_postEffectDepthOnlyFramebuffer = std::make_unique<Framebuffer2>();
@@ -107,7 +104,7 @@ void Filtering::BlitDepth(GlTexture & destination, GLuint source, const ShaderPr
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_DEPTH_BUFFER_BIT);
-	s_postEffectQuad->draw(false /* disableDepthTest */);
+	PostEffect::DrawWithDepthTest();
 
 	glTextureBarrier();
 }
@@ -115,39 +112,6 @@ void Filtering::BlitDepth(GlTexture & destination, GLuint source, const ShaderPr
 void Filtering::BlitDepth(GlTexture & destination, const GlTexture & source, const ShaderProgram & shader)
 {
 	BlitDepth(destination, source.raw(), shader);
-}
-
-//-----------------------------------------------------------------------------
-
-PostEffect::PostEffect()
-{
-	static GLfloat points[] = {
-		-1, -1, 0,
-		3, -1, 0,
-		-1, 3, 0
-	};
-
-	glCreateBuffers(1, &m_vbo);
-	glNamedBufferStorage(m_vbo, sizeof(points), points, NULL);
-
-	glCreateVertexArrays(1, &m_vao);
-	glVertexArrayVertexBuffer(m_vao, 0, m_vbo, 0, 3 * sizeof(GLfloat));
-	glEnableVertexArrayAttrib(m_vao, 0);
-	glVertexArrayAttribBinding(m_vao, 0, 0);
-	glVertexArrayAttribFormat(m_vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
-}
-
-PostEffect::~PostEffect()
-{
-	glDeleteVertexArrays(1, &m_vao);
-	glDeleteBuffers(1, &m_vbo);
-}
-
-void PostEffect::draw(bool disableDepthTest)
-{
-	if (disableDepthTest) glDisable(GL_DEPTH_TEST);
-	glBindVertexArray(m_vao);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
 //-----------------------------------------------------------------------------
