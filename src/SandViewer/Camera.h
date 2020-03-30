@@ -44,7 +44,8 @@ public:
 	};
 	enum class ExtraFramebufferOption {
 		Rgba32fDepth = 0,
-		Depth = 1,
+		TwoRgba32fDepth = 1,
+		Depth = 2,
 		_Count,
 	};
 

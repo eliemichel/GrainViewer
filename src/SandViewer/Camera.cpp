@@ -450,6 +450,12 @@ std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(ExtraFramebufferOption 
 		case ExtraFramebufferOption::Rgba32fDepth:
 			colorLayerInfos = std::vector<ColorLayerInfo>{ { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
 			break;
+		case ExtraFramebufferOption::TwoRgba32fDepth:
+			colorLayerInfos = std::vector<ColorLayerInfo>{
+				{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
+				{ GL_RGBA32F,  GL_COLOR_ATTACHMENT1 }
+			};
+			break;
 		case ExtraFramebufferOption::Depth:
 			colorLayerInfos = std::vector<ColorLayerInfo>{};
 			break;

@@ -66,6 +66,7 @@ public:
 private:
 	// When adding flag, don't forget to add the corresponding define in the
 	// definition of s_shaderVariantDefines in cpp file.
+	// TODO: distinguish stages from options
 	enum ShaderVariantFlags {
 		ShaderVariantEpsilonZPass = 1 << 0,
 		ShaderVariantNoDiscard = 1 << 1,
@@ -73,7 +74,8 @@ private:
 		ShaderVariantFragDepth = 1 << 3,
 		ShaderVariantExtraInitPass = 1 << 4, // Add an extra initialisation before accumulation to avoid uninitialized pixels when using ShaderVariantNoDiscard
 		ShaderVariantBlitToMainFbo = 1 << 5,
-		_ShaderVariantFlagsCount = 1 << 6,
+		ShaderVariantUsingExtraFbo = 1 << 6,
+		_ShaderVariantFlagsCount = 1 << 7,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;

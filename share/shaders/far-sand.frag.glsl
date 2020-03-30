@@ -5,6 +5,7 @@
 #pragma variant NO_DISCARD_IN_EPSILON_ZBUFFER
 #pragma variant NO_COLOR_OUTPUT // used when there is an EXTRA_INIT pass then
 #pragma variant USING_ShellCullingFragDepth // to use with FragDepth ShellCullingStrategy
+#pragma variant USING_ExtraFbo // to enable in all shaders when ExtraFbo option is used
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeLitSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -31,6 +32,31 @@ uniform bool uShellDepthFalloff = false;
 
 #include "include/zbuffer.inc.glsl"
 
+// Compute influence weight of a grain fragment
+// sqDistToCenter = dot(uv, uv);
+float computeWeight(vec2 uv, float sqDistToCenter) {
+    switch (uWeightMode) {
+    case cWeightLinear:
+        if (uDebugShape == cDebugShapeSquare) {
+            return 1.0 - max(abs(uv.x), abs(uv.y));
+        } else {
+            return 1.0 - sqrt(sqDistToCenter);
+        }
+    case cWeightQuad:
+        if (uDebugShape == cDebugShapeSquare) {
+            float d = max(abs(uv.x), abs(uv.y));
+            return 1.0 - d * d;
+        } else {
+            return 1.0 - sqDistToCenter;
+        }
+    case cWeightGaussian:
+        return -1.0; // TODO
+    case cWeightNone:
+    default:
+        return 1.0;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(STAGE_BLIT_TO_MAIN_FBO)
 
@@ -44,23 +70,35 @@ uniform bool uShellDepthFalloff = false;
 
 // attachments of the secondary fbo
 uniform sampler2D uFboColor0Texture;
+uniform sampler2D uFboColor1Texture;
 uniform sampler2D uFboDepthTexture;
 
 // Problem: semi transparency requires to read from current color attachment
 // but this creates dangerous feedback loops
 // (glBlend cannot be used because of packing)
 
+#include "include/utils.inc.glsl"
+#include "include/raytracing.inc.glsl"
+
+// This stage gathers additive measures and turn them into regular g-buffer fragments
 void main() {
     float d = texelFetch(uFboDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
-    gl_FragDepth = d;
+    gl_FragDepth = d; // maybe add back uEpsilon here -- benchmark-me
 
-    vec4 color0 = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
+    vec4 in_color = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
+    vec4 in_normal = texelFetch(uFboColor1Texture, ivec2(gl_FragCoord.xy), 0);
+    float weightNormalization = 1.0 / in_color.a; // inverse sum of integration weights
 
     GFragment fragment;
     initGFragment(fragment);
-    fragment.baseColor = color0.rgb / color0.a;
+    fragment.baseColor = in_color.rgb * weightNormalization;
     fragment.material_id = pbrMaterial;
-    fragment.material_id = forwardBaseColorMaterial;
+    //fragment.material_id = forwardBaseColorMaterial;
+    fragment.normal = in_normal.xyz * weightNormalization;
+
+    Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+    vec3 cs_coord = linearizeDepth(d) * ray_cs.direction;
+    fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
 
     autoPackGFragment(fragment);
 }
@@ -114,6 +152,107 @@ void main() {
     color0 = vec4(0.0);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+#elif defined(USING_ExtraFbo)
+// STAGE_DEFAULT when using Extra FBO does not write to a GFragment but to some
+// ad-hoc attachment layout.
+
+layout (location = 0) out vec4 out_color;
+layout (location = 1) out vec4 out_normal;
+
+in FragmentData {
+    vec3 position_ws;
+    vec3 baseColor;
+    float radius;
+} inData;
+
+uniform float height = 0.0;
+uniform float metallic = 0.0;
+uniform float roughness = 0.4;
+uniform float occlusion = 1.0;
+uniform vec3 emission = vec3(0.0, 0.0, 0.0);
+uniform vec3 normal = vec3(0.5, 0.5, 1.0);
+uniform float normal_mapping = 0.0;
+
+uniform sampler2D uDepthTexture;
+
+#include "include/utils.inc.glsl"
+#include "include/raytracing.inc.glsl"
+#include "include/bsdf.inc.glsl"
+
+void main() {
+    vec2 uv = gl_PointCoord * 2.0 - 1.0;
+    float sqDistToCenter = dot(uv, uv);
+    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
+        discard;
+    }
+
+    float weight = computeWeight(uv, sqDistToCenter);
+
+    vec3 n;
+    if (uDebugShape == cDebugShapeLitSphere || uDebugShape == cDebugShapeNormalSphere) {
+        Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+        Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
+        vec3 sphereHitPosition_ws;
+        bool intersectSphere = intersectRaySphere(sphereHitPosition_ws, ray_ws, inData.position_ws.xyz, inData.radius);
+        if (intersectSphere) {
+            n = normalize(sphereHitPosition_ws - inData.position_ws);
+        } else {
+            //discard;
+            n = -ray_ws.direction;
+        }
+    } else {
+        n = normalize(normal);
+    }
+
+    out_color.rgb = inData.baseColor.rgb;
+    out_color.a = 1.0;
+    out_normal.xyz = n;
+
+    // direct shading
+    if (uDebugShape != -1) {
+        vec3 beauty = vec3(0.0, 0.0, 0.0);
+
+        if (uDebugShape == cDebugShapeLitSphere) {
+            // Ad-hoc lighting, just to test
+            vec3 camPos_ws = vec3(inverseViewMatrix[3]);
+            vec3 toCam = normalize(camPos_ws - inData.position_ws);
+
+            SurfaceAttributes surface;
+            surface.baseColor = out_color.rgb;
+            surface.reflectance = 0.7;
+            surface.metallic = metallic;
+            surface.roughness = roughness;
+
+            for (int k = 0 ; k < 1 ; ++k) {
+                vec3 toLight = normalize(vec3(5.0, 5.0, 5.0) - inData.position_ws);
+                vec3 f = vec3(0.0);
+                f = brdf(toCam, n, toLight, surface);
+                beauty.rgb += f * vec3(3.0);
+            }
+        } else if (uDebugShape == cDebugShapeNormalSphere) {
+            beauty.rgb = normalize(n) * 0.5 + 0.5;
+        } else {
+            beauty = inData.baseColor;
+        }
+
+        // TODO: move to computeWeight
+        if (uShellDepthFalloff) {
+            float d = texelFetch(uDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
+            float limitDepth = linearizeDepth(d);
+            float depth = linearizeDepth(gl_FragCoord.z);
+            float fac = (limitDepth - depth) / uEpsilon;
+            //beauty = vec3(1.0, fac, 0.0);
+            weight *= fac;
+        }
+
+        out_color.rgb = beauty * weight;
+        out_color.a = weight;
+        out_normal.xyz = n * weight;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 #else // STAGE_DEFAULT
 
@@ -147,31 +286,7 @@ void main() {
         discard;
     }
 
-    float weight;
-    switch (uWeightMode) {
-    case cWeightLinear:
-        if (uDebugShape == cDebugShapeSquare) {
-            weight = 1.0 - max(abs(uv.x), abs(uv.y));
-        } else {
-            weight = 1.0 - sqrt(sqDistToCenter);
-        }
-        break;
-    case cWeightQuad:
-        if (uDebugShape == cDebugShapeSquare) {
-            float d = max(abs(uv.x), abs(uv.y));
-            weight = 1.0 - d * d;
-        } else {
-            weight = 1.0 - sqDistToCenter;
-        }
-        break;
-    case cWeightGaussian:
-        weight = -1.0; // TODO
-        break;
-    case cWeightNone:
-    default:
-        weight = 1.0;
-        break;
-    }
+    float weight = computeWeight(uv, sqDistToCenter);
 
     vec3 n;
     if (uDebugShape == cDebugShapeLitSphere || uDebugShape == cDebugShapeNormalSphere) {

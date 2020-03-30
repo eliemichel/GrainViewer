@@ -54,7 +54,7 @@ void FarSandRendererDialog::draw()
 
 				ImGui::Checkbox("Use Early Depth Test", &props.useEarlyDepthTest);
 				ImGui::Checkbox("No Discard In Epsilon ZPass", &props.noDiscardInEpsilonZPass);
-				ImGui::Checkbox("Use Extra Fbo", &props.extraFbo);
+				ImGui::Checkbox("Use Extra Fbo (recommended)", &props.extraFbo);
 				BeginDisable(props.extraFbo);
 				{
 					ImGui::Checkbox("Extra Init Pass", &props.extraInitPass);

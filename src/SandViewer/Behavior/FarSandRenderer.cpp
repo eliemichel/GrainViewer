@@ -27,6 +27,7 @@ const std::vector<std::string> FarSandRenderer::s_shaderVariantDefines = {
 	"USING_ShellCullingFragDepth",
 	"STAGE_EXTRA_INIT",
 	"STAGE_BLIT_TO_MAIN_FBO",
+	"USING_ExtraFbo",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -88,7 +89,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 	ScopedFramebufferOverride scoppedFramebufferOverride; // to restore fbo binding
 	std::shared_ptr<Framebuffer> fbo;
 	if (props.extraFbo) {
-		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::TwoRgba32fDepth);
 	}
 
 	// 1. Render epsilon depth buffer
@@ -111,6 +112,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
 		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
 		if (props.extraInitPass) flags |= ShaderVariantNoColor;
+		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
 		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
@@ -140,6 +142,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderVariantFlagSet flags = ShaderVariantExtraInitPass;
 		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
 		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
 		ShaderProgram& shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
@@ -179,6 +182,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		ShaderVariantFlagSet flags = 0;
 		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
 		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
+		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
 		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
@@ -196,11 +200,16 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 	// 4. Blit extra fbo to gbuffer
 	if (props.extraFbo) {
 		scoppedFramebufferOverride.restore();
+		glTextureBarrier();
+		glDepthMask(GL_TRUE);
+		glEnable(GL_DEPTH_TEST);
+		glDisable(GL_BLEND);
 
 		ShaderVariantFlagSet flags = ShaderVariantBlitToMainFbo;
+		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
 		ShaderProgram& shader = *getShader(flags);
 
-		glTextureBarrier();
+		setCommonUniforms(shader, camera);
 
 		// Bind depth buffer for reading
 		setDepthUniform(shader);
@@ -209,7 +218,7 @@ void FarSandRenderer::render(const Camera & camera, const World & world, RenderT
 		GLint o = 0;
 		for (int i = 0; i < fbo->colorTextureCount(); ++i) {
 			glBindTextureUnit(static_cast<GLuint>(o), fbo->colorTexture(i));
-			shader.setUniform("uFboColor0Texture", o);
+			shader.setUniform(MAKE_STR("uFboColor" << i << "Texture"), o);
 			++o;
 		}
 		glBindTextureUnit(static_cast<GLuint>(o), fbo->depthTexture());
