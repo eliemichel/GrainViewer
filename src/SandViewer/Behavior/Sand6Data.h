@@ -18,7 +18,11 @@
 #include "IPointCloudData.h"
 
 /**
- * Load point cloud data from sand6 simulation
+ * Load point cloud data from sand6 simulation.
+ *
+ *  Well, actually forget about it: sand6 does not do per grain simulation
+ * (that'd be a waste of resources) so there is not way of loading individual
+ * grains positions. The particles represent clusters of grains.
  */
 class Sand6Data : public Behavior, public IPointCloudData {
 public:

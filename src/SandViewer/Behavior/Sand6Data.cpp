@@ -1,5 +1,7 @@
 #ifndef NO_GPL
 
+#include "mono/Phase.hh" // sand6
+
 #include "utils/strutils.h"
 #include "utils/jsonutils.h"
 #include "Logger.h"
@@ -58,7 +60,7 @@ void Sand6Data::start()
 	d6::Offline offline(m_directory.c_str());
 	const d6::Config& config = offline.config();
 
-	offline.load_frame(0);
+	offline.load_frame(1);
 	DEBUG_LOG << "Loading " << offline.particles().count() << " particles from sand6 simulation";
 
 	const Eigen::Matrix3Xd& centers = offline.particles().centers();
