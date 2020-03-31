@@ -1,8 +1,8 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma varopt STAGE_ZPASS STAGE_EPSILON_ZPASS STAGE_BLIT_TO_MAIN_FBO STAGE_EXTRA_INIT
-#pragma option NO_DISCARD_IN_EPSILON_ZBUFFER
+#pragma varopt PASS_DEPTH PASS_EPSILON_DEPTH PASS_BLIT_TO_MAIN_FBO
+#pragma opt SHELL_CULLING
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeRaytracedSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -20,6 +20,10 @@ uniform bool uShellDepthFalloff = false;
 uniform bool uCheckboardSprites;
 uniform bool uShowSampleCount;
 
+uniform sampler2D uDepthTexture;
+
+uniform float uRadius;
+
 #include "include/uniform/camera.inc.glsl"
 
 #include "include/zbuffer.inc.glsl"
@@ -27,21 +31,36 @@ uniform bool uShowSampleCount;
 // Compute influence weight of a grain fragment
 // sqDistToCenter = dot(uv, uv);
 float computeWeight(vec2 uv, float sqDistToCenter) {
+    float depthWeight = 1.0;
+    if (uShellDepthFalloff) {
+        float d = texelFetch(uDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
+        float limitDepth = linearizeDepth(d);
+        float depth = linearizeDepth(gl_FragCoord.z);
+        float fac = (limitDepth - depth) / uEpsilon;
+        depthWeight = fac;
+    }
+
+    float blendWeight = 1.0;
     switch (uWeightMode) {
     case cWeightLinear:
         if (uDebugShape == cDebugShapeSquare) {
-            return 1.0 - max(abs(uv.x), abs(uv.y));
+            blendWeight = 1.0 - max(abs(uv.x), abs(uv.y));
+            break;
         } else {
-            return 1.0 - sqrt(sqDistToCenter);
+            blendWeight = 1.0 - sqrt(sqDistToCenter);
+            break;
         }
     case cWeightNone:
     default:
-        return 1.0;
+        blendWeight = 1.0;
+        break;
     }
+
+    return depthWeight * blendWeight;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#if defined(STAGE_BLIT_TO_MAIN_FBO)
+#if defined(PASS_BLIT_TO_MAIN_FBO)
 
 #define OUT_GBUFFER
 #include "include/gbuffer2.inc.glsl"
@@ -82,7 +101,7 @@ void main() {
     fragment.normal = in_normal.xyz * weightNormalization;
 
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-    vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
+    vec3 cs_coord = (linearizeDepth(d) - uEpsilon - 0.*uRadius) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
 
     if (uShowSampleCount) {
@@ -94,21 +113,7 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#elif defined(STAGE_EPSILON_ZPASS)
-
-layout (location = 0) out vec4 color0;
-
-void main() {
-#ifndef NO_DISCARD_IN_EPSILON_ZBUFFER
-    vec2 uv = gl_PointCoord * 2.0 - 1.0;
-    if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
-        discard;
-    }
-#endif // NO_DISCARD_IN_EPSILON_ZBUFFER
-}
-
-///////////////////////////////////////////////////////////////////////////////
-#elif defined(STAGE_EXTRA_INIT) // STAGE_EXTRA_INIT
+#elif defined(PASS_EPSILON_DEPTH)
 
 layout (location = 0) out vec4 color0;
 
@@ -117,17 +122,18 @@ void main() {
     if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
         discard;
     }
-
-    // Init for accumulation
-    color0 = vec4(0.0);
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
-#else // DEFAULT STAGE
+#else // DEFAULT PASS
 
+#ifdef SHELL_CULLING
 layout (location = 0) out vec4 out_color;
 layout (location = 1) out vec4 out_normal;
+#else // SHELL_CULLING
+#define OUT_GBUFFER
+#include "include/gbuffer2.inc.glsl"
+#endif // SHELL_CULLING
 
 in FragmentData {
     vec3 position_ws;
@@ -144,7 +150,6 @@ uniform vec3 emission = vec3(0.0, 0.0, 0.0);
 uniform vec3 normal = vec3(0.5, 0.5, 1.0);
 uniform float normal_mapping = 0.0;
 
-uniform sampler2D uDepthTexture;
 uniform float uTime;
 
 #include "include/utils.inc.glsl"
@@ -152,20 +157,24 @@ uniform float uTime;
 #include "include/bsdf.inc.glsl"
 
 void main() {
-    vec2 correctedPointCoord = (ceil(gl_PointCoord.xy * inData.screenSpaceDiameter) - 0.5) / inData.screenSpaceDiameter;
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     float sqDistToCenter = dot(uv, uv);
 
-    float weight = computeWeight(uv, sqDistToCenter);
-
-    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
-        //discard;
-    }
     float antialiasing = 1.0;
+    float weight = 1.0;
+#ifdef SHELL_CULLING
+    weight = computeWeight(uv, sqDistToCenter);
     if (uDebugShape != cDebugShapeSquare) {
-        antialiasing = smoothstep(1.0, 0.8, sqDistToCenter);
+        antialiasing = smoothstep(1.0, 1.0 - 5.0 / inData.screenSpaceDiameter, sqDistToCenter);
     }
     weight *= antialiasing;
+#else // SHELL_CULLING
+    vec4 out_color = vec4(0.0); // mock outputs
+    vec4 out_normal = vec4(0.0);
+    if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
+        discard;
+    }
+#endif // SHELL_CULLING
 
     vec3 n;
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
@@ -192,37 +201,32 @@ void main() {
         n = mat3(inverseViewMatrix) * normalize(-ray_cs.direction);
     }
 
-    out_color.rgb = inData.baseColor.rgb;
-    out_color.a = 1.0;
-    out_normal.xyz = n;
+    vec3 baseColor = inData.baseColor;
 
-    // direct shading
-    if (uDebugShape != -1) {
-        vec3 baseColor = inData.baseColor;
-
-        // DEBUG checkerboard for mipmap test
-        if (uCheckboardSprites) {
-            baseColor = vec3(abs(step(uv.x, 0.0) - step(uv.y, 0.0)));
-        }
-
-        // TODO: move to computeWeight
-        if (uShellDepthFalloff) {
-            float d = texelFetch(uDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
-            float limitDepth = linearizeDepth(d);
-            float depth = linearizeDepth(gl_FragCoord.z);
-            float fac = (limitDepth - depth) / uEpsilon;
-            //baseColor = vec3(1.0, fac, 0.0);
-            weight *= fac;
-        }
-
-        out_color.rgb = baseColor * weight;
-        out_color.a = weight;
-        out_normal.xyz = n * weight;
+    // DEBUG checkerboard for mipmap test
+    if (uCheckboardSprites) {
+        baseColor = vec3(abs(step(uv.x, 0.0) - step(uv.y, 0.0)));
     }
+
+    out_color.rgb = baseColor * weight;
+    out_color.a = weight;
+    out_normal.xyz = n * weight;
 
     if (uShowSampleCount) {
         out_color.a = clamp(ceil(antialiasing), 0, 1);
     }
+
+#ifndef SHELL_CULLING
+    // If not using shell culling, we render directly to G-buffer, otherwise
+    // there is an extra blitting pass to normalize cumulated values.
+    GFragment fragment;
+    initGFragment(fragment);
+    fragment.baseColor = out_color.rgb;
+    fragment.normal = out_normal.xyz;
+    fragment.ws_coord = inData.position_ws;
+    fragment.material_id = pbrMaterial;
+    autoPackGFragment(fragment);
+#endif // not SHELL_CULLING
 }
 
 ///////////////////////////////////////////////////////////////////////////////

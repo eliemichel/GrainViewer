@@ -1,11 +1,11 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma varopt STAGE_ZPASS STAGE_EPSILON_ZPASS STAGE_BLIT_TO_MAIN_FBO
+#pragma varopt PASS_DEPTH PASS_EPSILON_DEPTH PASS_BLIT_TO_MAIN_FBO
 #pragma variant PROCEDURAL_BASECOLOR PROCEDURAL_BASECOLOR2 PROCEDURAL_BASECOLOR3 BLACK_BASECOLOR
 
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef STAGE_BLIT_TO_MAIN_FBO
+#ifdef PASS_BLIT_TO_MAIN_FBO
 #extension GL_EXT_geometry_shader4 : enable // to use gl_PositionIn[]
 
 in vec2 vertUv[];
@@ -25,7 +25,7 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#else // STAGE_BLIT_TO_MAIN_FBO
+#else // PASS_BLIT_TO_MAIN_FBO
 
 layout(points) in;
 layout(points, max_vertices = 1) out;
@@ -110,9 +110,9 @@ vec3 computeBaseColor(vec3 pos) {
 
 // Early depth test
 bool depthTest(vec4 position_clipspace) {
-#if defined(STAGE_ZPASS) || defined(STAGE_EPSILON_ZPASS)
+#if defined(PASS_DEPTH) || defined(PASS_EPSILON_DEPTH)
 	return true;
-#else // STAGE_ZPASS
+#else // PASS_DEPTH
 	if (!uUseShellCulling || !uUseEarlyDepthTest) return true;
 	vec3 fragCoord;
 	vec2 res = resolution.xy - vec2(0.0, 0.0);
@@ -122,7 +122,7 @@ bool depthTest(vec4 position_clipspace) {
 	float limitDepth = texelFetch(uDepthTexture, ivec2(fragCoord.xy), 0).x;
 
 	return fragCoord.z <= limitDepth;
-#endif // STAGE_ZPASS
+#endif // PASS_DEPTH
 }
 
 void main() {
@@ -134,10 +134,10 @@ void main() {
 	vec4 position_cs = viewMatrix * vec4(outData.position_ws, 1.0);
 
 	vec4 offset = vec4(0.0);
-#ifdef STAGE_EPSILON_ZPASS
+#ifdef PASS_EPSILON_DEPTH
 	// Move away to let a shell of thickness uEpsilon
 	offset.xyz = uEpsilon * normalize(position_cs.xyz);
-#endif // STAGE_EPSILON_ZPASS
+#endif // PASS_EPSILON_DEPTH
 
 	vec4 position_clipspace = projectionMatrix * (position_cs + offset);
 
@@ -158,4 +158,4 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // STAGE_BLIT_TO_MAIN_FBO
+#endif // PASS_BLIT_TO_MAIN_FBO

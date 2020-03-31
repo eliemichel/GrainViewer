@@ -60,10 +60,11 @@ private:
 	// definition of s_shaderVariantDefines in cpp file.
 	// TODO: distinguish stages from options
 	enum ShaderVariantFlags {
-		ShaderVariantZPass = 1 << 0,
-		ShaderVariantEpsilonZPass = 1 << 1,
-		ShaderVariantBlitToMainFbo = 1 << 2,
-		_ShaderVariantFlagsCount = 1 << 3,
+		ShaderOptionShellCulling = 1 << 0,
+		ShaderPassDepth = 1 << 1,
+		ShaderPassEpsilonDepth = 1 << 2,
+		ShaderPassBlitToMainFbo = 1 << 3,
+		_ShaderVariantFlagsCount = 1 << 4,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;

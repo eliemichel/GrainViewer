@@ -23,9 +23,10 @@
 #include "PostEffect.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
-	"STAGE_ZPASS",
-	"STAGE_EPSILON_ZPASS",
-	"STAGE_BLIT_TO_MAIN_FBO",
+	"SHELL_CULLING",
+	"PASS_DEPTH",
+	"PASS_EPSILON_DEPTH",
+	"PASS_BLIT_TO_MAIN_FBO",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -110,7 +111,7 @@ void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, 
 
 	// 1. Render depth buffer with an offset of epsilon
 	if (props.useShellCulling) {
-		ShaderProgram& shader = *getShader(ShaderVariantEpsilonZPass);
+		ShaderProgram& shader = *getShader(ShaderPassEpsilonDepth | ShaderOptionShellCulling);
 
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
@@ -131,7 +132,7 @@ void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, 
 
 	// 3. Render points cumulatively
 	{
-		ShaderProgram& shader = *getShader();
+		ShaderProgram& shader = *getShader(props.useShellCulling ? ShaderOptionShellCulling : 0);
 
 		if (props.useShellCulling) {
 			glDepthMask(GL_FALSE);
@@ -159,7 +160,7 @@ void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, 
 
 	// 4. Blit extra fbo to gbuffer
 	if (props.useShellCulling) {
-		ShaderProgram& shader = *getShader(ShaderVariantBlitToMainFbo);
+		ShaderProgram& shader = *getShader(ShaderPassBlitToMainFbo | ShaderOptionShellCulling);
 
 		scoppedFramebufferOverride.restore();
 		
@@ -191,7 +192,7 @@ void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, 
 
 void UberSandRenderer::renderToShadowMap(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const
 {
-	ShaderProgram& shader = *getShader(ShaderVariantZPass);
+	ShaderProgram& shader = *getShader(ShaderPassDepth | (properties().useShellCulling ? ShaderOptionShellCulling : 0));
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	glDepthMask(GL_TRUE);

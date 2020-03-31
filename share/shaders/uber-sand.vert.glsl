@@ -1,12 +1,12 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma varopt STAGE_BLIT_TO_MAIN_FBO
+#pragma varopt PASS_BLIT_TO_MAIN_FBO
 
 layout (location = 0) in vec4 position;
 
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef STAGE_BLIT_TO_MAIN_FBO
+#ifdef PASS_BLIT_TO_MAIN_FBO
 
 // just a regular post effect
 out vec2 vertUv;
@@ -16,7 +16,7 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#else // STAGE_BLIT_TO_MAIN_FBO
+#else // PASS_BLIT_TO_MAIN_FBO
 
 out VertexData {
 	vec3 position_ws;
@@ -50,4 +50,4 @@ void main() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // STAGE_BLIT_TO_MAIN_FBO
+#endif // PASS_BLIT_TO_MAIN_FBO
