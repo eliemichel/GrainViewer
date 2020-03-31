@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef _WIN32
+#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
+#endif // _WIN32
+
 #include <glad/glad.h>
 #include <memory>
 #include <glm/glm.hpp>

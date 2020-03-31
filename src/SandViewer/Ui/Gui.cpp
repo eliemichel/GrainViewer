@@ -33,6 +33,7 @@ using namespace std;
 // TODO: Find a way to avoid this function
 #include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
+#include "Sand6DataDialog.h"
 #include "FarSandRendererDialog.h"
 #include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
@@ -45,6 +46,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	}
 	handleType(SandRenderer);
 	handleType(LightGizmo);
+	handleType(Sand6Data);
 	handleType(FarSandRenderer);
 	handleType(UberSandRenderer);
 	handleType(TransformBehavior);

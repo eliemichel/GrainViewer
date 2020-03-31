@@ -35,7 +35,7 @@ foreach(FLAG ${CMAKE_CXX_FLAGS})
 	endif()
 endforeach()
 list(APPEND NEW_FLAGS "/w")
-set(CMAKE_CXX_FLAGS "${NEW_FLAGS}")
+string(REPLACE ";" " " CMAKE_CXX_FLAGS "${NEW_FLAGS}")
 
 ###############################################################################
 # Submodules
@@ -132,3 +132,4 @@ add_subdirectory(tinypngout)
 add_subdirectory(tinygltf)
 add_subdirectory(nanoflann)
 add_subdirectory(refl-cpp)
+add_subdirectory(sand6) # ! GPL

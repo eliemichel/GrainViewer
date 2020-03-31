@@ -61,8 +61,18 @@ set(AugenCore_SRC
 ###############################################################################
 # Main executable
 
+# Elements of code that are GPL licenced
+set(GPL_SRC
+	Behavior/Sand6Data.h
+	Behavior/Sand6Data.cpp
+
+	Ui/Sand6DataDialog.h
+	Ui/Sand6DataDialog.cpp
+)
+
 set(All_SRC
 	${AugenCore_SRC}
+	${GPL_SRC}
 
 	Behavior/GltfDataBehavior.h
 	Behavior/GltfDataBehavior.cpp
@@ -189,6 +199,7 @@ set(LIBS
 	tinygltf
 	nanoflann
 	refl-cpp
+	sand6 # ! GPL
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
