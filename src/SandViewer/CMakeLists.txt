@@ -74,6 +74,7 @@ set(All_SRC
 	${AugenCore_SRC}
 	${GPL_SRC}
 
+	Behavior/IPointCloudData.h
 	Behavior/GltfDataBehavior.h
 	Behavior/GltfDataBehavior.cpp
 	Behavior/ImpostorCloudRenderer.h

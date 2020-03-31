@@ -16,11 +16,14 @@
 #include "ShaderPool.h"
 #include "ShaderProgram.h"
 #include "GlBuffer.h"
-#include "PointCloudDataBehavior.h"
 #include "ResourceManager.h"
 #include "GlTexture.h"
 #include "Framebuffer.h"
 #include "PostEffect.h"
+
+// TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
+#include "PointCloudDataBehavior.h"
+#include "Sand6Data.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"SHELL_CULLING",
@@ -47,7 +50,12 @@ bool UberSandRenderer::deserialize(const rapidjson::Value & json)
 void UberSandRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
+
 	m_pointData = getComponent<PointCloudDataBehavior>();
+	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
+	if (m_pointData.expired()) {
+		WARN_LOG << "UberSandRenderer could not find point data (ensure that there is a PointCloudDataBehavior or Sand6Data attached to the same object)";
+	}
 
 	if (!m_colormapTextureName.empty()) {
 		m_colormapTexture = ResourceManager::loadTexture(m_colormapTextureName);
@@ -82,14 +90,14 @@ void UberSandRenderer::render(const Camera& camera, const World& world, RenderTy
 // private members
 ///////////////////////////////////////////////////////////////////////////////
 
-void UberSandRenderer::draw(const PointCloudDataBehavior& pointData) const
+void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
 	glDrawArrays(GL_POINTS, 0, pointData.pointCount() / pointData.frameCount());
 	glBindVertexArray(0);
 }
 
-void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const
+void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const Camera& camera, const World& world) const
 {
 	ScopedFramebufferOverride scoppedFramebufferOverride; // to automatically restore fbo binding at the end of scope
 
@@ -190,7 +198,7 @@ void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, 
 	}
 }
 
-void UberSandRenderer::renderToShadowMap(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const
+void UberSandRenderer::renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const
 {
 	ShaderProgram& shader = *getShader(ShaderPassDepth | (properties().useShellCulling ? ShaderOptionShellCulling : 0));
 

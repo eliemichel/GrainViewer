@@ -8,7 +8,7 @@
 
 class TransformBehavior;
 class ShaderProgram;
-class PointCloudDataBehavior;
+class IPointCloudData;
 class GlTexture;
 
 /**
@@ -70,9 +70,9 @@ private:
 	static const std::vector<std::string> s_shaderVariantDefines;
 
 private:
-	void draw(const PointCloudDataBehavior & pointData) const;
-	void renderToGBuffer(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const;
-	void renderToShadowMap(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const;
+	void draw(const IPointCloudData& pointData) const;
+	void renderToGBuffer(const IPointCloudData& pointData, const Camera& camera, const World& world) const;
+	void renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const;
 	glm::mat4 modelMatrix() const;
 	void setCommonUniforms(ShaderProgram & shader, const Camera & camera) const;
 	void bindDepthTexture(ShaderProgram & shader, GLuint textureUnit = 7) const;
@@ -86,7 +86,7 @@ public:
 	// One shader by combination of flags
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<PointCloudDataBehavior> m_pointData;
+	std::weak_ptr<IPointCloudData> m_pointData;
 	std::unique_ptr<GlTexture> m_colormapTexture;
 
 	std::shared_ptr<Framebuffer> m_depthFbo;

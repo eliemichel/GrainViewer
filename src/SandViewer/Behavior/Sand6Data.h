@@ -15,17 +15,18 @@
 #include "Behavior.h"
 #include "Mesh.h"
 #include "GlBuffer.h"
+#include "IPointCloudData.h"
 
 /**
  * Load point cloud data from sand6 simulation
  */
-class Sand6Data : public Behavior {
+class Sand6Data : public Behavior, public IPointCloudData {
 public:
-	// Accessors
-	GLsizei pointCount() const;
-	GLsizei frameCount() const;
-	const GlBuffer & data() const;
-	GLuint vao() const;
+	// IPointCloudData implementation
+	GLsizei pointCount() const override;
+	GLsizei frameCount() const override;
+	const GlBuffer & data() const override;
+	GLuint vao() const override;
 
 public:
 	// Behavior implementation

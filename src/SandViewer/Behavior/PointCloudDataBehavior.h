@@ -11,17 +11,18 @@
 #include "Behavior.h"
 #include "Mesh.h"
 #include "GlBuffer.h"
+#include "IPointCloudData.h"
 
 /**
  * Load point cloud from XYZ or adhoc BIN file to video memory
  */
-class PointCloudDataBehavior : public Behavior {
+class PointCloudDataBehavior : public Behavior, public IPointCloudData {
 public:
-	// Accessors
-	GLsizei pointCount() const;
-	GLsizei frameCount() const;
-	const GlBuffer & data() const;
-	GLuint vao() const;
+	// IPointCloudData implementation
+	GLsizei pointCount() const override;
+	GLsizei frameCount() const override;
+	const GlBuffer& data() const override;
+	GLuint vao() const override;
 
 public:
 	// Behavior implementation
