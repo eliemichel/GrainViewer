@@ -4,6 +4,8 @@
 
 #include <glad/modernglad.h>
 
+#include <magic_enum.hpp>
+
 #include "utils/jsonutils.h"
 #include "utils/mathutils.h"
 #include "utils/strutils.h"
@@ -21,13 +23,9 @@
 #include "PostEffect.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
-	"STAGE_EPSILON_ZBUFFER",
-	"NO_DISCARD_IN_EPSILON_ZBUFFER",
-	"NO_COLOR_OUTPUT",
-	"USING_ShellCullingFragDepth",
-	"STAGE_EXTRA_INIT",
+	"STAGE_ZPASS",
+	"STAGE_EPSILON_ZPASS",
 	"STAGE_BLIT_TO_MAIN_FBO",
-	"USING_ExtraFbo",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -60,103 +58,86 @@ void UberSandRenderer::update(float time, int frame)
 	m_time = time;
 }
 
-void UberSandRenderer::render(const Camera & camera, const World & world, RenderType target) const
+void UberSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	if (target == RenderType::ShadowMap) {
-		renderToShadowMap(camera, world, target);
-		return;
-	}
-
 	// Sanity checks
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
+	switch (target) {
+	case RenderType::ShadowMap:
+		renderToShadowMap(*pointData, camera, world);
+		break;
+	case RenderType::Default:
+		renderToGBuffer(*pointData, camera, world);
+		break;
+	default:
+		ERR_LOG << "Unsupported render target: " << magic_enum::enum_name(target);
+		break;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// private members
+///////////////////////////////////////////////////////////////////////////////
+
+void UberSandRenderer::draw(const PointCloudDataBehavior& pointData) const
+{
+	glBindVertexArray(pointData.vao());
+	glDrawArrays(GL_POINTS, 0, pointData.pointCount() / pointData.frameCount());
+	glBindVertexArray(0);
+}
+
+void UberSandRenderer::renderToGBuffer(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const
+{
+	ScopedFramebufferOverride scoppedFramebufferOverride; // to automatically restore fbo binding at the end of scope
+
 	glEnable(GL_PROGRAM_POINT_SIZE);
 
-	const auto & props = properties();
-
-	ScopedFramebufferOverride scoppedFramebufferOverride; // to restore fbo binding
+	const auto& props = properties();
+	
 	std::shared_ptr<Framebuffer> fbo;
-	if (props.extraFbo) {
+	if (props.useShellCulling) {
 		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::TwoRgba32fDepth);
 	}
 
-	// 1. Render epsilon depth buffer
+	// 0. Clear depth
 	if (props.useShellCulling) {
-		if (props.extraFbo) {
-			fbo->deactivateColorAttachments();
-			fbo->bind();
-			glClear(GL_DEPTH_BUFFER_BIT);
-		}
+		fbo->deactivateColorAttachments();
+		fbo->bind();
+		glClear(GL_DEPTH_BUFFER_BIT);
+	}
+
+	// 1. Render depth buffer with an offset of epsilon
+	if (props.useShellCulling) {
+		ShaderProgram& shader = *getShader(ShaderVariantEpsilonZPass);
 
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		if (props.shellCullingStrategy == ShellCullingDepthRange) {
-			glDepthRangef(depthRangeBias(camera), 1.0f);
-		}
-
-		ShaderVariantFlagSet flags = ShaderVariantEpsilonZPass;
-		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
-		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
-		if (props.extraInitPass) flags |= ShaderVariantNoColor;
-		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
-		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
 		shader.use();
-		glBindVertexArray(pointData->vao());
-		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
-		glBindVertexArray(0);
-
-		if (props.extraFbo) {
-			// Replaces optional extra init pass
-			fbo->activateColorAttachments();
-			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
-		}
+		draw(pointData);
 	}
 
-	// 2. Optional extra init pass
-	if (!props.extraFbo && props.useShellCulling && props.extraInitPass) {
-		glDepthMask(GL_FALSE);
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
-
-		if (props.shellCullingStrategy == ShellCullingDepthRange) {
-			glDepthRangef(0, 1.0f - depthRangeBias(camera));
-		}
-
-		ShaderVariantFlagSet flags = ShaderVariantExtraInitPass;
-		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
-		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
-		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
-		ShaderProgram& shader = *getShader(flags);
-		setCommonUniforms(shader, camera);
-
-		if (props.useShellCulling && props.useEarlyDepthTest) {
-			glTextureBarrier();
-			setDepthUniform(shader);
-		}
-
-		shader.use();
-		glBindVertexArray(pointData->vao());
-		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
-		glBindVertexArray(0);
+	// 2. Clear color buffers
+	if (props.useShellCulling) {
+		fbo->activateColorAttachments();
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
 	}
 
 	// 3. Render points cumulatively
 	{
-		if (properties().useShellCulling) {
+		ShaderProgram& shader = *getShader();
+
+		if (props.useShellCulling) {
 			glDepthMask(GL_FALSE);
 			glEnable(GL_DEPTH_TEST);
-			if (properties().disableBlend) {
-				glDisable(GL_BLEND);
-			} else {
-				glEnable(GL_BLEND);
-				glBlendFunc(GL_ONE, GL_ONE);
-			}
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE);
 		}
 		else {
 			glDepthMask(GL_TRUE);
@@ -164,46 +145,32 @@ void UberSandRenderer::render(const Camera & camera, const World & world, Render
 			glDisable(GL_BLEND);
 		}
 
-		if (props.shellCullingStrategy == ShellCullingDepthRange) {
-			glDepthRangef(0, 1.0f - depthRangeBias(camera));
-		}
-
-		ShaderVariantFlagSet flags = 0;
-		if (props.shellCullingStrategy == ShellCullingFragDepth) flags |= ShaderVariantFragDepth;
-		if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
-		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
-		ShaderProgram & shader = *getShader(flags);
 		setCommonUniforms(shader, camera);
 
 		if (props.useShellCulling && (props.shellDepthFalloff || props.useEarlyDepthTest)) {
+			// If we need to read from the current depth buffer
 			glTextureBarrier();
-			setDepthUniform(shader);
+			bindDepthTexture(shader);
 		}
 
 		shader.use();
-		glBindVertexArray(pointData->vao());
-		glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
-		glBindVertexArray(0);
+		draw(pointData);
 	}
 
 	// 4. Blit extra fbo to gbuffer
-	if (props.useShellCulling && props.extraFbo) {
+	if (props.useShellCulling) {
+		ShaderProgram& shader = *getShader(ShaderVariantBlitToMainFbo);
+
 		scoppedFramebufferOverride.restore();
-		glTextureBarrier();
+		
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		ShaderVariantFlagSet flags = ShaderVariantBlitToMainFbo;
-		if (props.extraFbo) flags |= ShaderVariantUsingExtraFbo;
-		ShaderProgram& shader = *getShader(flags);
-
 		setCommonUniforms(shader, camera);
 
-		// Bind depth buffer for reading
-		setDepthUniform(shader);
-
 		// Bind secondary FBO textures
+		glTextureBarrier();
 		GLint o = 0;
 		for (int i = 0; i < fbo->colorTextureCount(); ++i) {
 			glBindTextureUnit(static_cast<GLuint>(o), fbo->colorTexture(i));
@@ -214,45 +181,26 @@ void UberSandRenderer::render(const Camera & camera, const World & world, Render
 		shader.setUniform("uFboDepthTexture", o);
 		++o;
 
+		// Bind depth buffer for reading
+		bindDepthTexture(shader, o++);
+
 		shader.use();
 		PostEffect::DrawWithDepthTest();
 	}
-
-	// Reset depth range to default
-	glDepthRangef(0.0f, 1.0f);
-	glDepthMask(GL_TRUE);
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// private members
-///////////////////////////////////////////////////////////////////////////////
-
-void UberSandRenderer::renderToShadowMap(const Camera& camera, const World& world, RenderType target) const
+void UberSandRenderer::renderToShadowMap(const PointCloudDataBehavior& pointData, const Camera& camera, const World& world) const
 {
-	// Sanity checks
-	auto pointData = m_pointData.lock();
-	if (!pointData) return;
+	ShaderProgram& shader = *getShader(ShaderVariantZPass);
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
-
-	const auto& props = properties();
-
-	// 1. Render epsilon depth buffer
 	glDepthMask(GL_TRUE);
 	glDisable(GL_BLEND);
 
-	ShaderVariantFlagSet flags = ShaderVariantEpsilonZPass;
-	if (props.noDiscardInEpsilonZPass) flags |= ShaderVariantNoDiscard;
-	flags |= ShaderVariantNoColor;
-	ShaderProgram& shader = *getShader(flags);
 	setCommonUniforms(shader, camera);
 
-	shader.setUniform("uEpsilon", 0);
-
 	shader.use();
-	glBindVertexArray(pointData->vao());
-	glDrawArrays(GL_POINTS, 0, pointData->pointCount() / pointData->frameCount());
-	glBindVertexArray(0);
+	draw(pointData);
 }
 
 glm::mat4 UberSandRenderer::modelMatrix() const {
@@ -274,11 +222,6 @@ void UberSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & 
 	shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
 	shader.setUniform("uTime", m_time);
 	
-	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
-		shader.setUniform("uDepthRangeMin", 0.0f);
-		shader.setUniform("uDepthRangeMax", 1.0f - depthRangeBias(camera));
-	}
-
 	GLint o = 0;
 	if (m_colormapTexture) {
 		m_colormapTexture->bind(o);
@@ -287,25 +230,14 @@ void UberSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & 
 	}
 }
 
-void UberSandRenderer::setDepthUniform(ShaderProgram & shader) const
+void UberSandRenderer::bindDepthTexture(ShaderProgram & shader, GLuint textureUnit) const
 {
 	GLint depthTexture;
 	GLint drawFboId = 0;
 	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
 	glGetNamedFramebufferAttachmentParameteriv(drawFboId, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME, &depthTexture);
-	glBindTextureUnit(7, static_cast<GLuint>(depthTexture));
-	shader.setUniform("uDepthTexture", 7);
-}
-
-float UberSandRenderer::depthRangeBias(const Camera & camera) const
-{
-	if (m_properties.shellCullingStrategy == ShellCullingDepthRange) {
-		float eps = m_properties.epsilonFactor * m_properties.radius;
-		return eps / (camera.farDistance() - camera.nearDistance() + eps);
-	}
-	else {
-		return 0.0f;
-	}
+	glBindTextureUnit(textureUnit, static_cast<GLuint>(depthTexture));
+	shader.setUniform("uDepthTexture", static_cast<GLint>(textureUnit));
 }
 
 std::shared_ptr<ShaderProgram> UberSandRenderer::getShader(ShaderVariantFlagSet flags) const

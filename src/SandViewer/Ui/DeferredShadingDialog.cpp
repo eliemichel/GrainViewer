@@ -27,7 +27,7 @@ void DeferredShadingDialog::draw()
 			props.shadingMode = static_cast<GlDeferredShader::ShadingMode>(mode);
 
 			ImGui::Checkbox("Transparent film", &props.transparentFilm);
-			ImGui::Checkbox("Show Sample Count", &props.showSampleCount);
+			ImGui::Checkbox("Show Colormap Dialog", &props.showSampleCount);
 		}
 	}
 }

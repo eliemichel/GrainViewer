@@ -263,7 +263,7 @@ void FarSandRenderer::renderToShadowMap(const Camera& camera, const World& world
 	ShaderProgram& shader = *getShader(flags);
 	setCommonUniforms(shader, camera);
 
-	shader.setUniform("uEpsilon", 0);
+	shader.setUniform("uEpsilon", 0.0f);
 
 	shader.use();
 	glBindVertexArray(pointData->vao());

@@ -28,6 +28,7 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 			jrOption(json, std::string(member.name), member(properties), member(properties));
 		}
 		// Enum properties
+		// TODO: use magic_enum to load from strings
 		else if constexpr (std::is_enum_v<type>) {
 			int value = member(properties);
 			jrOption(json, std::string(member.name), value, value);
