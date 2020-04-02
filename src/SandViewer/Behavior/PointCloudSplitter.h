@@ -5,6 +5,7 @@
 #include "Behavior.h"
 #include "GlBuffer.h"
 #include "IPointCloudData.h"
+#include "utils/ReflectionAttributes.h"
 
 #include <refl.hpp>
 
@@ -31,9 +32,9 @@ public:
 public:
 	
 	enum class RenderTypeCaching {
-		Forget,
-		Cache,
-		Precompute,
+		Forget, // Uses less memory
+		Cache, // Faster, but by max 1%...
+		Precompute, // Not recommended
 	};
 	struct Properties {
 		RenderTypeCaching renderTypeCaching = RenderTypeCaching::Forget;
@@ -98,7 +99,7 @@ private:
 	std::weak_ptr<IPointCloudData> m_pointData;
 
 	std::unique_ptr<GlBuffer> m_elementBuffer;
-	std::unique_ptr<GlBuffer> m_renderTypeSsbo;
+	mutable std::unique_ptr<GlBuffer> m_renderTypeCache; // lazily allocated
 
 	std::vector<Counter> m_counters;
 	std::unique_ptr<GlBuffer> m_countersSsbo;
@@ -109,12 +110,13 @@ private:
 	float m_time;
 };
 
+using namespace ReflectionAttributes;
 REFL_TYPE(PointCloudSplitter::Properties)
 REFL_FIELD(renderTypeCaching)
 REFL_FIELD(enableOcclusionCulling)
 REFL_FIELD(enableFrustumCulling)
 REFL_FIELD(instanceLimit)
-REFL_FIELD(impostorLimit)
+REFL_FIELD(impostorLimit, Range(0.01f, 20.0f))
 REFL_END
 
 /**

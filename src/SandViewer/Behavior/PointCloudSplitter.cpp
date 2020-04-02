@@ -39,19 +39,6 @@ void PointCloudSplitter::start()
 	m_elementBuffer->alloc();
 	m_elementBuffer->finalize();
 
-	// Cache for render types
-	m_renderTypeSsbo = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
-	m_renderTypeSsbo->addBlock<GLuint>(m_elementCount);
-	m_renderTypeSsbo->alloc();
-
-
-
-
-
-
-
-	m_renderTypeSsbo->finalize();
-
 	// Small extra buffer to count the number of elements for each model
 	m_counters.resize(magic_enum::enum_count<RenderModel>());
 	m_countersSsbo = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
@@ -71,9 +58,19 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	if (!pointData) return;
 
 	m_countersSsbo->bindSsbo(0);
-	m_renderTypeSsbo->bindSsbo(1);
 	m_elementBuffer->bindSsbo(2);
 	pointData->vbo().bindSsbo(3);
+
+	if (properties().renderTypeCaching != RenderTypeCaching::Forget) {
+		// Cache for render types
+		if (!m_renderTypeCache) {
+			m_renderTypeCache = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
+			m_renderTypeCache->addBlock<GLuint>(m_elementCount);
+			m_renderTypeCache->alloc();
+			m_renderTypeCache->finalize();
+		}
+		m_renderTypeCache->bindSsbo(1);
+	}
 
 	StepShaderVariant firstStep = StepShaderVariant::STEP_RESET;
 	if (properties().renderTypeCaching == RenderTypeCaching::Precompute) {
@@ -81,11 +78,13 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	}
 
 	constexpr StepShaderVariant lastStep = lastValue<StepShaderVariant>();
+	constexpr int STEP_RESET = static_cast<int>(StepShaderVariant::STEP_RESET);
+	constexpr int STEP_OFFSET = static_cast<int>(StepShaderVariant::STEP_OFFSET);
 	for (int i = static_cast<int>(firstStep); i <= static_cast<int>(lastStep); ++i) {
 		const ShaderProgram& shader = *getShader(properties().renderTypeCaching, i);
 		setCommonUniforms(shader, camera);
 		shader.use();
-		glDispatchCompute(i == 0 || i == 2 ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
+		glDispatchCompute(i == STEP_RESET || i == STEP_OFFSET ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
 

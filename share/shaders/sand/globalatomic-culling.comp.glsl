@@ -2,6 +2,7 @@
 #include "sys:defines"
 #include "sys:settings"
 
+// Matches enums in PointCloudSplitter.h
 #pragma variant RENDER_TYPE_FORGET RENDER_TYPE_CACHE RENDER_TYPE_PRECOMPUTE
 #pragma variant STEP_PRECOMPUTE STEP_RESET STEP_COUNT STEP_OFFSET STEP_WRITE
 
@@ -16,12 +17,7 @@ struct Counter {
 	uint offset;
 };
 
-/**
- * Shader used for culling in SandRenderer when cullingMechanism is set to
- * PrefixSum. It is split into several steps.
- */
-
-uniform uint uPointCount;
+uniform uint uPointCount; // number of elements to draw a priori, ie points per frame
 uniform uint uRenderModelCount = 2;
 uniform uint uFrameCount;
 uniform float uFps = 25.0;
@@ -38,7 +34,7 @@ layout (std430, binding = 2) restrict writeonly buffer elementBufferSsbo {
  * getRenderType(): Get the index of the model to use for a given element.
  * Several options to investigate:
  *   a. cache this before hand in a renderType[] ssbo
-        -- RENDER_TYPE_PRECOMPUTED variant
+        -- RENDER_TYPE_PRECOMPUTE variant
  *   b. compute it directly here, but then compute it twice (steps #1 and #3)
         -- RENDER_TYPE_FORGET variant
  *   c. A trade-off would consist in computing it during step #1 and caching
@@ -47,7 +43,7 @@ layout (std430, binding = 2) restrict writeonly buffer elementBufferSsbo {
  * or scalar units.
  */
 ///////////////////////////////////////////////////////////////////////////////
-#if (defined(RENDER_TYPE_PRECOMPUTED) && !defined(STEP_PRECOMPUTE)) || (defined(RENDER_TYPE_CACHE) && !defined(STEP_COUNT))
+#if (defined(RENDER_TYPE_PRECOMPUTE) && !defined(STEP_PRECOMPUTE)) || (defined(RENDER_TYPE_CACHE) && !defined(STEP_COUNT))
 
 layout(std430, binding = 1) restrict readonly buffer renderTypeSsbo {
 	uint renderType[];
@@ -58,7 +54,7 @@ uint getRenderType(uint element) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#else // RENDER_TYPE_PRECOMPUTED
+#else // RENDER_TYPE_PRECOMPUTE
 
 uniform sampler2D uOcclusionMap;
 uniform float uOuterOverInnerRadius;
@@ -87,15 +83,15 @@ uint getRenderType(uint element) {
 	uint totalPointCount = uPointCount * uFrameCount;
 	uint pointId = AnimatedPointId(element, uFrameCount, totalPointCount, uTime, uFps);
 	vec3 position = point[pointId].position.xyz;
-	uint model = discriminate(position, uOuterRadius, uInnerRadius, uOuterOverInnerRadius, uOcclusionMap);
+	uint type = discriminate(position, uOuterRadius, uInnerRadius, uOuterOverInnerRadius, uOcclusionMap);
 #ifdef RENDER_TYPE_CACHE
-	renderType[element] = model;
+	renderType[element] = type;
 #endif // RENDER_TYPE_CACHE
-	return model;
+	return type;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // RENDER_TYPE_PRECOMPUTED
+#endif // RENDER_TYPE_PRECOMPUTE
 
 void main() {
 	uint i = gl_GlobalInvocationID.x;
@@ -104,7 +100,7 @@ void main() {
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(STEP_PRECOMPUTE)
-// Reset counters (shader invoked only once at this step)
+// Precompute render types
 	renderType[i] = getRenderType(i);
 
 ///////////////////////////////////////////////////////////////////////////////

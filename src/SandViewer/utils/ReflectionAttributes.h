@@ -1,5 +1,7 @@
 #pragma once
 
+#include <refl.hpp>
+
 namespace ReflectionAttributes {
 
 struct HideInDialog : refl::attr::usage::member {
