@@ -24,6 +24,7 @@
 // TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
 #include "PointCloudDataBehavior.h"
 #include "Sand6Data.h"
+#include "PointCloudSplitter.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"SHELL_CULLING",
@@ -51,10 +52,18 @@ void UberSandRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
 
-	m_pointData = getComponent<PointCloudDataBehavior>();
+	// The following block is duplicated in other sand/point rendering components
+	if (auto splitter = getComponent<PointCloudSplitter>().lock()) {
+		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Point);
+	}
+	if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
 	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
 	if (m_pointData.expired()) {
-		WARN_LOG << "UberSandRenderer could not find point data (ensure that there is a PointCloudDataBehavior or Sand6Data attached to the same object)";
+		WARN_LOG
+			<< "UberSandRenderer could not find point data "
+			<< "(ensure that there is one of PointCloudSplitter, "
+			<< "PointCloudDataBehavior or Sand6Data attached to the same"
+			<< "object)";
 	}
 
 	if (!m_colormapTextureName.empty()) {
@@ -93,7 +102,12 @@ void UberSandRenderer::render(const Camera& camera, const World& world, RenderTy
 void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
-	glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount());
+	if (auto ebo = pointData.ebo()) {
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo->name());
+		glDrawElementsBaseVertex(GL_POINTS, pointData.pointCount(), GL_UNSIGNED_INT, 0, pointData.pointOffset());
+	} else {
+		glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount());
+	}
 	glBindVertexArray(0);
 }
 

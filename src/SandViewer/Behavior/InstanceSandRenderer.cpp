@@ -32,13 +32,12 @@ void InstanceSandRenderer::start()
 	m_sand = getComponent<SandBehavior>();
 	m_mesh = getComponent<MeshDataBehavior>();
 
+	// The following block is duplicated in other sand/point rendering components
 	if (auto splitter = getComponent<PointCloudSplitter>().lock()) {
-		DEBUG_LOG << "splitter found";
-		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Instance);
-		DEBUG_LOG << "m_pointData: " << m_pointData.expired();
+		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Impostor);
 	}
-	//if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
-	//if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
+	if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
+	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
 	if (m_pointData.expired()) {
 		WARN_LOG
 			<< "InstanceSandRenderer could not find point data "

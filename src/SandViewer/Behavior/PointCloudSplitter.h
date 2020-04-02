@@ -116,16 +116,17 @@ private:
 	float m_time;
 };
 
-using namespace ReflectionAttributes;
+#define _ ReflectionAttributes::
 REFL_TYPE(PointCloudSplitter::Properties)
 REFL_FIELD(renderTypeCaching)
 REFL_FIELD(enableOcclusionCulling)
 REFL_FIELD(enableFrustumCulling)
-REFL_FIELD(instanceLimit)
-REFL_FIELD(impostorLimit, Range(0.01f, 20.0f))
+REFL_FIELD(instanceLimit, _ Range(0.5f, 3.0f))
+REFL_FIELD(impostorLimit, _ Range(0.01f, 20.0f))
 REFL_FIELD(innerRadius)
 REFL_FIELD(outerRadius)
 REFL_END
+#undef _
 
 registerBehaviorType(PointCloudSplitter)
 
