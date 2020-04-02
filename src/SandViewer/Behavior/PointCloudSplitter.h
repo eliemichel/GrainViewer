@@ -13,6 +13,7 @@
 
 class ShaderProgram;
 class PointCloudView;
+class TransformBehavior;
 
 /**
  * The Point Cloud Splitter behavior uses the preRender pass to split
@@ -24,6 +25,7 @@ public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
 	void start() override;
+	void update(float time, int frame) override;
 	void onPreRender(const Camera& camera, const World& world, RenderType target) override;
 
 public:
@@ -35,6 +37,10 @@ public:
 	};
 	struct Properties {
 		RenderTypeCaching renderTypeCaching = RenderTypeCaching::Forget;
+		bool enableOcclusionCulling = true;
+		bool enableFrustumCulling = true;
+		float instanceLimit = 1.05f; // distance beyond which we switch from instances to impostors
+		float impostorLimit = 10.0f;
 	};
 	enum class RenderModel {
 		Instance = 0,
@@ -46,19 +52,23 @@ public:
 	Properties & properties() { return m_properties; }
 	const Properties& properties() const { return m_properties; }
 
-	// Return a point buffer for a given model
-	std::shared_ptr<PointCloudView> subPointCloud(RenderModel model) const;
-
-	GLint pointOffset(RenderModel model) const;
-	GLsizei pointCount(RenderModel model) const;
-	GLsizei frameCount(RenderModel model) const;
-	GLuint vao(RenderModel model) const;
-
-private:
 	struct Counter {
 		GLuint count = 0;
 		GLuint offset = 0;
 	};
+	const std::vector<Counter> counters() const { return m_counters; }
+
+	// Return a point buffer for a given model
+	std::shared_ptr<PointCloudView> subPointCloud(RenderModel model) const;
+	GLint pointOffset(RenderModel model) const;
+	GLsizei pointCount(RenderModel model) const;
+	GLsizei frameCount(RenderModel model) const;
+	GLuint vao(RenderModel model) const;
+	const GlBuffer& vbo(RenderModel model) const;
+
+private:
+	glm::mat4 modelMatrix() const;
+	void setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const;
 
 	// These must match defines in the shader (magic_enum reflexion is used to set defines)
 	// the first one mirrors RenderTypeCaching (which is for diaplay)
@@ -84,9 +94,11 @@ private:
 	std::string m_shaderName = "GlobalAtomic";
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 
+	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<IPointCloudData> m_pointData;
 
 	std::unique_ptr<GlBuffer> m_elementBuffer;
+	std::unique_ptr<GlBuffer> m_renderTypeSsbo;
 
 	std::vector<Counter> m_counters;
 	std::unique_ptr<GlBuffer> m_countersSsbo;
@@ -94,10 +106,15 @@ private:
 	GLuint m_elementCount;
 	int m_local_size_x = 128;
 	int m_xWorkGroups;
+	float m_time;
 };
 
 REFL_TYPE(PointCloudSplitter::Properties)
 REFL_FIELD(renderTypeCaching)
+REFL_FIELD(enableOcclusionCulling)
+REFL_FIELD(enableFrustumCulling)
+REFL_FIELD(instanceLimit)
+REFL_FIELD(impostorLimit)
 REFL_END
 
 /**
@@ -115,6 +132,7 @@ public:
 	GLsizei pointCount() const override { return m_splitter.pointCount(m_model); }
 	GLsizei frameCount() const override { return m_splitter.frameCount(m_model); }
 	GLuint vao() const override { return m_splitter.vao(m_model); }
+	const GlBuffer& vbo() const override { return m_splitter.vbo(m_model); }
 
 private:
 	const PointCloudSplitter & m_splitter;

@@ -220,7 +220,7 @@ glm::mat4 UberSandRenderer::modelMatrix() const {
 	}
 }
 
-void UberSandRenderer::setCommonUniforms(ShaderProgram & shader, const Camera & camera) const {
+void UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Camera & camera) const {
 	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
 	shader.bindUniformBlock("Camera", camera.ubo());
 	shader.setUniform("modelMatrix", modelMatrix());

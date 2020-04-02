@@ -30,6 +30,7 @@ public:
 	GLsizei pointCount() const override;
 	GLsizei frameCount() const override;
 	GLuint vao() const override;
+	const GlBuffer& vbo() const override;
 
 	const GlBuffer& data() const;
 

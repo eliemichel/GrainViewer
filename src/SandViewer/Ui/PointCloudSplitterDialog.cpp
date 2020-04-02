@@ -4,6 +4,7 @@
 #include "utils/guiutils.h"
 #include "PointCloudSplitterDialog.h"
 #include "utils/behaviorutils.h"
+#include "utils/strutils.h"
 
 void PointCloudSplitterDialog::draw()
 {
@@ -16,6 +17,13 @@ void PointCloudSplitterDialog::draw()
 			BeginDisable(!enabled);
 			autoUi(cont->properties());
 			EndDisable(!enabled);
+
+			ImGui::Text("\nInfo");
+			constexpr auto names = magic_enum::enum_names<PointCloudSplitter::RenderModel>();
+			const auto& counters = cont->counters();
+			for (int i = 0; i < counters.size(); ++i) {
+				ImGui::Text(MAKE_STR(" - " << names[i] << ": " << counters[i].count).c_str());
+			}
 		}
 	}
 }

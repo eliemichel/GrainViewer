@@ -1,4 +1,5 @@
 #include "PointCloudSplitter.h"
+#include "TransformBehavior.h"
 
 // TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
 #include "PointCloudDataBehavior.h"
@@ -21,6 +22,7 @@ bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 
 void PointCloudSplitter::start()
 {
+	m_transform = getComponent<TransformBehavior>();
 	m_pointData = getComponent<PointCloudDataBehavior>();
 	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
 	if (m_pointData.expired()) {
@@ -37,6 +39,19 @@ void PointCloudSplitter::start()
 	m_elementBuffer->alloc();
 	m_elementBuffer->finalize();
 
+	// Cache for render types
+	m_renderTypeSsbo = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
+	m_renderTypeSsbo->addBlock<GLuint>(m_elementCount);
+	m_renderTypeSsbo->alloc();
+
+
+
+
+
+
+
+	m_renderTypeSsbo->finalize();
+
 	// Small extra buffer to count the number of elements for each model
 	m_counters.resize(magic_enum::enum_count<RenderModel>());
 	m_countersSsbo = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
@@ -45,14 +60,20 @@ void PointCloudSplitter::start()
 	m_xWorkGroups = (m_elementCount + (m_local_size_x - 1)) / m_local_size_x;
 }
 
+void PointCloudSplitter::update(float time, int frame)
+{
+	m_time = time;
+}
+
 void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, RenderType target)
 {
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
 	m_countersSsbo->bindSsbo(0);
-	// m_renderTypeSsbo.bindSsbo(1);
+	m_renderTypeSsbo->bindSsbo(1);
 	m_elementBuffer->bindSsbo(2);
+	pointData->vbo().bindSsbo(3);
 
 	StepShaderVariant firstStep = StepShaderVariant::STEP_RESET;
 	if (properties().renderTypeCaching == RenderTypeCaching::Precompute) {
@@ -62,9 +83,7 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	constexpr StepShaderVariant lastStep = lastValue<StepShaderVariant>();
 	for (int i = static_cast<int>(firstStep); i <= static_cast<int>(lastStep); ++i) {
 		const ShaderProgram& shader = *getShader(properties().renderTypeCaching, i);
-		autoSetUniforms(shader, properties());
-		shader.setUniform("uPointCount", m_elementCount);
-		shader.setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));
+		setCommonUniforms(shader, camera);
 		shader.use();
 		glDispatchCompute(i == 0 || i == 2 ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
@@ -93,25 +112,48 @@ GLsizei PointCloudSplitter::pointCount(RenderModel model) const
 
 GLsizei PointCloudSplitter::frameCount(RenderModel model) const
 {
-	if (auto pointData = m_pointData.lock()) {
-		return pointData->frameCount();
-	}
-	else {
-		return 0;
-	}
+	auto pointData = m_pointData.lock();
+	assert(pointData);
+	return pointData->frameCount();
 }
 
 GLuint PointCloudSplitter::vao(RenderModel model) const
 {
-	if (auto pointData = m_pointData.lock()) {
-		return pointData->vao();
-	}
-	else {
-		return 0;
-	}
+	auto pointData = m_pointData.lock();
+	assert(pointData);
+	return pointData->vao();
+}
+
+const GlBuffer& PointCloudSplitter::vbo(RenderModel model) const
+{
+	auto pointData = m_pointData.lock();
+	assert(pointData);
+	return pointData->vbo();
 }
 
 //-----------------------------------------------------------------------------
+
+glm::mat4 PointCloudSplitter::modelMatrix() const {
+	if (auto transform = m_transform.lock()) {
+		return transform->modelMatrix();
+	}
+	else {
+		return glm::mat4(1.0f);
+	}
+}
+
+void PointCloudSplitter::setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const
+{
+	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
+	shader.bindUniformBlock("Camera", camera.ubo());
+	shader.setUniform("modelMatrix", modelMatrix());
+	shader.setUniform("viewModelMatrix", viewModelMatrix);
+	autoSetUniforms(shader, properties());
+	shader.setUniform("uPointCount", m_elementCount);
+	shader.setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));
+	shader.setUniform("uFrameCount", static_cast<GLuint>(m_pointData.lock()->frameCount()));
+	shader.setUniform("uTime", m_time);
+}
 
 std::shared_ptr<ShaderProgram> PointCloudSplitter::getShader(RenderTypeCaching renderType, int step) const
 {
