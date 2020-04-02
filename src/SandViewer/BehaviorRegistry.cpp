@@ -15,6 +15,9 @@
 #include "Behavior/FarSandRenderer.h"
 #include "Behavior/UberSandRenderer.h"
 #include "Behavior/GltfDataBehavior.h"
+#include "Behavior/InstanceSandRenderer.h"
+#include "Behavior/ImpostorSandRenderer.h"
+#include "Behavior/SandBehavior.h"
 
 void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
@@ -32,5 +35,8 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 	handleType(FarSandRenderer);
 	handleType(UberSandRenderer);
 	handleType(GltfDataBehavior);
+	handleType(InstanceSandRenderer);
+	handleType(ImpostorSandRenderer);
+	handleType(SandBehavior);
 #undef handleType
 }

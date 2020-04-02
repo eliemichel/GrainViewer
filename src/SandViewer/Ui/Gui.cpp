@@ -38,6 +38,9 @@ using namespace std;
 #include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
 #include "PointCloudSplitterDialog.h"
+#include "InstanceSandRendererDialog.h"
+#include "ImpostorSandRendererDialog.h"
+#include "SandBehaviorDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleBehavior(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -52,6 +55,9 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	handleBehavior(UberSandRenderer);
 	handleBehavior(TransformBehavior);
 	handleBehavior(PointCloudSplitter);
+	handleBehavior(InstanceSandRenderer);
+	handleBehavior(ImpostorSandRenderer);
+	handleBehavior(SandBehavior);
 	return nullptr;
 #undef handleType
 }

@@ -63,11 +63,12 @@ public:
 
 	// Return a point buffer for a given model
 	std::shared_ptr<PointCloudView> subPointCloud(RenderModel model) const;
-	GLint pointOffset(RenderModel model) const;
 	GLsizei pointCount(RenderModel model) const;
 	GLsizei frameCount(RenderModel model) const;
 	GLuint vao(RenderModel model) const;
 	const GlBuffer& vbo(RenderModel model) const;
+	std::shared_ptr<GlBuffer> ebo(RenderModel model) const;
+	GLint pointOffset(RenderModel model) const;
 
 private:
 	glm::mat4 modelMatrix() const;
@@ -100,11 +101,14 @@ private:
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<IPointCloudData> m_pointData;
 
-	std::unique_ptr<GlBuffer> m_elementBuffer;
+	std::shared_ptr<GlBuffer> m_elementBuffer; // must be shared because exposed through IPointCloudData interface
 	mutable std::unique_ptr<GlBuffer> m_renderTypeCache; // lazily allocated
 
 	std::vector<Counter> m_counters;
 	std::unique_ptr<GlBuffer> m_countersSsbo;
+
+	// Output subclouds
+	std::vector<std::shared_ptr<PointCloudView>> m_subClouds;
 
 	GLuint m_elementCount;
 	int m_local_size_x = 128;
@@ -138,11 +142,12 @@ public:
 	PointCloudView(const PointCloudSplitter & splitter, PointCloudSplitter::RenderModel model)
 		: m_splitter(splitter), m_model(model) {}
 	// IPointCloudData implementation
-	GLint pointOffset() const override { return m_splitter.pointOffset(m_model); }
 	GLsizei pointCount() const override { return m_splitter.pointCount(m_model); }
 	GLsizei frameCount() const override { return m_splitter.frameCount(m_model); }
 	GLuint vao() const override { return m_splitter.vao(m_model); }
 	const GlBuffer& vbo() const override { return m_splitter.vbo(m_model); }
+	std::shared_ptr<GlBuffer> ebo() const override { return m_splitter.ebo(m_model); }
+	GLint pointOffset() const override { return m_splitter.pointOffset(m_model); }
 
 private:
 	const PointCloudSplitter & m_splitter;

@@ -45,6 +45,12 @@ void PointCloudSplitter::start()
 	m_countersSsbo->importBlock(m_counters);
 
 	m_xWorkGroups = (m_elementCount + (m_local_size_x - 1)) / m_local_size_x;
+
+	// Create proxies to sub parts of the output point clouds
+	m_subClouds.resize(magic_enum::enum_count<RenderModel>());
+	for (int i = 0; i < m_subClouds.size(); ++i) {
+		m_subClouds[i] = std::make_shared<PointCloudView>(*this, static_cast<RenderModel>(i));
+	}
 }
 
 void PointCloudSplitter::update(float time, int frame)
@@ -96,12 +102,7 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 
 std::shared_ptr<PointCloudView> PointCloudSplitter::subPointCloud(RenderModel model) const
 {
-	return std::make_shared<PointCloudView>(*this, model);
-}
-
-GLint PointCloudSplitter::pointOffset(RenderModel model) const
-{
-	return static_cast<GLint>(m_counters[static_cast<int>(model)].offset);
+	return m_subClouds[static_cast<int>(model)];
 }
 
 GLsizei PointCloudSplitter::pointCount(RenderModel model) const
@@ -111,9 +112,7 @@ GLsizei PointCloudSplitter::pointCount(RenderModel model) const
 
 GLsizei PointCloudSplitter::frameCount(RenderModel model) const
 {
-	auto pointData = m_pointData.lock();
-	assert(pointData);
-	return pointData->frameCount();
+	return 1; // renderers must not animate it again, this was already taken care of in PointCloudSplitter
 }
 
 GLuint PointCloudSplitter::vao(RenderModel model) const
@@ -128,6 +127,16 @@ const GlBuffer& PointCloudSplitter::vbo(RenderModel model) const
 	auto pointData = m_pointData.lock();
 	assert(pointData);
 	return pointData->vbo();
+}
+
+std::shared_ptr<GlBuffer> PointCloudSplitter::ebo(RenderModel model) const
+{
+	return m_elementBuffer;
+}
+
+GLint PointCloudSplitter::pointOffset(RenderModel model) const
+{
+	return static_cast<GLint>(m_counters[static_cast<int>(model)].offset);
 }
 
 //-----------------------------------------------------------------------------

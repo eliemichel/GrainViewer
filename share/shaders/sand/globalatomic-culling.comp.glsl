@@ -80,8 +80,7 @@ layout(std430, binding = 3) restrict readonly buffer pointSsbo {
 };
 
 uint getRenderType(uint element) {
-	uint totalPointCount = uPointCount * uFrameCount;
-	uint pointId = AnimatedPointId(element, uFrameCount, totalPointCount, uTime, uFps);
+	uint pointId = AnimatedPointId2(element, uFrameCount, uPointCount, uTime, uFps);
 	vec3 position = point[pointId].position.xyz;
 	uint type = discriminate(position, uOuterRadius, uInnerRadius, uOuterOverInnerRadius, uOcclusionMap);
 #ifdef RENDER_TYPE_CACHE

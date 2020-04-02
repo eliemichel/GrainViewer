@@ -22,7 +22,9 @@ public:
 		behavior->setParent(iparent);
 
 		const char *type = TypeName<BehaviorType>().Get();
-		iparent->m_behaviors.insert(std::pair<std::string, std::shared_ptr<Behavior>>(type, behavior));
+		auto pair = std::pair(type, behavior);
+		iparent->m_behaviors.push_back(pair);
+		iparent->m_behaviorsMap.insert(pair);
 		return behavior;
 	}
 
@@ -30,7 +32,7 @@ public:
 	std::weak_ptr<BehaviorType> getBehavior() {
 		const char *type = TypeName<BehaviorType>().Get();
 		std::string key = type;
-		auto result = m_behaviors.equal_range(key);
+		auto result = m_behaviorsMap.equal_range(key);
 		auto count = std::distance(result.first, result.second);
 		if (count == 0) {
 			return std::weak_ptr<BehaviorType>();
@@ -43,15 +45,17 @@ public:
 	}
 
 public:
-	using BehaviorIterator = std::multimap<std::string, std::shared_ptr<Behavior>>::iterator;
-	using ConstBehaviorIterator = std::multimap<std::string, std::shared_ptr<Behavior>>::const_iterator;
+	using BehaviorIterator = std::vector<std::pair<std::string, std::shared_ptr<Behavior>>>::iterator;
+	using ConstBehaviorIterator = std::vector<std::pair<std::string, std::shared_ptr<Behavior>>>::const_iterator;
 	BehaviorIterator beginBehaviors() { return m_behaviors.begin(); }
 	ConstBehaviorIterator cbeginBehaviors() const { return m_behaviors.cbegin(); }
 	BehaviorIterator endBehaviors() { return m_behaviors.end(); }
 	ConstBehaviorIterator cendBehaviors() const { return m_behaviors.cend(); }
 
 private:
-	std::multimap<std::string,std::shared_ptr<Behavior>> m_behaviors;
+	// intentional redundancy for quicker access, even though it is a contestable choice
+	std::vector<std::pair<std::string,std::shared_ptr<Behavior>>> m_behaviors; // ordered
+	std::multimap<std::string,std::shared_ptr<Behavior>> m_behaviorsMap; // faster for search
 };
 
 

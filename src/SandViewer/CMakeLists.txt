@@ -99,6 +99,12 @@ set(All_SRC
 	Behavior/PointCloudDataBehavior.cpp
 	Behavior/PointCloudSplitter.h
 	Behavior/PointCloudSplitter.cpp
+	Behavior/InstanceSandRenderer.h
+	Behavior/InstanceSandRenderer.cpp
+	Behavior/ImpostorSandRenderer.h
+	Behavior/ImpostorSandRenderer.cpp
+	Behavior/SandBehavior.h
+	Behavior/SandBehavior.cpp
 
 	utils/shader.h
 	utils/shader.cpp
@@ -141,6 +147,12 @@ set(All_SRC
 	Ui/WorldDialog.cpp
 	Ui/PointCloudSplitterDialog.h
 	Ui/PointCloudSplitterDialog.cpp
+	Ui/InstanceSandRendererDialog.h
+	Ui/InstanceSandRendererDialog.cpp
+	Ui/ImpostorSandRendererDialog.h
+	Ui/ImpostorSandRendererDialog.cpp
+	Ui/SandBehaviorDialog.h
+	Ui/SandBehaviorDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

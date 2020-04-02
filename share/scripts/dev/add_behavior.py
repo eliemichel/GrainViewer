@@ -141,14 +141,17 @@ void {BehaviorName}Dialog::draw()
 """
 
 from os import path
+import sys
 
 def dirname(p, n): # recursive dirname
 	return dirname(path.dirname(p), n - 1) if n > 0 else p
 ROOT = path.join(dirname(path.realpath(__file__), 4), "src", "SandViewer")
 
+name = sys.argv[1]
+
 data = {
-	"BehaviorName": "TestBehavior",
-	"DefaultShader": "TestShader"
+	"BehaviorName": name,
+	"DefaultShader": name + "Shader"
 }
 
 def f(fmt):

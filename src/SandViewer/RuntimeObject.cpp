@@ -3,6 +3,7 @@
 
 #define forEachBehavior for (BehaviorIterator it = beginBehaviors(), end = endBehaviors(); it != end; ++it)
 #define forEachBehaviorConst for (ConstBehaviorIterator it = cbeginBehaviors(), end = cendBehaviors(); it != end; ++it)
+#define b (it->second)
 
 RuntimeObject::RuntimeObject()
 {}
@@ -10,49 +11,50 @@ RuntimeObject::RuntimeObject()
 void RuntimeObject::start()
 {
 	forEachBehavior {
-		it->second->start();
+		b->start();
 	}
 }
 
 void RuntimeObject::reloadShaders()
 {
 	forEachBehavior {
-		if (it->second->isEnabled())
-			it->second->reloadShaders();
+		if (b->isEnabled())
+			b->reloadShaders();
 	}
 }
 
 void RuntimeObject::update(float time, int frame)
 {
 	forEachBehavior {
-		if (it->second->isEnabled())
-			it->second->update(time, frame);
+		if (b->isEnabled())
+			b->update(time, frame);
 	}
 }
 
 void RuntimeObject::onPreRender(const Camera& camera, const World& world, RenderType target)
 {
 	forEachBehavior {
-		if (it->second->isEnabled())
-			it->second->onPreRender(camera, world, target);
+		if (b->isEnabled())
+			b->onPreRender(camera, world, target);
 	}
 }
 
 void RuntimeObject::render(const Camera & camera, const World & world, RenderType target) const
 {
 	forEachBehaviorConst {
-		if (it->second->isEnabled())
-			it->second->render(camera, world, target);
+		if (b->isEnabled())
+			b->render(camera, world, target);
 	}
 }
 
 void RuntimeObject::onPostRender(float time, int frame)
 {
 	forEachBehavior{
-		if (it->second->isEnabled())
-			it->second->onPostRender(time, frame);
+		if (b->isEnabled())
+			b->onPostRender(time, frame);
 	}
 }
 
 #undef forEachBehavior
 #undef forEachBehaviorConst
+#undef b
