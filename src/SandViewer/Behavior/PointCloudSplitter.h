@@ -30,7 +30,6 @@ public:
 	void onPreRender(const Camera& camera, const World& world, RenderType target) override;
 
 public:
-	
 	enum class RenderTypeCaching {
 		Forget, // Uses less memory
 		Cache, // Faster, but by max 1%...
@@ -42,6 +41,9 @@ public:
 		bool enableFrustumCulling = true;
 		float instanceLimit = 1.05f; // distance beyond which we switch from instances to impostors
 		float impostorLimit = 10.0f;
+
+		GLfloat innerRadius = 0.95f; // TODO: import from a separate SandPropertiesComponent
+		GLfloat outerRadius = 1.0f;
 	};
 	enum class RenderModel {
 		Instance = 0,
@@ -117,7 +119,13 @@ REFL_FIELD(enableOcclusionCulling)
 REFL_FIELD(enableFrustumCulling)
 REFL_FIELD(instanceLimit)
 REFL_FIELD(impostorLimit, Range(0.01f, 20.0f))
+REFL_FIELD(innerRadius)
+REFL_FIELD(outerRadius)
 REFL_END
+
+registerBehaviorType(PointCloudSplitter)
+
+//-----------------------------------------------------------------------------
 
 /**
  * Proxy to an externally allocated element buffer,
@@ -140,6 +148,4 @@ private:
 	const PointCloudSplitter & m_splitter;
 	PointCloudSplitter::RenderModel m_model;
 };
-
-registerBehaviorType(PointCloudSplitter)
 

@@ -147,7 +147,12 @@ void PointCloudSplitter::setCommonUniforms(const ShaderProgram& shader, const Ca
 	shader.bindUniformBlock("Camera", camera.ubo());
 	shader.setUniform("modelMatrix", modelMatrix());
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
+
 	autoSetUniforms(shader, properties());
+	shader.setUniform("uOuterOverInnerRadius", properties().outerRadius / properties().innerRadius);
+
+	// shader.setUniform("uOcclusionMap", m_elementCount);
+
 	shader.setUniform("uPointCount", m_elementCount);
 	shader.setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));
 	shader.setUniform("uFrameCount", static_cast<GLuint>(m_pointData.lock()->frameCount()));

@@ -1,7 +1,7 @@
 // **************************************************
-// Author : Élie Michel <elie.michel@telecom-paristech.fr>
+// Author : Ã‰lie Michel <elie.michel@telecom-paristech.fr>
 // UNPUBLISHED CODE.
-// Copyright (C) 2017 Élie Michel.
+// Copyright (C) 2017 Ã‰lie Michel.
 // **************************************************
 
 #ifdef _WIN32
@@ -59,7 +59,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 static void printUsage() {
 	cerr
 		<< "Augen -- real time viewer" << endl
-		<< "Author : Élie Michel (http://perso.telecom-paristech.fr/~emichel)" << endl
+		<< "Author : Ã‰lie Michel (http://perso.telecom-paristech.fr/~emichel)" << endl
 		<< endl
 		<< "Keyboard commands" << endl
 		<< "------------------" << endl
