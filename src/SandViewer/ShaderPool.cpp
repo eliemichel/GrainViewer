@@ -3,25 +3,40 @@
 #include "Logger.h"
 #include "ShaderPool.h"
 
+#undef GetObject
+
 ShaderPool ShaderPool::s_instance = ShaderPool();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public static methods
 ///////////////////////////////////////////////////////////////////////////////
 
-void ShaderPool::AddShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)
+void ShaderPool::AddShader(
+	const std::string & shaderName,
+	const std::string & baseFile,
+	ShaderProgram::ShaderProgramType type,
+	const std::vector<std::string> & defines,
+	const std::map<std::string, std::string> & snippets)
 {
-	s_instance.addShader(shaderName, baseFile, type, defines);
+	s_instance.addShader(shaderName, baseFile, type, defines, snippets);
 }
 
-void ShaderPool::AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define)
+void ShaderPool::AddShaderVariant(
+	const std::string & shaderName,
+	const std::string & baseShaderName,
+	const std::string & define)
 {
-	s_instance.addShaderVariant(shaderName, baseShaderName, define);
+	std::vector<std::string> d = { define };
+	s_instance.addShaderVariant(shaderName, baseShaderName, d);
 }
 
-void ShaderPool::AddShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines)
+void ShaderPool::AddShaderVariant(
+	const std::string & shaderName,
+	const std::string & baseShaderName,
+	const std::vector<std::string> & defines,
+	const std::map<std::string, std::string> & snippets)
 {
-	s_instance.addShaderVariant(shaderName, baseShaderName, defines);
+	s_instance.addShaderVariant(shaderName, baseShaderName, defines, snippets);
 }
 
 std::shared_ptr<ShaderProgram> ShaderPool::GetShader(const std::string & shaderName)
@@ -83,7 +98,12 @@ ShaderPool::ShaderPool()
 		});
 }
 
-void ShaderPool::addShader(const std::string & shaderName, const std::string & baseFile, ShaderProgram::ShaderProgramType type, const std::vector<std::string> & defines)
+void ShaderPool::addShader(
+	const std::string & shaderName,
+	const std::string & baseFile,
+	ShaderProgram::ShaderProgramType type,
+	const std::vector<std::string> & defines,
+	const std::map<std::string, std::string>& snippets)
 {
 	if (m_shaders.count(shaderName) > 0) {
 		WARN_LOG << "Duplicate shader name: " << shaderName << " (ignoring duplicates)";
@@ -94,16 +114,17 @@ void ShaderPool::addShader(const std::string & shaderName, const std::string & b
 	for (const std::string& def : defines) {
 		m_shaders[shaderName]->define(def);
 	}
+	for (const auto& s : snippets) {
+		m_shaders[shaderName]->setSnippet(s.first, s.second);
+	}
 	m_shaders[shaderName]->load();
 }
 
-void ShaderPool::addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::string & define)
-{
-	std::vector<std::string> d = { define };
-	addShaderVariant(shaderName, baseShaderName, d);
-}
-
-void ShaderPool::addShaderVariant(const std::string & shaderName, const std::string & baseShaderName, const std::vector<std::string> & defines)
+void ShaderPool::addShaderVariant(
+	const std::string & shaderName,
+	const std::string & baseShaderName,
+	const std::vector<std::string> & defines,
+	const std::map<std::string, std::string>& snippets)
 {
 	auto baseShader = getShader(baseShaderName);
 	if (!baseShader) {
@@ -130,6 +151,11 @@ void ShaderPool::addShaderVariant(const std::string & shaderName, const std::str
 			}
 		}
 		m_shaders[shaderName]->load();
+	}
+
+	// (override snippets even if already defined)
+	for (const auto& s : snippets) {
+		m_shaders[shaderName]->setSnippet(s.first, s.second);
 	}
 }
 
@@ -163,6 +189,7 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 	for (auto it = json.MemberBegin(), end = json.MemberEnd(); it != end; ++it) {
 		std::string name = it->name.GetString();
 		std::vector<std::string> defines;
+		std::map<std::string,std::string> snippets;
 		std::string baseFile;
 		ShaderProgram::ShaderProgramType type = ShaderProgram::RenderShader;
 		std::ostringstream definesDebug;
@@ -185,6 +212,13 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 					definesDebug << def.GetString();
 				}
 			}
+			if (it->value.HasMember("snippets") && it->value["snippets"].IsObject()) {
+				const auto& snippetsJson = it->value["snippets"].GetObject();
+				for (auto sit = snippetsJson.MemberBegin(), send = snippetsJson.MemberEnd(); sit != send; ++sit) {
+					std::string name = sit->name.GetString();
+					snippets[name] = sit->value.GetString();
+				}
+			}
 			if (it->value.HasMember("type") && it->value["type"].IsString()) {
 				std::string strtype = it->value["type"].GetString();
 				if (strtype == "compute") {
@@ -201,8 +235,15 @@ bool ShaderPool::deserialize(const rapidjson::Value & json)
 		else {
 			ERR_LOG << "Shader entry must be either a string ofr an object. Ignoring shader '" << name << "'";
 		}
-		addShader(name, baseFile, type, defines);
-		LOG << " - shader '" << name << "' loaded with defines [" << definesDebug.str() << "]";
+
+		std::ostringstream snippetsDebug;
+		for (const auto & s : snippets) {
+			if (!snippetsDebug.str().empty()) snippetsDebug << ", ";
+			snippetsDebug << "\"" << s.first << "\": \"" << s.second << "\"";
+		}
+		LOG << " - shader '" << name << "' loaded with defines [" << definesDebug.str() << "] and snippets {" << snippetsDebug.str() << "}";
+
+		addShader(name, baseFile, type, defines, snippets);
 	}
 	return true;
 }

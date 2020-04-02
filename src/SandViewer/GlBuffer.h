@@ -65,8 +65,15 @@ public:
 	inline void importBlock(const std::vector<T> & data) {
 		addBlock<T>(data.size());
 		alloc();
-		fillBlock<T>(0, [&data](T *gpuData, size_t size) {
+		fillBlock<T>(m_blocks.size() - 1, [&data](T *gpuData, size_t size) {
 			memcpy(gpuData, data.data(), size * sizeof(T));
+		});
+	}
+
+	template <class T>
+	inline void exportBlock(size_t blockId, std::vector<T>& data) const {
+		readBlock<T>(blockId, [&data](T* gpuData, size_t size) {
+			memcpy(data.data(), gpuData, size * sizeof(T));
 		});
 	}
 

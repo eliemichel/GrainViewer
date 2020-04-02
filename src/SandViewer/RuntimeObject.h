@@ -14,6 +14,7 @@ public:
 	void reloadShaders();
 	void update(float time, int frame);
 	void render(const Camera & camera, const World & world, RenderType target) const;
+	void onPreRender(const Camera& camera, const World& world, RenderType target);
 	void onPostRender(float time, int frame);
 
 	std::string name;

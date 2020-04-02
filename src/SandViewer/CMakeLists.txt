@@ -97,6 +97,8 @@ set(All_SRC
 	Behavior/UberSandRenderer.cpp
 	Behavior/PointCloudDataBehavior.h
 	Behavior/PointCloudDataBehavior.cpp
+	Behavior/PointCloudSplitter.h
+	Behavior/PointCloudSplitter.cpp
 
 	utils/shader.h
 	utils/shader.cpp

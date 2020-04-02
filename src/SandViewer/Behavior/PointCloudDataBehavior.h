@@ -21,8 +21,9 @@ public:
 	// IPointCloudData implementation
 	GLsizei pointCount() const override;
 	GLsizei frameCount() const override;
-	const GlBuffer& data() const override;
 	GLuint vao() const override;
+
+	const GlBuffer& data() const;
 
 public:
 	// Behavior implementation

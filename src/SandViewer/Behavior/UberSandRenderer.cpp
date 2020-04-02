@@ -93,7 +93,7 @@ void UberSandRenderer::render(const Camera& camera, const World& world, RenderTy
 void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
-	glDrawArrays(GL_POINTS, 0, pointData.pointCount() / pointData.frameCount());
+	glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount() / pointData.frameCount());
 	glBindVertexArray(0);
 }
 

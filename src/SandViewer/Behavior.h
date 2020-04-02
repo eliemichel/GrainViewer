@@ -56,6 +56,12 @@ public:
 	 */
 	virtual void update(float time) {}
 	virtual void update(float time, int frame) { update(time); }
+
+	/**
+	 * Called just before rendering.
+	 */
+	virtual void onPreRender(const Camera& camera, const World& world, RenderType target) {}
+
 	/**
 	 * Called for rendering, cannot change this object data
 	 * Precondition: start() has been called before, and onDestroy has not been called yet.

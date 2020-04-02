@@ -1,7 +1,8 @@
 #pragma once
 
+#include <OpenGL>
+
 #include <vector>
-#include <glad/modernglad.h>
 
 class GlBuffer;
 

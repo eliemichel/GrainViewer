@@ -10,6 +10,7 @@
 #include "Behavior/TestPrefixSumRenderer.h"
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
+#include "Behavior/PointCloudSplitter.h"
 #include "Behavior/Sand6Data.h"
 #include "Behavior/FarSandRenderer.h"
 #include "Behavior/UberSandRenderer.h"
@@ -26,6 +27,7 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 	handleType(TestPrefixSumRenderer);
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
+	handleType(PointCloudSplitter);
 	handleType(Sand6Data);
 	handleType(FarSandRenderer);
 	handleType(UberSandRenderer);

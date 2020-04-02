@@ -117,6 +117,9 @@ void World::update(float time)
 void World::reloadShaders()
 {}
 
+void World::onPreRender(const Camera& camera) const
+{}
+
 void World::render(const Camera & camera) const
 {
 	if (!m_shader || !m_shader->isValid()) {
@@ -152,8 +155,16 @@ void World::renderShadowMaps(const Camera & camera, const std::vector<std::share
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
 
+		const Camera& lightCamera = light->shadowMap().camera();
+
+		// Pre-rendering
 		for (const auto& obj : objects) {
-			obj->render(light->shadowMap().camera(), *this, RenderType::ShadowMap);
+			obj->onPreRender(lightCamera, *this, RenderType::ShadowMap);
+		}
+
+		// Main shadow map rendering
+		for (const auto& obj : objects) {
+			obj->render(lightCamera, *this, RenderType::ShadowMap);
 		}
 	}
 

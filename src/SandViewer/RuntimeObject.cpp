@@ -30,6 +30,14 @@ void RuntimeObject::update(float time, int frame)
 	}
 }
 
+void RuntimeObject::onPreRender(const Camera& camera, const World& world, RenderType target)
+{
+	forEachBehavior {
+		if (it->second->isEnabled())
+			it->second->onPreRender(camera, world, target);
+	}
+}
+
 void RuntimeObject::render(const Camera & camera, const World & world, RenderType target) const
 {
 	forEachBehaviorConst {
@@ -42,7 +50,7 @@ void RuntimeObject::onPostRender(float time, int frame)
 {
 	forEachBehavior{
 		if (it->second->isEnabled())
-		it->second->onPostRender(time, frame);
+			it->second->onPostRender(time, frame);
 	}
 }
 

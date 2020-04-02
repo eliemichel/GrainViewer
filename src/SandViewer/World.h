@@ -1,10 +1,6 @@
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
-
-#include <glad/modernglad.h>
+#include <OpenGL>
 
 #include <vector>
 #include <memory>
@@ -27,6 +23,7 @@ public:
 	void start();
 	void update(float time);
 	void reloadShaders();
+	void onPreRender(const Camera & camera) const;
 	void render(const Camera & camera) const;
 	void renderShadowMaps(const Camera & camera, const std::vector<std::shared_ptr<RuntimeObject>> & objects) const;
 

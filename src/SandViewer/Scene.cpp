@@ -125,6 +125,13 @@ void Scene::render() const {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	// Pre-rendering
+	m_world->onPreRender(camera);
+	for (auto obj : m_objects) {
+		obj->onPreRender(camera, *m_world, RenderType::Default);
+	}
+
+	// Main Rendering
 	m_world->render(camera);
 	for (auto obj : m_objects) {
 		obj->render(camera, *m_world, RenderType::Default);
