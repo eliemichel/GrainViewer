@@ -139,6 +139,8 @@ set(All_SRC
 	Ui/DeferredShadingDialog.cpp
 	Ui/WorldDialog.h
 	Ui/WorldDialog.cpp
+	Ui/PointCloudSplitterDialog.h
+	Ui/PointCloudSplitterDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

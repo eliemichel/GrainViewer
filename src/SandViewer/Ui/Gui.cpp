@@ -37,19 +37,21 @@ using namespace std;
 #include "FarSandRendererDialog.h"
 #include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
+#include "PointCloudSplitterDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
-#define handleType(T) \
+#define handleBehavior(T) \
 	if (type == TypeName<T>().Get()) { \
 		auto dialog = DialogFactory<T>().MakeShared(); \
 		dialog->setControlledBehavior(std::dynamic_pointer_cast<T>(component)); \
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
-	handleType(SandRenderer);
-	handleType(LightGizmo);
-	handleType(Sand6Data);
-	handleType(FarSandRenderer);
-	handleType(UberSandRenderer);
-	handleType(TransformBehavior);
+	handleBehavior(SandRenderer);
+	handleBehavior(LightGizmo);
+	handleBehavior(Sand6Data);
+	handleBehavior(FarSandRenderer);
+	handleBehavior(UberSandRenderer);
+	handleBehavior(TransformBehavior);
+	handleBehavior(PointCloudSplitter);
 	return nullptr;
 #undef handleType
 }

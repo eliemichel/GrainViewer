@@ -197,4 +197,7 @@ void ShaderProgram::copy(const ShaderProgram & other)
 	for (const auto &def : other.m_defines) {
 		define(def);
 	}
+	for (const auto& s : other.m_snippets) {
+		setSnippet(s.first, s.second);
+	}
 }

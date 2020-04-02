@@ -6,6 +6,7 @@
 
 #include "ShaderPool.h"
 #include "utils/jsonutils.h"
+#include "utils/behaviorutils.h"
 
 #include <magic_enum.hpp>
 
@@ -14,6 +15,7 @@
 bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 {
 	jrOption(json, "shader", m_shaderName, m_shaderName);
+	autoDeserialize(json, m_properties);
 	return true;
 }
 
@@ -25,14 +27,6 @@ void PointCloudSplitter::start()
 		WARN_LOG << "PointCloudSplitter could not find point data (ensure that there is a PointCloudDataBehavior or Sand6Data attached to the same object)";
 		return;
 	}
-
-	// Load shaders
-	m_shader = ShaderPool::GetShader(m_shaderName);
-	// This is a bit dirty, only ShaderPool is supposed to call load(), but it
-	// has no mechanism (yet) to set snippets. We assume that all objects using
-	// this shader will use the same value for LOCAL_SIZE_X.
-	m_shader->setSnippet("settings", "#define LOCAL_SIZE_X " + std::to_string(m_local_size_x));
-	m_shader->load();
 
 	// Initialize element buffer
 	auto pointData = m_pointData.lock();
@@ -56,17 +50,22 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
-	// Split element buffer
-	m_shader->use();
-	m_shader->setUniform("uPointCount", m_elementCount);
-	m_shader->setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));
-
 	m_countersSsbo->bindSsbo(0);
 	// m_renderTypeSsbo.bindSsbo(1);
 	m_elementBuffer->bindSsbo(2);
 
-	for (GLuint i = 0; i < 4; ++i) {
-		m_shader->setUniform("uStep", i);
+	StepShaderVariant firstStep = StepShaderVariant::STEP_RESET;
+	if (properties().renderTypeCaching == RenderTypeCaching::Precompute) {
+		firstStep = StepShaderVariant::STEP_PRECOMPUTE;
+	}
+
+	constexpr StepShaderVariant lastStep = lastValue<StepShaderVariant>();
+	for (int i = static_cast<int>(firstStep); i <= static_cast<int>(lastStep); ++i) {
+		const ShaderProgram& shader = *getShader(properties().renderTypeCaching, i);
+		autoSetUniforms(shader, properties());
+		shader.setUniform("uPointCount", m_elementCount);
+		shader.setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));
+		shader.use();
 		glDispatchCompute(i == 0 || i == 2 ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 	}
@@ -74,6 +73,8 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	// Get counters back
 	m_countersSsbo->exportBlock(0, m_counters);
 }
+
+//-----------------------------------------------------------------------------
 
 std::shared_ptr<PointCloudView> PointCloudSplitter::subPointCloud(RenderModel model) const
 {
@@ -108,4 +109,41 @@ GLuint PointCloudSplitter::vao(RenderModel model) const
 	else {
 		return 0;
 	}
+}
+
+//-----------------------------------------------------------------------------
+
+std::shared_ptr<ShaderProgram> PointCloudSplitter::getShader(RenderTypeCaching renderType, int step) const
+{
+	return getShader(static_cast<RenderTypeShaderVariant>(renderType), static_cast<StepShaderVariant>(step));
+}
+
+std::shared_ptr<ShaderProgram> PointCloudSplitter::getShader(RenderTypeShaderVariant renderType, StepShaderVariant step) const
+{
+	constexpr size_t n1 = magic_enum::enum_count<RenderTypeShaderVariant>();
+	constexpr size_t n2 = magic_enum::enum_count<StepShaderVariant>();
+	if (m_shaders.empty()) {
+		m_shaders.resize(n1 * n2);
+	}
+
+	int i1 = static_cast<int>(renderType);
+	int i2 = static_cast<int>(step);
+	int index = i1 + n1 * i2;
+
+	if (!m_shaders[index]) {
+		// Lazy loading of shader variants
+		std::string variantName = m_shaderName + "_RenderType" + std::to_string(i1) + "_Step" + std::to_string(i2);
+
+		std::vector<std::string> defines;
+		defines.push_back(std::string(magic_enum::enum_name(renderType)));
+		defines.push_back(std::string(magic_enum::enum_name(step)));
+
+		std::map<std::string, std::string> snippets;
+		snippets["settings"] = "#define LOCAL_SIZE_X " + std::to_string(m_local_size_x);
+
+		DEBUG_LOG << "loading variant " << variantName;
+		ShaderPool::AddShaderVariant(variantName, m_shaderName, defines);
+		m_shaders[index] = ShaderPool::GetShader(variantName);
+	}
+	return m_shaders[index];
 }

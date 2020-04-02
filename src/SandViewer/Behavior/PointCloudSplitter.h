@@ -6,6 +6,8 @@
 #include "GlBuffer.h"
 #include "IPointCloudData.h"
 
+#include <refl.hpp>
+
 #include <memory>
 #include <vector>
 
@@ -25,12 +27,24 @@ public:
 	void onPreRender(const Camera& camera, const World& world, RenderType target) override;
 
 public:
+	
+	enum class RenderTypeCaching {
+		Forget,
+		Cache,
+		Precompute,
+	};
+	struct Properties {
+		RenderTypeCaching renderTypeCaching = RenderTypeCaching::Forget;
+	};
 	enum class RenderModel {
 		Instance = 0,
 		Impostor,
 		Point,
 		None,
 	};
+
+	Properties & properties() { return m_properties; }
+	const Properties& properties() const { return m_properties; }
 
 	// Return a point buffer for a given model
 	std::shared_ptr<PointCloudView> subPointCloud(RenderModel model) const;
@@ -46,10 +60,32 @@ private:
 		GLuint offset = 0;
 	};
 
+	// These must match defines in the shader (magic_enum reflexion is used to set defines)
+	// the first one mirrors RenderTypeCaching (which is for diaplay)
+	enum class RenderTypeShaderVariant {
+		RENDER_TYPE_FORGET,
+		RENDER_TYPE_CACHE,
+		RENDER_TYPE_PRECOMPUTE,
+	};
+	enum class StepShaderVariant {
+		STEP_PRECOMPUTE,
+		STEP_RESET,
+		STEP_COUNT,
+		STEP_OFFSET,
+		STEP_WRITE,
+	};
+	typedef int ShaderVariantFlagSet;
+	std::shared_ptr<ShaderProgram> getShader(RenderTypeCaching renderType, int step) const; // for convenience
+	std::shared_ptr<ShaderProgram> getShader(RenderTypeShaderVariant renderType, StepShaderVariant step) const;
+
 private:
+	Properties m_properties;
+
 	std::string m_shaderName = "GlobalAtomic";
+	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
+
 	std::weak_ptr<IPointCloudData> m_pointData;
-	std::shared_ptr<ShaderProgram> m_shader;
+
 	std::unique_ptr<GlBuffer> m_elementBuffer;
 
 	std::vector<Counter> m_counters;
@@ -59,6 +95,10 @@ private:
 	int m_local_size_x = 128;
 	int m_xWorkGroups;
 };
+
+REFL_TYPE(PointCloudSplitter::Properties)
+REFL_FIELD(renderTypeCaching)
+REFL_END
 
 /**
  * Proxy to an externally allocated element buffer,

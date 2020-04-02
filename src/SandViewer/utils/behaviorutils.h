@@ -10,6 +10,8 @@
 #include "utils/ReflectionAttributes.h"
 #include "ShaderProgram.h"
 
+// This file is more reflectutils.h than anything else actually
+
 /**
  * Automatically deserialize properties using reflection.
  * The type T must have reflection enabled (see refl-cpp)
@@ -30,7 +32,7 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 		// Enum properties
 		// TODO: use magic_enum to load from strings
 		else if constexpr (std::is_enum_v<type>) {
-			int value = member(properties);
+			int value = static_cast<int>(member(properties));
 			jrOption(json, std::string(member.name), value, value);
 			member(properties) = static_cast<typename decltype(member)::value_type>(value);
 		}
@@ -49,18 +51,21 @@ void autoSetUniforms(const ShaderProgram& shader, const T& properties) {
 	// Automatically bind properties using reflection
 	for_each(refl::reflect(properties).members, [&](auto member) {
 		using type = typename decltype(member)::value_type;
+		// transform property name "foo" into uniform name "uFoo"
+			// (ideally this transformation should be performed at compile time)
+		std::string name = "u" + std::string(member.name);
+		name[1] = toupper(name[1]);
 		// whatever is supported by setUniform
 		if constexpr (
 			std::is_same_v<type, bool>
 			|| std::is_same_v<type, float>
-			|| std::is_same_v<type, glm::vec3>
-			|| std::is_enum_v<type>)
+			|| std::is_same_v<type, glm::vec3>)
 		{
-			// transform property name "foo" into uniform name "uFoo"
-			// (ideally this transformation should be performed at compile time)
-			std::string name = "u" + std::string(member.name);
-			name[1] = toupper(name[1]);
 			shader.setUniform(name, member(properties));
+		}
+		else if constexpr (std::is_enum_v<type>)
+		{
+			shader.setUniform(name, static_cast<int>(member(properties)));
 		}
 	});
 }
@@ -123,3 +128,10 @@ void autoUi(T& properties) {
 		}
 	});
 }
+
+// Misc utils (should end up somewhere else)
+template <typename Enum>
+constexpr Enum lastValue() {
+	return magic_enum::enum_value<Enum>(magic_enum::enum_count<Enum>() - 1);
+}
+
