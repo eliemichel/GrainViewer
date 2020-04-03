@@ -20,11 +20,7 @@
 #include "GlTexture.h"
 #include "Framebuffer.h"
 #include "PostEffect.h"
-
-// TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
-#include "PointCloudDataBehavior.h"
-#include "Sand6Data.h"
-#include "PointCloudSplitter.h"
+#include "BehaviorRegistry.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"SHELL_CULLING",
@@ -51,20 +47,7 @@ bool UberSandRenderer::deserialize(const rapidjson::Value & json)
 void UberSandRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-
-	// The following block is duplicated in other sand/point rendering components
-	if (auto splitter = getComponent<PointCloudSplitter>().lock()) {
-		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Point);
-	}
-	if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
-	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
-	if (m_pointData.expired()) {
-		WARN_LOG
-			<< "UberSandRenderer could not find point data "
-			<< "(ensure that there is one of PointCloudSplitter, "
-			<< "PointCloudDataBehavior or Sand6Data attached to the same"
-			<< "object)";
-	}
+	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Point);
 
 	if (!m_colormapTextureName.empty()) {
 		m_colormapTexture = ResourceManager::loadTexture(m_colormapTextureName);
@@ -103,7 +86,7 @@ void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
 	if (auto ebo = pointData.ebo()) {
-		glVertexArrayElementBuffer(pointData.vao(), ebo->name());
+		//glVertexArrayElementBuffer(pointData.vao(), ebo->name());
 		//glDrawElements(GL_POINTS, pointData.pointCount(), GL_UNSIGNED_INT, 0);
 		// could not find a way to offset in element buffer, so fall back to ssbo for indexed vertex arrays
 		pointData.vbo().bindSsbo(0);

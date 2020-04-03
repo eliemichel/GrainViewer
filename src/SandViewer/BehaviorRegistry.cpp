@@ -40,3 +40,20 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 	handleType(SandBehavior);
 #undef handleType
 }
+
+std::weak_ptr<IPointCloudData> BehaviorRegistry::getPointCloudDataComponent(Behavior& behavior, PointCloudSplitter::RenderModel preferedModel) {
+	std::weak_ptr<IPointCloudData> pointData;
+	if (auto splitter = behavior.getComponent<PointCloudSplitter>().lock()) {
+		pointData = splitter->subPointCloud(preferedModel);
+	}
+	if (pointData.expired()) pointData = behavior.getComponent<PointCloudDataBehavior>();
+	if (pointData.expired()) pointData = behavior.getComponent<Sand6Data>();
+	if (pointData.expired()) {
+		WARN_LOG
+			<< "Could not find point data "
+			<< "(ensure that there is one of PointCloudSplitter, "
+			<< "PointCloudDataBehavior or Sand6Data attached to the same"
+			<< "object)";
+	}
+	return pointData;
+}

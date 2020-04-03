@@ -43,11 +43,11 @@ private:
 private:
 	Properties m_properties;
 
-	std::string m_shaderName = "InstanceSandRendererShader";
+	std::string m_shaderName = "InstanceSand";
 	std::shared_ptr<ShaderProgram> m_shader;
 
-	std::weak_ptr<SandBehavior> m_sand;
 	std::weak_ptr<TransformBehavior> m_transform;
+	std::weak_ptr<SandBehavior> m_sand;
 	std::weak_ptr<MeshDataBehavior> m_mesh;
 	std::weak_ptr<IPointCloudData> m_pointData;
 

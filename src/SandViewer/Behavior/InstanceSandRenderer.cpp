@@ -6,11 +6,7 @@
 #include "IPointCloudData.h"
 #include "ShaderPool.h"
 #include "ResourceManager.h"
-
-// TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
-#include "PointCloudSplitter.h"
-#include "PointCloudDataBehavior.h"
-#include "Sand6Data.h"
+#include "BehaviorRegistry.h"
 
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
@@ -31,20 +27,7 @@ void InstanceSandRenderer::start()
 	m_transform = getComponent<TransformBehavior>();
 	m_sand = getComponent<SandBehavior>();
 	m_mesh = getComponent<MeshDataBehavior>();
-
-	// The following block is duplicated in other sand/point rendering components
-	if (auto splitter = getComponent<PointCloudSplitter>().lock()) {
-		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Instance);
-	}
-	if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
-	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
-	if (m_pointData.expired()) {
-		WARN_LOG
-			<< "InstanceSandRenderer could not find point data "
-			<< "(ensure that there is one of PointCloudSplitter, "
-			<< "PointCloudDataBehavior or Sand6Data attached to the same"
-			<< "object)";
-	}
+	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Instance);
 
 	m_shader = ShaderPool::GetShader(m_shaderName);
 }

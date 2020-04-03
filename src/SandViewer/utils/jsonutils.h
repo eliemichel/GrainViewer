@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
+#include "Logger.h"
+#include "utils/tplutils.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -17,8 +17,9 @@
 #include <rapidjson/ostreamwrapper.h>
 #include <rapidjson/writer.h>
 
-#include "Logger.h"
-#include "utils/tplutils.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 typedef rapidjson::Writer<rapidjson::OStreamWrapper> JsonWriter;
 
@@ -29,12 +30,14 @@ template<typename T> inline bool _read(T & target, const rapidjson::Value& json)
 }
 template<typename T> inline bool _read(std::vector<T>& target, const rapidjson::Value& json) {
 	if (!json.IsArray()) return false;
-	target.resize(json.Size());
+	target.reserve(json.Size());
 	for (int k = 0; k < static_cast<int>(json.Size()); ++k) {
-		if (!_read(target[k], json[k])) {
+		T item;
+		if (!_read(item, json[k])) {
 			target.resize(0);
 			return false;
 		}
+		target.push_back(std::move(item));
 	}
 	return true;
 }
