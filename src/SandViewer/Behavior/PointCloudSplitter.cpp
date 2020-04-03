@@ -1,9 +1,7 @@
 #include "PointCloudSplitter.h"
 #include "TransformBehavior.h"
-
-// TODO find a way to use reflection or behavior registry to avoid enumerating all possible parent of IPointCloudData
-#include "PointCloudDataBehavior.h"
-#include "Sand6Data.h"
+#include "SandBehavior.h"
+#include "BehaviorRegistry.h"
 
 #include "ShaderPool.h"
 #include "utils/jsonutils.h"
@@ -23,12 +21,8 @@ bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 void PointCloudSplitter::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_pointData = getComponent<PointCloudDataBehavior>();
-	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();
-	if (m_pointData.expired()) {
-		WARN_LOG << "PointCloudSplitter could not find point data (ensure that there is a PointCloudDataBehavior or Sand6Data attached to the same object)";
-		return;
-	}
+	m_sand = getComponent<SandBehavior>();
+	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this);
 
 	// Initialize element buffer
 	auto pointData = m_pointData.lock();
@@ -157,8 +151,11 @@ void PointCloudSplitter::setCommonUniforms(const ShaderProgram& shader, const Ca
 	shader.setUniform("modelMatrix", modelMatrix());
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
+
 	autoSetUniforms(shader, properties());
-	shader.setUniform("uOuterOverInnerRadius", properties().outerRadius / properties().innerRadius);
+	if (auto sand = m_sand.lock()) {
+		shader.setUniform("uOuterOverInnerRadius", 1.0f / sand->properties().grainInnerRadiusRatio);
+	}
 
 	// shader.setUniform("uOcclusionMap", m_elementCount);
 

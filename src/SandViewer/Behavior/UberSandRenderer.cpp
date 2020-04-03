@@ -13,6 +13,7 @@
 #include "utils/ScopedFramebufferOverride.h"
 #include "UberSandRenderer.h"
 #include "TransformBehavior.h"
+#include "SandBehavior.h"
 #include "ShaderPool.h"
 #include "ShaderProgram.h"
 #include "GlBuffer.h"
@@ -47,6 +48,7 @@ bool UberSandRenderer::deserialize(const rapidjson::Value & json)
 void UberSandRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
+	m_sand = getComponent<SandBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Point);
 
 	if (!m_colormapTextureName.empty()) {
@@ -228,8 +230,13 @@ void UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Cam
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
 	autoSetUniforms(shader, m_properties);
-
-	shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
+	if (auto sand = m_sand.lock()) {
+		autoSetUniforms(shader, sand->properties());
+		shader.setUniform("uEpsilon", m_properties.epsilonFactor * sand->properties().grainRadius);
+	} else {
+		shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
+	}
+	
 	shader.setUniform("uTime", m_time);
 	
 	GLint o = 0;

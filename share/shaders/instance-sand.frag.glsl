@@ -29,6 +29,9 @@ uniform float uRoughness = 0.5;
 uniform float uMetallic = 0.0;
 uniform float uNormalMapping = 1.0;
 
+uniform bool uDebugRenderType = false;
+uniform vec3 uDebugRenderColor = vec3(172.0/255.0, 23.0/255.0, 1.0/255.0);
+
 void main() {
     vec3 normal = normal_ws;
     if (uNormalMapping > 0 && uMaterial[matId].hasNormalMap) {
@@ -69,6 +72,10 @@ void main() {
     fragment.material_id = pbrMaterial;
     fragment.emission = vec3(0.0);
     fragment.alpha = 1.0;
+
+    if (uDebugRenderType) {
+        fragment.baseColor = uDebugRenderColor;
+    }
 
     autoPackGFragment(fragment);
 }

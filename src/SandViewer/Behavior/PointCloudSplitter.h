@@ -15,6 +15,7 @@
 class ShaderProgram;
 class PointCloudView;
 class TransformBehavior;
+class SandBehavior;
 
 /**
  * The Point Cloud Splitter behavior uses the preRender pass to split
@@ -41,9 +42,6 @@ public:
 		bool enableFrustumCulling = true;
 		float instanceLimit = 1.05f; // distance beyond which we switch from instances to impostors
 		float impostorLimit = 10.0f;
-
-		GLfloat innerRadius = 0.95f; // TODO: import from a separate SandPropertiesComponent
-		GLfloat outerRadius = 1.0f;
 	};
 	enum class RenderModel {
 		Instance = 0,
@@ -99,6 +97,7 @@ private:
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 
 	std::weak_ptr<TransformBehavior> m_transform;
+	std::weak_ptr<SandBehavior> m_sand;
 	std::weak_ptr<IPointCloudData> m_pointData;
 
 	std::shared_ptr<GlBuffer> m_elementBuffer; // must be shared because exposed through IPointCloudData interface
@@ -123,8 +122,6 @@ REFL_FIELD(enableOcclusionCulling)
 REFL_FIELD(enableFrustumCulling)
 REFL_FIELD(instanceLimit, _ Range(0.5f, 3.0f))
 REFL_FIELD(impostorLimit, _ Range(0.01f, 20.0f))
-REFL_FIELD(innerRadius)
-REFL_FIELD(outerRadius)
 REFL_END
 #undef _
 

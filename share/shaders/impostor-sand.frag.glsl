@@ -50,6 +50,9 @@ uniform float uDefaultMetallic = 0.0;
 uniform int uDebugShape = -1; // 0: DEBUG_SPHERE 1: DEBUG_INNER_SPHERE 2: DEBUG_CUBE
 uniform int uInterpolationMode = 1; // 0: NO_INTERPOLATION 1: INTERPOLATION
 uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: MIXEDHIT_SAMPLING
+uniform bool uDebugRenderType = false;
+
+uniform vec3 uDebugRenderColor = vec3(150.0/255.0, 231.0/255.0, 12.0/255.0);
 
 void main() {
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
@@ -138,7 +141,9 @@ void main() {
 		fragment.roughness = uDefaultRoughness;
 	}
 
-	fragment.baseColor *= 1.0;
+	if (uDebugRenderType) {
+		fragment.baseColor = uDebugRenderColor;
+	}
 
 #ifdef SET_DEPTH
 	vec3 p = (viewMatrix * vec4(fragment.ws_coord, 1.0)).xyz;

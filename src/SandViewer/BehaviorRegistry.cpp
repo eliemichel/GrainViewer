@@ -43,8 +43,10 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 
 std::weak_ptr<IPointCloudData> BehaviorRegistry::getPointCloudDataComponent(Behavior& behavior, PointCloudSplitter::RenderModel preferedModel) {
 	std::weak_ptr<IPointCloudData> pointData;
-	if (auto splitter = behavior.getComponent<PointCloudSplitter>().lock()) {
-		pointData = splitter->subPointCloud(preferedModel);
+	if (preferedModel != PointCloudSplitter::RenderModel::None) {
+		if (auto splitter = behavior.getComponent<PointCloudSplitter>().lock()) {
+			pointData = splitter->subPointCloud(preferedModel);
+		}
 	}
 	if (pointData.expired()) pointData = behavior.getComponent<PointCloudDataBehavior>();
 	if (pointData.expired()) pointData = behavior.getComponent<Sand6Data>();

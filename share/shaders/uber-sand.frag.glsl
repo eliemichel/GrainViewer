@@ -22,7 +22,8 @@ uniform bool uShowSampleCount;
 
 uniform sampler2D uDepthTexture;
 
-uniform float uRadius;
+uniform bool uDebugRenderType = false;
+uniform vec3 uDebugRenderColor = vec3(32.0/255.0, 64.0/255.0, 161.0/255.0);
 
 #include "include/uniform/camera.inc.glsl"
 
@@ -101,12 +102,16 @@ void main() {
     fragment.normal = in_normal.xyz * weightNormalization;
 
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
-    vec3 cs_coord = (linearizeDepth(d) - uEpsilon - 0.*uRadius) * ray_cs.direction;
+    vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
 
     if (uShowSampleCount) {
         fragment.material_id = colormapDebugMaterial;
         fragment.baseColor = vec3(in_color.a);
+    }
+
+    if (uDebugRenderType) {
+        fragment.baseColor = uDebugRenderColor;
     }
 
     autoPackGFragment(fragment);
@@ -225,6 +230,11 @@ void main() {
     fragment.normal = out_normal.xyz;
     fragment.ws_coord = inData.position_ws;
     fragment.material_id = pbrMaterial;
+
+    if (uDebugRenderType) {
+        fragment.baseColor = uDebugRenderColor;
+    }
+
     autoPackGFragment(fragment);
 #endif // not SHELL_CULLING
 }

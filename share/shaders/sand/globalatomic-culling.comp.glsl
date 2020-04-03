@@ -57,9 +57,9 @@ uint getRenderType(uint element) {
 #else // RENDER_TYPE_PRECOMPUTE
 
 uniform sampler2D uOcclusionMap;
-uniform float uOuterOverInnerRadius;
-uniform float uInnerRadius;
-uniform float uOuterRadius;
+uniform float uGrainRadius;
+uniform float uGrainInnerRadiusRatio;
+uniform float uOuterOverInnerRadius; // 1./uGrainInnerRadiusRatio
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
@@ -82,7 +82,8 @@ layout(std430, binding = 3) restrict readonly buffer pointSsbo {
 uint getRenderType(uint element) {
 	uint pointId = AnimatedPointId2(element, uFrameCount, uPointCount, uTime, uFps);
 	vec3 position = point[pointId].position.xyz;
-	uint type = discriminate(position, uOuterRadius, uInnerRadius, uOuterOverInnerRadius, uOcclusionMap);
+	float innerRadius = uGrainRadius * uGrainInnerRadiusRatio;
+	uint type = discriminate(position, uGrainRadius, innerRadius, uOuterOverInnerRadius, uOcclusionMap);
 #ifdef RENDER_TYPE_CACHE
 	renderType[element] = type;
 #endif // RENDER_TYPE_CACHE
