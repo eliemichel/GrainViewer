@@ -267,11 +267,11 @@ void Gui::updateImGui() {
 		dialogId = 0;
 		for (auto & dg : m_dialogGroups) {
 			if (dg.enabled) {
-				ImGui::PushID(dialogId++);
 				for (auto d : dg.dialogs) {
+					ImGui::PushID(dialogId++);
 					d->draw();
+					ImGui::PopID();
 				}
-				ImGui::PopID();
 			}
 			else {
 				dialogId += static_cast<int>(dg.dialogs.size());
