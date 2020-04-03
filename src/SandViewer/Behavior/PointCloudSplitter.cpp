@@ -2,10 +2,11 @@
 #include "TransformBehavior.h"
 #include "SandBehavior.h"
 #include "BehaviorRegistry.h"
-
+#include "utils/ScopedFramebufferOverride.h"
 #include "ShaderPool.h"
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
+#include "Framebuffer.h"
 
 #include <magic_enum.hpp>
 
@@ -14,6 +15,7 @@
 bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 {
 	jrOption(json, "shader", m_shaderName, m_shaderName);
+	jrOption(json, "occlusionCullingShader", m_occlusionCullingShaderName, m_occlusionCullingShaderName);
 	autoDeserialize(json, m_properties);
 	return true;
 }
@@ -45,6 +47,9 @@ void PointCloudSplitter::start()
 	for (int i = 0; i < m_subClouds.size(); ++i) {
 		m_subClouds[i] = std::make_shared<PointCloudView>(*this, static_cast<RenderModel>(i));
 	}
+
+	// Shader (other shaders are lazy loaded by getShader())
+	m_occlusionCullingShader = ShaderPool::GetShader(m_occlusionCullingShaderName);
 }
 
 void PointCloudSplitter::update(float time, int frame)
@@ -57,39 +62,74 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
-	m_countersSsbo->bindSsbo(0);
-	m_elementBuffer->bindSsbo(2);
-	pointData->vbo().bindSsbo(3);
+	const auto& props = properties();
 
-	if (properties().renderTypeCaching != RenderTypeCaching::Forget) {
-		// Cache for render types
-		if (!m_renderTypeCache) {
-			m_renderTypeCache = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
-			m_renderTypeCache->addBlock<GLuint>(m_elementCount);
-			m_renderTypeCache->alloc();
-			m_renderTypeCache->finalize();
-		}
-		m_renderTypeCache->bindSsbo(1);
-	}
+	std::shared_ptr<Framebuffer> occlusionCullingFbo;
+	
+	// 1. Occlusion culling map (kind of shadow map)
+	if (props.enableOcclusionCulling) {
+		ScopedFramebufferOverride scoppedFramebufferOverride;
 
-	StepShaderVariant firstStep = StepShaderVariant::STEP_RESET;
-	if (properties().renderTypeCaching == RenderTypeCaching::Precompute) {
-		firstStep = StepShaderVariant::STEP_PRECOMPUTE;
-	}
+		glEnable(GL_PROGRAM_POINT_SIZE);
 
-	constexpr StepShaderVariant lastStep = lastValue<StepShaderVariant>();
-	constexpr int STEP_RESET = static_cast<int>(StepShaderVariant::STEP_RESET);
-	constexpr int STEP_OFFSET = static_cast<int>(StepShaderVariant::STEP_OFFSET);
-	for (int i = static_cast<int>(firstStep); i <= static_cast<int>(lastStep); ++i) {
-		const ShaderProgram& shader = *getShader(properties().renderTypeCaching, i);
+		occlusionCullingFbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+		occlusionCullingFbo->bind();
+		glClearColor(0, 0, 0, 1);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+		const ShaderProgram& shader = *m_occlusionCullingShader;
+
 		setCommonUniforms(shader, camera);
+
 		shader.use();
-		glDispatchCompute(i == STEP_RESET || i == STEP_OFFSET ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
-		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		glBindVertexArray(pointData->vao());
+		pointData->vbo().bindSsbo(1);
+		glDrawArrays(GL_POINTS, 0, m_elementCount);
+		glBindVertexArray(0);
+
+		glTextureBarrier();
 	}
 
-	// Get counters back
-	m_countersSsbo->exportBlock(0, m_counters);
+	// 2. Splitting
+	{
+		m_countersSsbo->bindSsbo(0);
+		m_elementBuffer->bindSsbo(2);
+		pointData->vbo().bindSsbo(3);
+
+		if (props.renderTypeCaching != RenderTypeCaching::Forget) {
+			// Cache for render types
+			if (!m_renderTypeCache) {
+				m_renderTypeCache = std::make_unique<GlBuffer>(GL_ELEMENT_ARRAY_BUFFER);
+				m_renderTypeCache->addBlock<GLuint>(m_elementCount);
+				m_renderTypeCache->alloc();
+				m_renderTypeCache->finalize();
+			}
+			m_renderTypeCache->bindSsbo(1);
+		}
+
+		StepShaderVariant firstStep = StepShaderVariant::STEP_RESET;
+		if (props.renderTypeCaching == RenderTypeCaching::Precompute) {
+			firstStep = StepShaderVariant::STEP_PRECOMPUTE;
+		}
+
+		constexpr StepShaderVariant lastStep = lastValue<StepShaderVariant>();
+		constexpr int STEP_RESET = static_cast<int>(StepShaderVariant::STEP_RESET);
+		constexpr int STEP_OFFSET = static_cast<int>(StepShaderVariant::STEP_OFFSET);
+		for (int i = static_cast<int>(firstStep); i <= static_cast<int>(lastStep); ++i) {
+			const ShaderProgram& shader = *getShader(props.renderTypeCaching, i);
+			setCommonUniforms(shader, camera);
+			if (props.enableOcclusionCulling) {
+				glBindTextureUnit(0, occlusionCullingFbo->colorTexture(0));
+				shader.setUniform("uOcclusionMap", 0);
+			}
+			shader.use();
+			glDispatchCompute(i == STEP_RESET || i == STEP_OFFSET ? 1 : static_cast<GLuint>(m_xWorkGroups), 1, 1);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+		}
+
+		// Get counters back
+		m_countersSsbo->exportBlock(0, m_counters);
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -154,10 +194,9 @@ void PointCloudSplitter::setCommonUniforms(const ShaderProgram& shader, const Ca
 
 	autoSetUniforms(shader, properties());
 	if (auto sand = m_sand.lock()) {
+		autoSetUniforms(shader, sand->properties());
 		shader.setUniform("uOuterOverInnerRadius", 1.0f / sand->properties().grainInnerRadiusRatio);
 	}
-
-	// shader.setUniform("uOcclusionMap", m_elementCount);
 
 	shader.setUniform("uPointCount", m_elementCount);
 	shader.setUniform("uRenderModelCount", static_cast<GLuint>(magic_enum::enum_count<RenderModel>()));

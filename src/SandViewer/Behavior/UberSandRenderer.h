@@ -40,7 +40,7 @@ public:
 		float radius = 0.007f;
 		float epsilonFactor = 10.0f; // multiplied by radius
 		bool useShellCulling = true;
-		DebugShape debugShape = DebugShapeDisc;
+		DebugShape debugShape = DebugShapeRaytracedSphere;
 		WeightMode weightMode = WeightModeLinear;
 		bool shellDepthFalloff = true;
 		bool useEarlyDepthTest = true;

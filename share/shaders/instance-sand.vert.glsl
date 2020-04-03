@@ -10,10 +10,10 @@ layout (location = 4) in vec3 tangent;
 struct PointCloundVboEntry {
     vec4 position;
 };
-layout(std430, binding = 0) buffer pointsSsbo {
+layout(std430, binding = 0) restrict readonly buffer pointsSsbo {
     PointCloundVboEntry pointVertexAttributes[];
 };
-layout (std430, binding = 1) buffer pointElementsSsbo {
+layout (std430, binding = 1) restrict readonly buffer pointElementsSsbo {
     uint pointElements[];
 };
 

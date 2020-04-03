@@ -94,7 +94,9 @@ private:
 	Properties m_properties;
 
 	std::string m_shaderName = "GlobalAtomic";
+	std::string m_occlusionCullingShaderName = "OcclusionCulling";
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
+	std::shared_ptr<ShaderProgram> m_occlusionCullingShader;
 
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<SandBehavior> m_sand;
