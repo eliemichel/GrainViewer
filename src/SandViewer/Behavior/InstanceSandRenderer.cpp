@@ -34,7 +34,7 @@ void InstanceSandRenderer::start()
 
 	// The following block is duplicated in other sand/point rendering components
 	if (auto splitter = getComponent<PointCloudSplitter>().lock()) {
-		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Impostor);
+		m_pointData = splitter->subPointCloud(PointCloudSplitter::RenderModel::Instance);
 	}
 	if (m_pointData.expired()) m_pointData = getComponent<PointCloudDataBehavior>();
 	if (m_pointData.expired()) m_pointData = getComponent<Sand6Data>();

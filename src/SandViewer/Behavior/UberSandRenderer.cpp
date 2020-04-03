@@ -103,8 +103,12 @@ void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
 	if (auto ebo = pointData.ebo()) {
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo->name());
-		glDrawElementsBaseVertex(GL_POINTS, pointData.pointCount(), GL_UNSIGNED_INT, 0, pointData.pointOffset());
+		glVertexArrayElementBuffer(pointData.vao(), ebo->name());
+		//glDrawElements(GL_POINTS, pointData.pointCount(), GL_UNSIGNED_INT, 0);
+		// could not find a way to offset in element buffer, so fall back to ssbo for indexed vertex arrays
+		pointData.vbo().bindSsbo(0);
+		ebo->bindSsbo(1);
+		glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount());
 	} else {
 		glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount());
 	}

@@ -5,6 +5,16 @@
 
 layout (location = 0) in vec4 position;
 
+struct PointCloundVboEntry {
+    vec4 position;
+};
+layout(std430, binding = 0) buffer pointsSsbo {
+    PointCloundVboEntry pointVertexAttributes[];
+};
+layout (std430, binding = 1) buffer pointElementsSsbo {
+    uint pointElements[];
+};
+
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef PASS_BLIT_TO_MAIN_FBO
 
@@ -33,8 +43,12 @@ uniform mat4 viewModelMatrix;
 uniform float uRadius = 0.005;
 uniform float uTime;
 
+uniform bool uUsePointElements = true;
+
 void main() {
-	vec3 p = position.xyz;
+    uint pointId = uUsePointElements ? pointElements[gl_VertexID] : gl_VertexID;
+
+	vec3 p = uUsePointElements ? pointVertexAttributes[pointId].position.xyz : position.xyz;
 
 #ifdef PROCEDURAL_ANIM0
 #ifdef PROCEDURAL_BASECOLOR3
@@ -46,7 +60,7 @@ void main() {
 
 	outData.radius = uRadius;
 	outData.position_ws = (modelMatrix * vec4(p, 1.0)).xyz;
-	outData.vertexId = gl_VertexID;
+	outData.vertexId = pointId;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
