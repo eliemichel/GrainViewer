@@ -17,12 +17,14 @@ layout (std430, binding = 1) buffer pointElementsSsbo {
     uint pointElements[];
 };
 
-out vec3 normal_ws;
-out vec3 position_ws;
-out vec3 tangent_ws;
-out vec2 uv_ts;
-flat out uint matId;
-out vec3 baseColor;
+out VertexData {
+    vec3 normal_ws;
+    vec3 position_ws;
+    vec3 tangent_ws;
+    vec2 uv_ts;
+    flat uint matId;
+    vec3 baseColor;
+} vert;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
@@ -30,7 +32,6 @@ uniform mat4 viewModelMatrix;
 
 #pragma variant PROCEDURAL_BASECOLOR
 
-uniform sampler2D uColormapTexture;
 uniform float uGrainRadius = 0.005;
 uniform float uGrainMeshScale = 4.5;
 
@@ -44,7 +45,7 @@ uniform bool uUsePointElements = true;
 
 #include "include/random.inc.glsl"
 #include "include/anim.inc.glsl"
-#include "sand/random-grains.inc.glsl"
+#include "sand/procedural-color.inc.glsl"
 
 void main() {
     uint pointId =
@@ -63,26 +64,12 @@ void main() {
     
 	vec4 p = vec4(ws_from_gs * position * uGrainRadius * uGrainMeshScale + grainCenter_ws, 1.0);
 
-    position_ws = p.xyz;
-    normal_ws = ws_from_gs * normal;
-
-    gl_Position = projectionMatrix * viewMatrix * vec4(position_ws, 1.0);
+    vert.position_ws = p.xyz;
+    vert.normal_ws = ws_from_gs * normal;
+    vert.tangent_ws = tangent;
+    vert.uv_ts = vec2(uv.x, 1.-uv.y);
+    vert.matId = 0;
+    vert.baseColor = proceduralColor(vert.position_ws, pointId);
     
-    tangent_ws = tangent;
-    uv_ts = vec2(uv.x, 1.-uv.y);
-    matId = 0;
-
-#ifdef PROCEDURAL_BASECOLOR
-    float r = randomGrainColorFactor(int(pointId));
-    baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
-#endif // PROCEDURAL_BASECOLOR
-#ifdef PROCEDURAL_BASECOLOR2
-    float r0 = randomGrainColorFactor(int(pointId));
-    float r = position_ws.z*.6 + mix(0.35, 0.3, sin(position_ws.x*.5+.5))*r0;
-    if (r0 < 0.5) {
-        r = 1. - r0;
-    }
-    baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
-    baseColor *= mix(vec3(0.9, 0.9, 0.9), vec3(1.6, 2.0, 2.0), r0);
-#endif // PROCEDURAL_BASECOLOR2
+    gl_Position = projectionMatrix * viewMatrix * vec4(vert.position_ws, 1.0);
 }

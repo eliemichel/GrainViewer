@@ -34,10 +34,9 @@ uniform mat4 viewModelMatrix;
 #include "include/impostor.inc.glsl"
 #include "include/random.inc.glsl"
 #include "include/depth.inc.glsl"
-#include "sand/random-grains.inc.glsl"
+#include "sand/procedural-color.inc.glsl"
 
 uniform SphericalImpostor impostor[3];
-uniform sampler2D uColormapTexture;
 uniform float uGrainInnerRadiusRatio;
 
 uniform float uHitSphereCorrectionFactor = .65;
@@ -122,19 +121,9 @@ void main() {
 	if (fragment.alpha < 0.5) discard;
 	//if (dot(fragment.normal, ray_ws.direction) >= 0.0) discard;
 
-#ifdef PROCEDURAL_BASECOLOR
-    float r = randomGrainColorFactor(int(geo.id));
-    fragment.baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
-#endif // PROCEDURAL_BASECOLOR
-#ifdef PROCEDURAL_BASECOLOR2
-	float r0 = randomGrainColorFactor(int(geo.id));
-	float r = geo.position_ws.z*.6 + mix(0.35, 0.3, sin(geo.position_ws.x*.5+.5))*r0;
-	if (r0 < 0.5) {
-		r = 1. - r0;
+	if (isUsingProceduralColor()) {
+		fragment.baseColor = proceduralColor(geo.position_ws.xyz, geo.id);
 	}
-    fragment.baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
-    fragment.baseColor *= mix(vec3(0.9, 0.9, 0.9), vec3(1.6, 2.0, 2.0), r0);
-#endif // PROCEDURAL_BASECOLOR2
 
 	if (!impostor[0].hasMetallicRoughnessMap) {
 		fragment.metallic = uDefaultMetallic;

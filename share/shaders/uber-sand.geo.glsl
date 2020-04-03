@@ -32,9 +32,7 @@ layout(points, max_vertices = 1) out;
 
 in VertexData {
 	vec3 position_ws;
-#ifdef PROCEDURAL_BASECOLOR3
-	vec3 originalPosition_ws;
-#endif // PROCEDURAL_BASECOLOR3
+	vec3 originalPosition_ws; // for procedural color
 	float radius;
 	uint vertexId;
 } inData[];
@@ -51,11 +49,10 @@ out FragmentData {
 #include "include/sprite.inc.glsl"
 #include "include/random.inc.glsl"
 #include "include/zbuffer.inc.glsl"
-#include "sand/random-grains.inc.glsl"
+#include "sand/procedural-color.inc.glsl"
 
 uniform bool uUseShellCulling = true;
 uniform sampler2D uDepthTexture;
-uniform sampler2D uColormapTexture;
 uniform bool uUseBbox = false;
 uniform vec3 uBboxMin;
 uniform vec3 uBboxMax;
@@ -70,42 +67,6 @@ bool inBBox(vec3 pos) {
 		pos.y >= uBboxMin.y && pos.y <= uBboxMax.y &&
 		pos.z >= uBboxMin.z && pos.z <= uBboxMax.z
 	);
-}
-
-vec3 computeBaseColor(vec3 pos) {
-	vec3 baseColor;
-#ifdef PROCEDURAL_BASECOLOR
-	uint id = inData[0].vertexId;
-	float r = randomGrainColorFactor(int(id));
-    baseColor = texture(uColormapTexture, vec2(r, 0.0)).rgb;
-#elif defined(PROCEDURAL_BASECOLOR2) // PROCEDURAL_BASECOLOR
-	uint id = inData[0].vertexId;
-	float r = randomGrainColorFactor(int(id));
-	float u = pow(0.57 - pos.x * 0.12, 3.0);
-	if (r < 0.1) u = 0.01;
-	if (r > 0.9) u = 0.99;
-    baseColor = texture(uColormapTexture, vec2(u, 0.0)).rgb;
-#elif defined(PROCEDURAL_BASECOLOR3) // PROCEDURAL_BASECOLOR
-	uint id = inData[0].vertexId;
-	float r = randomGrainColorFactor(int(id));
-	float u = pow(0.5 + pos.z * 0.5, 3.0);
-	if (r < 0.1) u = 0.01;
-	if (r > 0.9) u = 0.99;
-    baseColor = texture(uColormapTexture, vec2(clamp(u + (r - 0.5) * 0.2, 0.01, 0.99), 0.0)).rgb;
-
-    // Add a blue dot
-    float th = 0.01;
-    if (abs(atan(pos.y, pos.x)) < th && abs(atan(pos.z, pos.x)) < th) {
-	    baseColor = vec3(0.0, 0.2, 0.9);
-	}
-
-	baseColor = mix(baseColor, baseColor.bgr, smoothstep(0.75, 0.73, length(inData[0].originalPosition_ws)));
-#elif defined(BLACK_BASECOLOR)
-	baseColor = vec3(0.0, 0.0, 0.0);
-#else
-    baseColor = vec3(1.0, 0.5, 0.0);
-#endif // PROCEDURAL_BASECOLOR
-	return baseColor;
 }
 
 // Early depth test
@@ -146,7 +107,7 @@ void main() {
 	}
 
 	gl_Position = position_clipspace;
-	outData.baseColor = computeBaseColor(outData.position_ws);
+	outData.baseColor = proceduralColor(inData[0].originalPosition_ws, inData[0].vertexId);
 	outData.radius = inData[0].radius;
 	outData.screenSpaceDiameter = SpriteSize_Botsch03(outData.radius, position_cs);
 	//outData.screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);

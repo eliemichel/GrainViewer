@@ -30,9 +30,7 @@ void main() {
 
 out VertexData {
 	vec3 position_ws;
-#ifdef PROCEDURAL_BASECOLOR3
-	vec3 originalPosition_ws;
-#endif // PROCEDURAL_BASECOLOR3
+	vec3 originalPosition_ws; // for procedural color
 	float radius;
 	uint vertexId;
 } outData;
@@ -46,20 +44,21 @@ uniform float uTime;
 uniform bool uUsePointElements = true;
 
 void main() {
-    uint pointId = uUsePointElements ? pointElements[gl_VertexID] : gl_VertexID;
+    uint pointId =
+    	uUsePointElements
+    	? pointElements[gl_VertexID]
+    	: gl_VertexID;
 
 	vec3 p = uUsePointElements ? pointVertexAttributes[pointId].position.xyz : position.xyz;
 
 #ifdef PROCEDURAL_ANIM0
-#ifdef PROCEDURAL_BASECOLOR3
-	outData.originalPosition_ws = (modelMatrix * vec4(p, 1.0)).xyz;
-#endif // PROCEDURAL_BASECOLOR3
 	float t = uTime * 0.;
 	p *= 1 + sin(t * 2.0 + p.y * 2.0) * 0.1 * sin(atan(p.x, p.z) * 10.0);
 #endif // PROCEDURAL_ANIM0
 
 	outData.radius = uGrainRadius;
 	outData.position_ws = (modelMatrix * vec4(p, 1.0)).xyz;
+	outData.originalPosition_ws = (modelMatrix * vec4(p, 1.0)).xyz;
 	outData.vertexId = pointId;
 }
 
