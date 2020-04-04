@@ -1,6 +1,14 @@
 #version 450 core
 #include "sys:defines"
 
+///////////////////////////////////////////////////////////////////////////////
+#ifdef PASS_BLIT_TO_MAIN_FBO
+
+#include "include/standard-posteffect.geo.inc.glsl"
+
+///////////////////////////////////////////////////////////////////////////////
+#else // PASS_BLIT_TO_MAIN_FBO
+
 layout (points) in;
 layout (points, max_vertices = 1) out;
 
@@ -42,3 +50,6 @@ void main() {
     EmitVertex();
     EndPrimitive();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+#endif // PASS_BLIT_TO_MAIN_FBO

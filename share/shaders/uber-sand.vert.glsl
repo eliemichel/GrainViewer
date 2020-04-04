@@ -3,30 +3,25 @@
 
 #pragma varopt PASS_BLIT_TO_MAIN_FBO
 
+///////////////////////////////////////////////////////////////////////////////
+#ifdef PASS_BLIT_TO_MAIN_FBO
+
+#include "include/standard-posteffect.vert.inc.glsl"
+
+///////////////////////////////////////////////////////////////////////////////
+#else // PASS_BLIT_TO_MAIN_FBO
+
 layout (location = 0) in vec4 position;
 
 struct PointCloundVboEntry {
     vec4 position;
 };
-layout(std430, binding = 0) buffer pointsSsbo {
+layout(std430, binding = 0) restrict readonly buffer pointsSsbo {
     PointCloundVboEntry pointVertexAttributes[];
 };
-layout (std430, binding = 1) buffer pointElementsSsbo {
+layout (std430, binding = 1) restrict readonly buffer pointElementsSsbo {
     uint pointElements[];
 };
-
-///////////////////////////////////////////////////////////////////////////////
-#ifdef PASS_BLIT_TO_MAIN_FBO
-
-// just a regular post effect
-out vec2 vertUv;
-void main() {
-	gl_Position = vec4(position.xyz, 1.0);
-	vertUv = position.xy * .5 + .5;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-#else // PASS_BLIT_TO_MAIN_FBO
 
 out VertexData {
 	vec3 position_ws;
@@ -49,7 +44,10 @@ void main() {
     	? pointElements[gl_VertexID]
     	: gl_VertexID;
 
-	vec3 p = uUsePointElements ? pointVertexAttributes[pointId].position.xyz : position.xyz;
+	vec3 p =
+		uUsePointElements
+		? pointVertexAttributes[pointId].position.xyz
+		: position.xyz;
 
 #ifdef PROCEDURAL_ANIM0
 	float t = uTime * 0.;

@@ -131,6 +131,37 @@ void packGFragment(
 	);
 }
 
+/**
+ * Linear packing of a g-fragment does not hold as much information as regular packing,
+ * but it is compatible with additive rendering.
+ */
+void unpackLinearGFragment(
+	in sampler2D lgbuffer0,
+	in sampler2D lgbuffer1,
+	in ivec2 coords, 
+	out GFragment fragment)
+{
+	vec4 data0 = texelFetch(lgbuffer0, coords, 0);
+	vec4 data1 = texelFetch(lgbuffer1, coords, 0);
+	fragment.baseColor.rgb = data0.rgb;
+	fragment.alpha = data0.a;
+	fragment.normal.xyz = data1.rgb;
+	fragment.roughness = data1.a;
+}
+
+/**
+ * Linear packing of a g-fragment does not hold as much information as regular packing,
+ * but it is compatible with additive rendering.
+ */
+void packLinearGFragment(
+	in GFragment fragment,
+	out vec4 lgbuffer_color0,
+	out vec4 lgbuffer_color1)
+{
+	lgbuffer_color0 = vec4(fragment.baseColor.rgb, fragment.alpha);
+	lgbuffer_color1 = vec4(fragment.normal.xyz, fragment.roughness);
+}
+
 /////////////////////////////////////////////////////////////////////
 #ifdef OUT_GBUFFER
 
@@ -152,9 +183,35 @@ layout (binding = 0) uniform sampler2D gbuffer0;
 layout (binding = 1) uniform usampler2D gbuffer1;
 layout (binding = 2) uniform usampler2D gbuffer2;
 
-void autoUnpackGFragment(in ivec2 pixel, out GFragment fragment) {
-	unpackGFragment(gbuffer0, gbuffer1, gbuffer2, pixel, fragment);
+void autoUnpackGFragment(inout GFragment fragment) {
+	unpackGFragment(gbuffer0, gbuffer1, gbuffer2, ivec2(gl_FragCoord.xy), fragment);
 }
 
-#endif // OUT_GBUFFER
+#endif // IN_GBUFFER
+
+/////////////////////////////////////////////////////////////////////
+#ifdef OUT_LINEAR_GBUFFER
+
+layout (location = 0) out vec4 lgbuffer_color0;
+layout (location = 1) out vec4 lgbuffer_color1;
+
+void autoPackLinearGFragment(in GFragment fragment) {
+	packLinearGFragment(fragment, lgbuffer_color0, lgbuffer_color1);
+}
+
+#endif // OUT_LINEAR_GBUFFER
+
+
+/////////////////////////////////////////////////////////////////////
+#ifdef IN_LINEAR_GBUFFER
+
+layout (binding = 0) uniform sampler2D lgbuffer0;
+layout (binding = 1) uniform sampler2D lgbuffer1;
+
+void autoUnpackLinearGFragment(inout GFragment fragment) {
+	unpackLinearGFragment(lgbuffer0, lgbuffer1, ivec2(gl_FragCoord.xy), fragment);
+}
+
+#endif // IN_LINEAR_GBUFFER
+
 

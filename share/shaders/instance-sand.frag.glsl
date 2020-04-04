@@ -76,6 +76,9 @@ void main() {
     fragment.emission = vec3(0.0);
     fragment.alpha = 1.0;
 
+    fragment.roughness = uRoughness;
+    fragment.metallic = uMetallic;
+
     if (uDebugRenderType) {
         fragment.baseColor = uDebugRenderColor;
     }

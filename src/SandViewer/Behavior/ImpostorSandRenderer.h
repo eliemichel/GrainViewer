@@ -57,21 +57,34 @@ public:
 		DebugShape debugShape = DebugShape::None;
 		InterpolationMode interpolationMode = InterpolationMode::Linear;
 		SamplingMode samplingMode = SamplingMode::Plane;
+		bool noDiscard = false;
 		float hitSphereCorrectionFactor = 0.65f;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties& properties() const { return m_properties; }
 
 private:
+	// When adding flag, don't forget to add the corresponding define in the
+	// definition of s_shaderVariantDefines in cpp file.
+	// TODO: distinguish stages from options
+	enum ShaderVariantFlag {
+		ShaderOptionNoDiscard = 1 << 0,
+		ShaderPassShadow = 1 << 1,
+		ShaderPassBlitToMainFbo = 1 << 2,
+	};
+	typedef int ShaderVariantFlagSet;
+	static const std::vector<std::string> s_shaderVariantDefines;
+
+private:
 	glm::mat4 modelMatrix() const;
+	std::shared_ptr<ShaderProgram> ImpostorSandRenderer::getShader(ShaderVariantFlagSet flags) const;
 
 private:
 	Properties m_properties;
 	std::vector<ImpostorAtlas> m_atlases;
 
 	std::string m_shaderName = "ImpostorSand";
-	std::shared_ptr<ShaderProgram> m_shader;
-	std::shared_ptr<ShaderProgram> m_shadowMapShader;
+	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders;
 
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<SandBehavior> m_sand;
@@ -86,6 +99,7 @@ REFL_TYPE(ImpostorSandRenderer::Properties)
 REFL_FIELD(debugShape)
 REFL_FIELD(interpolationMode)
 REFL_FIELD(samplingMode)
+REFL_FIELD(noDiscard)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 

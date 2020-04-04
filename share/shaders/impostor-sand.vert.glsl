@@ -1,4 +1,15 @@
 #version 430 core
+#include "sys:defines"
+
+#pragma varopt PASS_BLIT_TO_MAIN_FBO
+
+///////////////////////////////////////////////////////////////////////////////
+#ifdef PASS_BLIT_TO_MAIN_FBO
+
+#include "include/standard-posteffect.vert.inc.glsl"
+
+///////////////////////////////////////////////////////////////////////////////
+#else // PASS_BLIT_TO_MAIN_FBO
 
 struct PointCloundVboEntry {
     vec4 position;
@@ -43,3 +54,6 @@ void main() {
 
     gl_Position = vec4(p, 1.0);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+#endif // PASS

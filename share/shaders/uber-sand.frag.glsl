@@ -106,6 +106,7 @@ void main() {
     fragment.material_id = pbrMaterial;
     fragment.normal = in_normal.xyz * weightNormalization;
 
+    // Fix depth
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
     vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;

@@ -94,7 +94,7 @@ void pbrShading(const in GFragment fragment, out OutputFragment out_fragment)
 
 void main() {
 	GFragment fragment;
-	autoUnpackGFragment(ivec2(gl_FragCoord.xy), fragment);
+	autoUnpackGFragment(fragment);
 
 	OutputFragment out_fragment;
 	switch (fragment.material_id) {

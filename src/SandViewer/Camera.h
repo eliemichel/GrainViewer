@@ -42,6 +42,8 @@ public:
 		Rgba32fDepth = 0,
 		TwoRgba32fDepth = 1,
 		Depth = 2,
+		GBufferDepth = 3, // attachements to hold a g-buffer (see gbuffer.inc.glsl plus a depth buffer
+		LinearGBufferDepth = 4, // same with linear g-buffer
 		_Count,
 	};
 

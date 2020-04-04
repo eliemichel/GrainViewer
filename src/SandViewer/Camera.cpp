@@ -445,19 +445,28 @@ std::shared_ptr<Framebuffer> Camera::getExtraFramebuffer(ExtraFramebufferOption 
 		int width = static_cast<int>(m_uniforms.resolution.x);
 		int height = static_cast<int>(m_uniforms.resolution.y);
 		std::vector<ColorLayerInfo> colorLayerInfos;
+		using Opt = ExtraFramebufferOption;
 		switch (option)
 		{
-		case ExtraFramebufferOption::Rgba32fDepth:
+		case Opt::Rgba32fDepth:
 			colorLayerInfos = std::vector<ColorLayerInfo>{ { GL_RGBA32F,  GL_COLOR_ATTACHMENT0 } };
 			break;
-		case ExtraFramebufferOption::TwoRgba32fDepth:
+		case Opt::TwoRgba32fDepth:
+		case Opt::LinearGBufferDepth:
 			colorLayerInfos = std::vector<ColorLayerInfo>{
 				{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
 				{ GL_RGBA32F,  GL_COLOR_ATTACHMENT1 }
 			};
 			break;
-		case ExtraFramebufferOption::Depth:
+		case Opt::Depth:
 			colorLayerInfos = std::vector<ColorLayerInfo>{};
+			break;
+		case Opt::GBufferDepth:
+			colorLayerInfos = std::vector<ColorLayerInfo>{
+				{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
+				{ GL_RGBA32UI,  GL_COLOR_ATTACHMENT1 },
+				{ GL_RGBA32UI,  GL_COLOR_ATTACHMENT2 }
+			};
 			break;
 		}
 		fbo = std::make_shared<Framebuffer>(width, height, colorLayerInfos);
