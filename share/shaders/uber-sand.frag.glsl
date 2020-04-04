@@ -3,6 +3,7 @@
 
 #pragma varopt PASS_DEPTH PASS_EPSILON_DEPTH PASS_BLIT_TO_MAIN_FBO
 #pragma opt SHELL_CULLING
+#pragma opt NO_DISCARD_IN_PASS_EPSILON_DEPTH
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeRaytracedSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -92,6 +93,10 @@ void main() {
 
     vec4 in_color = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
     vec4 in_normal = texelFetch(uFboColor1Texture, ivec2(gl_FragCoord.xy), 0);
+
+#ifdef NO_DISCARD_IN_PASS_EPSILON_DEPTH
+    if (in_color.a < 0.00001) discard;
+#endif // NO_DISCARD_IN_PASS_EPSILON_DEPTH
     float weightNormalization = 1.0 / in_color.a; // inverse sum of integration weights
 
     GFragment fragment;
@@ -120,13 +125,13 @@ void main() {
 ///////////////////////////////////////////////////////////////////////////////
 #elif defined(PASS_EPSILON_DEPTH)
 
-layout (location = 0) out vec4 color0;
-
 void main() {
+#ifndef NO_DISCARD_IN_PASS_EPSILON_DEPTH
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     if (uDebugShape != cDebugShapeSquare && dot(uv, uv) > 1.0) {
         discard;
     }
+#endif // not NO_DISCARD_IN_PASS_EPSILON_DEPTH
 }
 
 ///////////////////////////////////////////////////////////////////////////////

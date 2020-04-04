@@ -28,6 +28,7 @@ const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"PASS_DEPTH",
 	"PASS_EPSILON_DEPTH",
 	"PASS_BLIT_TO_MAIN_FBO",
+	"NO_DISCARD_IN_PASS_EPSILON_DEPTH",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,7 +123,9 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 
 	// 1. Render depth buffer with an offset of epsilon
 	if (props.useShellCulling) {
-		ShaderProgram& shader = *getShader(ShaderPassEpsilonDepth | ShaderOptionShellCulling);
+		ShaderVariantFlagSet flags = ShaderPassEpsilonDepth | ShaderOptionShellCulling;
+		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		ShaderProgram& shader = *getShader(flags);
 
 		glDepthMask(GL_TRUE);
 		glEnable(GL_DEPTH_TEST);
@@ -143,7 +146,10 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 
 	// 3. Render points cumulatively
 	{
-		ShaderProgram& shader = *getShader(props.useShellCulling ? ShaderOptionShellCulling : 0);
+		ShaderVariantFlagSet flags = 0;
+		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.useShellCulling) flags |= ShaderOptionShellCulling;
+		ShaderProgram& shader = *getShader(flags);
 
 		if (props.useShellCulling) {
 			glDepthMask(GL_FALSE);
@@ -171,7 +177,9 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 
 	// 4. Blit extra fbo to gbuffer
 	if (props.useShellCulling) {
-		ShaderProgram& shader = *getShader(ShaderPassBlitToMainFbo | ShaderOptionShellCulling);
+		ShaderVariantFlagSet flags = ShaderPassBlitToMainFbo | ShaderOptionShellCulling;
+		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		ShaderProgram& shader = *getShader(flags);
 
 		scoppedFramebufferOverride.restore();
 		
@@ -203,7 +211,11 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 
 void UberSandRenderer::renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const
 {
-	ShaderProgram& shader = *getShader(ShaderPassDepth | (properties().useShellCulling ? ShaderOptionShellCulling : 0));
+	const Properties& props = properties();
+	ShaderVariantFlagSet flags = ShaderPassDepth;
+	if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+	if (props.useShellCulling) flags |= ShaderOptionShellCulling;
+	ShaderProgram& shader = *getShader(flags);
 
 	glEnable(GL_PROGRAM_POINT_SIZE);
 	glDepthMask(GL_TRUE);

@@ -54,6 +54,29 @@ uniform bool uDebugRenderType = false;
 uniform vec3 uDebugRenderColor = vec3(150.0/255.0, 231.0/255.0, 12.0/255.0);
 
 void main() {
+	GFragment fragment;
+	initGFragment(fragment);
+
+	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
+	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
+
+	vec3 outerSphereHitPosition_ws;
+	intersectRaySphere(outerSphereHitPosition_ws, ray_ws, geo.position_ws.xyz, geo.radius);
+
+	mat3 ws_from_gs_rot = transpose(mat3(geo.gs_from_ws));
+    Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
+    vec3 position_gs = (geo.gs_from_ws * vec4(geo.position_ws, 1.0)).xyz;
+
+    //fragment = IntersectRaySphericalGBillboardNoInterp(impostor[0], ray_gs, position_gs, geo.radius);
+    fragment = IntersectRaySphericalGBillboard(impostor[0], ray_gs, position_gs, geo.radius);
+
+    //if (fragment.alpha < 0.5) discard;
+
+	//fragment.baseColor = position_gs.xyz + ray_gs.direction.xyz * 0.5;
+	fragment.material_id = forwardNormalMaterial;
+	autoPackGFragment(fragment);
+	return;
+#if 0
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
 	vec3 innerSphereHitPosition_ws;
@@ -139,4 +162,5 @@ void main() {
 	setFragmentDepth(p);
 #endif // SET_DEPTH
     autoPackGFragment(fragment);
+#endif // 0
 }
