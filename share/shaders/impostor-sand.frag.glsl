@@ -177,7 +177,7 @@ void main() {
 #endif // not NO_DISCARD
 
 	fragment.material_id = pbrMaterial;
-	fragment.ws_coord = outerSphereHitPosition_ws;
+	fragment.ws_coord = outerSphereHitPosition_ws; // for shadow maps
 
 	if (!impostor[0].hasMetallicRoughnessMap) {
 		fragment.metallic = uDefaultMetallic;

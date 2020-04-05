@@ -73,6 +73,7 @@ const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
 	"PASS_SHADOW_MAP",
 	"PASS_BLIT_TO_MAIN_FBO",
 	"NO_INTERPOLATION",
+	"PRECOMPUTE_IMPOSTOR_VIEW_MATRICES",
 };
 
 bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
@@ -102,6 +103,9 @@ void ImpostorSandRenderer::start()
 void ImpostorSandRenderer::update(float time, int frame)
 {
 	m_time = time;
+	if (properties().precomputeViewMatrices && !m_precomputedViewMatrices) {
+		precomputeViewMatrices();
+	}
 }
 
 void ImpostorSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
@@ -147,6 +151,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		ShaderVariantFlagSet flags = 0;
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.precomputeViewMatrices) flags |= ShaderOptionPrecomputeViewMatrices;
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
@@ -174,6 +179,10 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 
 		for (size_t k = 0; k < m_atlases.size(); ++k) {
 			m_atlases[k].setUniforms(shader, o, MAKE_STR("impostor[" << k << "]."));
+		}
+
+		if (props.precomputeViewMatrices) {
+			m_precomputedViewMatrices->bindSsbo(4);
 		}
 
 		if (auto splitter = m_splitter.lock()) {
@@ -210,6 +219,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		ShaderVariantFlagSet flags = ShaderPassBlitToMainFbo;
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.precomputeViewMatrices) flags |= ShaderOptionPrecomputeViewMatrices;
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
@@ -234,6 +244,69 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 
 
 //-----------------------------------------------------------------------------
+
+// Extracted from impostor.inc.glsl
+namespace glsl {
+	using namespace glm;
+
+	/**
+	 * Return the direction of the i-th plane in an octahedric division of the unit
+	 * sphere of n subdivisions.
+	 */
+	vec3 ViewIndexToDirection(uint i, uint n) {
+		float eps = -1;
+		uint n2 = n * n;
+		if (i >= n2) {
+			eps = 1;
+			i -= n2;
+		}
+		vec2 uv = vec2(i / n, i % n) / float(n - 1);
+		float x = uv.x + uv.y - 1;
+		float y = uv.x - uv.y;
+		float z = eps * (1.0f - abs(x) - abs(y));
+		// break symmetry in redundant parts. TODO: find a mapping without redundancy, e.g. full octahedron
+		if (z == 0) z = 0.0001f * eps;
+		return normalize(vec3(x, y, z));
+	}
+
+	/**
+	 * Build the inverse of the view matrix used to bake the i-th G-Impostor
+	 */
+	mat4 InverseBakingViewMatrix(uint i, uint n) {
+		vec3 z = ViewIndexToDirection(i, n);
+		vec3 x = normalize(cross(vec3(0, 0, 1), z));
+		vec3 y = normalize(cross(z, x));
+		vec3 w = vec3(0);
+		return transpose(mat4(
+			vec4(x, 0),
+			vec4(y, 0),
+			vec4(z, 0),
+			vec4(w, 1)
+			));
+	}
+}
+
+void ImpostorSandRenderer::precomputeViewMatrices()
+{
+	m_precomputedViewMatrices = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);
+	// Check that viewCount is the same for all impostors
+	GLuint n = m_atlases[0].viewCount;
+	for (int i = 1 ; i < m_atlases.size() ; ++i) {
+		if (m_atlases[i].viewCount != n) {
+			ERR_LOG << "Precomputed view matrices can only be used when all impostors use the same number of views";
+			properties().precomputeViewMatrices = false;
+			return;
+		}
+	}
+	m_precomputedViewMatrices->addBlock<glm::mat4>(static_cast<size_t>(2 * n * n));
+	m_precomputedViewMatrices->alloc();
+	m_precomputedViewMatrices->fillBlock<glm::mat4>(0, [n](glm::mat4 *data, size_t size) {
+		for (glm::uint i = 0; i < size; ++i) {
+			data[i] = glsl::InverseBakingViewMatrix(i, n);
+		}
+	});
+	m_precomputedViewMatrices->finalize();
+}
 
 glm::mat4 ImpostorSandRenderer::modelMatrix() const
 {

@@ -4,6 +4,7 @@
 #include <OpenGL>
 #include "Behavior.h"
 #include "GlTexture.h"
+#include "GlBuffer.h"
 #include "Filtering.h"
 #include <refl.hpp>
 #include <glm/glm.hpp>
@@ -59,6 +60,7 @@ public:
 		InterpolationMode interpolationMode = InterpolationMode::Linear;
 		SamplingMode samplingMode = SamplingMode::Plane;
 		bool noDiscard = false;
+		bool precomputeViewMatrices = false; // requires that all impostors use the same number of views
 		float hitSphereCorrectionFactor = 0.65f;
 	};
 	Properties & properties() { return m_properties; }
@@ -73,11 +75,13 @@ private:
 		ShaderPassShadow = 1 << 1,
 		ShaderPassBlitToMainFbo = 1 << 2,
 		ShaderOptionNoInterpolation = 1 << 3,
+		ShaderOptionPrecomputeViewMatrices = 1 << 4,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;
 
 private:
+	void precomputeViewMatrices();
 	glm::mat4 modelMatrix() const;
 	std::shared_ptr<ShaderProgram> ImpostorSandRenderer::getShader(ShaderVariantFlagSet flags) const;
 
@@ -94,6 +98,7 @@ private:
 	std::weak_ptr<PointCloudSplitter> m_splitter;
 
 	std::unique_ptr<GlTexture> m_colormapTexture;
+	std::unique_ptr<GlBuffer> m_precomputedViewMatrices;
 
 	float m_time;
 };
@@ -103,6 +108,7 @@ REFL_FIELD(debugShape)
 REFL_FIELD(interpolationMode)
 REFL_FIELD(samplingMode)
 REFL_FIELD(noDiscard)
+REFL_FIELD(precomputeViewMatrices)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 

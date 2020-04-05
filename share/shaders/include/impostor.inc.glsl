@@ -2,6 +2,15 @@
 // Light related functions
 // requires gbuffer.inc.glsl and raytracing.inc.glsl
 
+// requires that all impostors use the same number of views
+#pragma opt PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
+
+#ifdef PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
+layout(std430, binding = 4) restrict readonly buffer impostorViewMatricesSsbo {
+    mat4 impostorViewMatrices[];
+};
+#endif // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
+
 struct SphericalImpostor {
 	sampler2DArray normalAlphaTexture;
 	sampler2DArray baseColorTexture;
@@ -55,6 +64,10 @@ void DirectionToViewIndices(vec3 d, uint n, out uvec4 i, out vec2 alpha) {
  * sphere of n subdivisions.
  */
 vec3 ViewIndexToDirection(uint i, uint n) {
+#ifdef PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
+	mat4 m = impostorViewMatrices[i];
+	return vec3(m[2].xyz);
+#else // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 	float eps = -1;
 	uint n2 = n * n;
 	if (i >= n2) {
@@ -68,12 +81,16 @@ vec3 ViewIndexToDirection(uint i, uint n) {
 	// break symmetry in redundant parts. TODO: find a mapping without redundancy, e.g. full octahedron
 	if (z == 0) z = 0.0001 * eps;
 	return normalize(vec3(x, y, z));
+#endif // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 }
 
 /**
  * Build the inverse of the view matrix used to bake the i-th G-Impostor
  */
 mat4 InverseBakingViewMatrix(uint i, uint n) {
+#ifdef PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
+	return impostorViewMatrices[i];
+#else // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 	vec3 z = ViewIndexToDirection(i, n);
 	vec3 x = normalize(cross(vec3(0, 0, 1), z));
 	vec3 y = normalize(cross(z, x));
@@ -84,6 +101,7 @@ mat4 InverseBakingViewMatrix(uint i, uint n) {
 		vec4(z, 0.0),
 		vec4(w, 1.0)
 	));
+#endif // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 }
 
 /**
