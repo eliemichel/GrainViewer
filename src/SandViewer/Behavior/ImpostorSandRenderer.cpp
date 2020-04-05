@@ -74,6 +74,7 @@ const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
 	"PASS_BLIT_TO_MAIN_FBO",
 	"NO_INTERPOLATION",
 	"PRECOMPUTE_IMPOSTOR_VIEW_MATRICES",
+	"PRECOMPUTE_IN_VERTEX",
 };
 
 bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
@@ -152,6 +153,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
 		if (props.precomputeViewMatrices) flags |= ShaderOptionPrecomputeViewMatrices;
+		if (props.precomputeInVertex) flags |= ShaderOptionPrecomputeInVertex;
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
@@ -220,6 +222,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
 		if (props.precomputeViewMatrices) flags |= ShaderOptionPrecomputeViewMatrices;
+		if (props.precomputeInVertex) flags |= ShaderOptionPrecomputeInVertex;
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 

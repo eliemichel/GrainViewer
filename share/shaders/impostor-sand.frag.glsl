@@ -32,26 +32,26 @@ uniform sampler2D uFboDepthTexture;
 
 // This stage gathers additive measures and turn them into regular g-buffer fragments
 void main() {
-    gl_FragDepth = texelFetch(uFboDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
+	gl_FragDepth = texelFetch(uFboDepthTexture, ivec2(gl_FragCoord.xy), 0).x;
 
-    GFragment fragment;
-    autoUnpackLinearGFragment(fragment);
-    if (fragment.alpha < 0.5) discard;
-    float weightNormalization = 1.0 / fragment.alpha;
+	GFragment fragment;
+	autoUnpackLinearGFragment(fragment);
+	if (fragment.alpha < 0.5) discard;
+	float weightNormalization = 1.0 / fragment.alpha;
 
-    fragment.baseColor *= weightNormalization;
-    fragment.normal *= weightNormalization;
-    fragment.material_id = pbrMaterial;
-    fragment.alpha = 1.0;
+	fragment.baseColor *= weightNormalization;
+	fragment.normal *= weightNormalization;
+	fragment.material_id = pbrMaterial;
+	fragment.alpha = 1.0;
 
-    if (uDebugRenderType) {
-        fragment.baseColor = uDebugRenderColor;
-    }
+	if (uDebugRenderType) {
+		fragment.baseColor = uDebugRenderColor;
+	}
 
 	//fragment.baseColor = vec3(1.0, weightNormalization, 0.5);
-    //fragment.material_id = forwardBaseColorMaterial;
+	//fragment.material_id = forwardBaseColorMaterial;
 
-    autoPackGFragment(fragment);
+	autoPackGFragment(fragment);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ void main() {
 
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
-    Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
+	Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
 
 #if defined(PASS_SHADOW_MAP) && !defined(SET_DEPTH)
 	// Early quit for shadow maps unless we alter fragment depth
@@ -168,12 +168,12 @@ void main() {
 	default: // IMPOSTOR
 		fragment = SampleImpostor(impostor[0], ray_gs, geo.radius);
 		mat3 ws_from_gs_rot = transpose(mat3(geo.gs_from_ws));
-	    fragment.normal = ws_from_gs_rot * fragment.normal;
+		fragment.normal = ws_from_gs_rot * fragment.normal;
 		break;
 	}
 
 #ifndef NO_DISCARD
-    if (fragment.alpha < 0.5) discard;
+	if (fragment.alpha < 0.5) discard;
 #endif // not NO_DISCARD
 
 	fragment.material_id = pbrMaterial;

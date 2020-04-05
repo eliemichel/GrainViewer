@@ -11,6 +11,8 @@ layout(std430, binding = 4) restrict readonly buffer impostorViewMatricesSsbo {
 };
 #endif // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 
+uniform float uGrainScale = 1.0;
+
 struct SphericalImpostor {
 	sampler2DArray normalAlphaTexture;
 	sampler2DArray baseColorTexture;
@@ -165,23 +167,25 @@ SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, float radiu
  */
 GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) {
 	// If invalid hit, return transparent fragment
-	if (hit.textureCoords.x < 0) {
+	if (hit.textureCoords.x <= 0 || hit.textureCoords.x >= 1 || hit.textureCoords.y <= 0 || hit.textureCoords.y >= 1) {
 		GFragment g;
 		g.alpha = 0.0;
 		return g;
 	}
+	
+	vec3 uvw = vec3((hit.textureCoords.xy - 0.5) * uGrainScale + 0.5, hit.textureCoords.z);
 
 	// Otherwise, sample textures
-	vec4 normalAlpha = texture(impostor.normalAlphaTexture, hit.textureCoords);
+	vec4 normalAlpha = texture(impostor.normalAlphaTexture, uvw);
 	vec4 lean1 = vec4(0.0);
 	vec4 lean2 = vec4(0.0);
 	vec4 baseColor = vec4(0.0);
 	vec4 metallicRoughnes = vec4(0.0);
 	if (normalAlpha.a > 0) {
-		baseColor = texture(impostor.baseColorTexture, hit.textureCoords);
-		lean1 = texture(impostor.lean1Texture, hit.textureCoords);
-		lean2 = texture(impostor.lean2Texture, hit.textureCoords);
-		metallicRoughnes = texture(impostor.metallicRoughnessTexture, hit.textureCoords);
+		baseColor = texture(impostor.baseColorTexture, uvw);
+		lean1 = texture(impostor.lean1Texture, uvw);
+		lean2 = texture(impostor.lean2Texture, uvw);
+		metallicRoughnes = texture(impostor.metallicRoughnessTexture, uvw);
 	}
 
 	GFragment g;

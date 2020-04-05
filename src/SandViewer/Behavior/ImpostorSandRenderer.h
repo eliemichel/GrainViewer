@@ -56,11 +56,13 @@ public:
 		Mixed
 	};
 	struct Properties {
+		float grainScale = 1.0f;
 		DebugShape debugShape = DebugShape::None;
 		InterpolationMode interpolationMode = InterpolationMode::Linear;
 		SamplingMode samplingMode = SamplingMode::Plane;
 		bool noDiscard = false;
 		bool precomputeViewMatrices = false; // requires that all impostors use the same number of views
+		bool precomputeInVertex = false; // precompute more things in vertex shader
 		float hitSphereCorrectionFactor = 0.65f;
 	};
 	Properties & properties() { return m_properties; }
@@ -76,6 +78,7 @@ private:
 		ShaderPassBlitToMainFbo = 1 << 2,
 		ShaderOptionNoInterpolation = 1 << 3,
 		ShaderOptionPrecomputeViewMatrices = 1 << 4,
+		ShaderOptionPrecomputeInVertex = 1 << 5,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;
@@ -104,11 +107,13 @@ private:
 };
 
 REFL_TYPE(ImpostorSandRenderer::Properties)
+REFL_FIELD(grainScale)
 REFL_FIELD(debugShape)
 REFL_FIELD(interpolationMode)
 REFL_FIELD(samplingMode)
 REFL_FIELD(noDiscard)
 REFL_FIELD(precomputeViewMatrices)
+REFL_FIELD(precomputeInVertex)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 
