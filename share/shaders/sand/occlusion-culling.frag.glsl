@@ -1,8 +1,10 @@
 #version 450 core
 #include "sys:defines"
 
-in vec4 position_cs;
-in float radius;
+in Geometry {
+	vec4 position_cs;
+	float radius;
+} geo;
 
 layout (location = 0) out vec4 out_color;
 
@@ -12,10 +14,12 @@ layout (location = 0) out vec4 out_color;
 #include "../include/raytracing.inc.glsl"
 
 void main() {
+	/*
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	vec3 hitPosition;
-	if (!intersectRaySphere(hitPosition, ray_cs, position_cs.xyz, radius)) {
-		//discard; // not recommended
+	if (!intersectRaySphere(hitPosition, ray_cs, geo.position_cs.xyz, geo.radius)) {
+		discard; // not recommended
 	}
-	out_color = position_cs;
+	*/
+	out_color = geo.position_cs;
 }
