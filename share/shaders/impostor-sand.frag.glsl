@@ -62,6 +62,10 @@ in GeometryData {
 	float radius;
 	vec3 position_ws;
 	mat4 gs_from_ws;
+#ifdef PRECOMPUTE_IN_VERTEX
+	flat uvec4 i;
+	vec2 alpha;
+#endif // PRECOMPUTE_IN_VERTEX
 } geo;
 
 // If noDiscard option is on, we write output in linear g-buffer because it is accumulated
@@ -105,7 +109,9 @@ uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: 
  * Sample an impostor with different strategies depending on options
  */
 GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_gs, float radius) {
-#ifdef NO_INTERPOLATION
+#if defined(PRECOMPUTE_IN_VERTEX)
+	return aux_IntersectRaySphericalGBillboard(impostor, ray_gs, radius, geo.i, geo.alpha);
+#elif defined(NO_INTERPOLATION)
 	return IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, radius);
 #else // NO_INTERPOLATION
 	switch (uSamplingMode) {
