@@ -5,6 +5,7 @@
 #pragma opt PROCEDURAL_BASECOLOR
 #pragma opt SET_DEPTH
 #pragma opt NO_DISCARD
+#pragma opt NO_INTERPOLATION
 // if both MIXEDHIT_SAMPLING and SPHEREHIT_SAMPLING are defined, sampling will be mixed.
 // NO_INTERPOLATION is defined only for default sampling (planeHit)
 // SET_DEPTH allows for self intersection but significantly degrades performances
@@ -103,19 +104,19 @@ uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: 
 /**
  * Sample an impostor with different strategies depending on options
  */
-GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_gs, const in vec3 position_gs, float radius) {
-	if (uInterpolationMode == 0) {
-		return IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, position_gs, radius);
-	} else {
-		switch (uSamplingMode) {
-		case 0: // PLANEHIT_SAMPLING
-			return IntersectRaySphericalGBillboard(impostor, ray_gs, position_gs, radius);
-		case 1: // SPHEREHIT_SAMPLING
-			return IntersectRaySphericalGBillboard_SphereHit(impostor, ray_gs, position_gs, radius, uHitSphereCorrectionFactor);
-		case 2: // MIXEDHIT_SAMPLING
-			return IntersectRaySphericalGBillboard_MixedHit(impostor, ray_gs, position_gs, radius, uHitSphereCorrectionFactor);
-		}
+GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_gs, float radius) {
+#ifdef NO_INTERPOLATION
+	return IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, radius);
+#else // NO_INTERPOLATION
+	switch (uSamplingMode) {
+	case 0: // PLANEHIT_SAMPLING
+		return IntersectRaySphericalGBillboard(impostor, ray_gs, radius);
+	case 1: // SPHEREHIT_SAMPLING
+		return IntersectRaySphericalGBillboard_SphereHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor);
+	case 2: // MIXEDHIT_SAMPLING
+		return IntersectRaySphericalGBillboard_MixedHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor);
 	}
+#endif // NO_INTERPOLATION
 }
 
 /**
@@ -140,6 +141,7 @@ void main() {
 
 	Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
 	Ray ray_ws = TransformRay(ray_cs, inverseViewMatrix);
+    Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
 
 #if defined(PASS_SHADOW_MAP) && !defined(SET_DEPTH)
 	// Early quit for shadow maps unless we alter fragment depth
@@ -153,10 +155,6 @@ void main() {
 	vec3 outerSphereHitPosition_ws;
 	intersectRaySphere(outerSphereHitPosition_ws, ray_ws, geo.position_ws.xyz, geo.radius);
 
-	mat3 ws_from_gs_rot = transpose(mat3(geo.gs_from_ws));
-    Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
-    vec3 position_gs = (geo.gs_from_ws * vec4(geo.position_ws, 1.0)).xyz;
-
 	switch (uDebugShape) {
 	case 0: // DEBUG_SPHERE
 		fragment = IntersectRaySphere(ray_ws, geo.position_ws, geo.radius);
@@ -168,8 +166,9 @@ void main() {
 		fragment = IntersectRayCube(ray_ws, geo.position_ws, geo.radius);
 		break;
 	default: // IMPOSTOR
-    	fragment = SampleImpostor(impostor[0], ray_gs, position_gs, geo.radius);
-		fragment.normal = ws_from_gs_rot * fragment.normal;
+		fragment = SampleImpostor(impostor[0], ray_gs, geo.radius);
+		mat3 ws_from_gs_rot = transpose(mat3(geo.gs_from_ws));
+	    fragment.normal = ws_from_gs_rot * fragment.normal;
 		break;
 	}
 

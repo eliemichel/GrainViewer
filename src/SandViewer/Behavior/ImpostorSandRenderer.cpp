@@ -72,6 +72,7 @@ const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
 	"NO_DISCARD",
 	"PASS_SHADOW_MAP",
 	"PASS_BLIT_TO_MAIN_FBO",
+	"NO_INTERPOLATION",
 };
 
 bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
@@ -95,6 +96,7 @@ void ImpostorSandRenderer::start()
 	m_transform = getComponent<TransformBehavior>();
 	m_sand = getComponent<SandBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Impostor);
+	m_splitter = getComponent<PointCloudSplitter>();
 }
 
 void ImpostorSandRenderer::update(float time, int frame)
@@ -145,6 +147,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		ShaderVariantFlagSet flags = 0;
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
 		// Set uniforms
@@ -171,6 +174,12 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 
 		for (size_t k = 0; k < m_atlases.size(); ++k) {
 			m_atlases[k].setUniforms(shader, o, MAKE_STR("impostor[" << k << "]."));
+		}
+
+		if (auto splitter = m_splitter.lock()) {
+			// This is a hack: we reuse the fbo that was used by the splitter and assume nothing else has written to it in the meantime
+			auto occlusionCullingFbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+			//occlusionCullingFbo->colorTexture(0);
 		}
 
 		// Draw call
@@ -201,6 +210,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		ShaderVariantFlagSet flags = ShaderPassBlitToMainFbo;
 		if (target == RenderType::ShadowMap) flags |= ShaderPassShadow;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
 		// Set uniforms

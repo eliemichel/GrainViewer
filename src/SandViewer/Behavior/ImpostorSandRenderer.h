@@ -13,6 +13,7 @@ class ShaderProgram;
 class TransformBehavior;
 class SandBehavior;
 class IPointCloudData;
+class PointCloudSplitter;
 
 // Matches SphericalImpostor struct in include/impostor.inc.glsl
 struct ImpostorAtlas {
@@ -71,6 +72,7 @@ private:
 		ShaderOptionNoDiscard = 1 << 0,
 		ShaderPassShadow = 1 << 1,
 		ShaderPassBlitToMainFbo = 1 << 2,
+		ShaderOptionNoInterpolation = 1 << 3,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;
@@ -89,6 +91,7 @@ private:
 	std::weak_ptr<TransformBehavior> m_transform;
 	std::weak_ptr<SandBehavior> m_sand;
 	std::weak_ptr<IPointCloudData> m_pointData;
+	std::weak_ptr<PointCloudSplitter> m_splitter;
 
 	std::unique_ptr<GlTexture> m_colormapTexture;
 

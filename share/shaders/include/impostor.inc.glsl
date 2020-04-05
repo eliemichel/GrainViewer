@@ -73,22 +73,25 @@ vec3 ViewIndexToDirection(uint i, uint n) {
 /**
  * Build the inverse of the view matrix used to bake the i-th G-Impostor
  */
-mat4 InverseBakingViewMatrix(uint i, vec3 p, uint n) {
+mat4 InverseBakingViewMatrix(uint i, uint n) {
 	vec3 z = ViewIndexToDirection(i, n);
 	vec3 x = normalize(cross(vec3(0, 0, 1), z));
 	vec3 y = normalize(cross(z, x));
-
-	mat3 rot = transpose(mat3(x, y, z));
-	vec3 invp = -rot * p;
-	return transpose(mat4(vec4(x, invp.x), vec4(y, invp.y), vec4(z, invp.z), vec4(0, 0, 0, 1)));
+	vec3 w = vec3(0.0);
+	return transpose(mat4(
+		vec4(x, 0.0),
+		vec4(y, 0.0),
+		vec4(z, 0.0),
+		vec4(w, 1.0)
+	));
 }
 
 /**
  * Return the position and texture coordinates intersected by the ray in the i-th G-billboard of a spherical G-impostor
  * Basic "PlaneHit" sampling scheme
  */
-SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius, uint n) {
-	mat4 bs_from_ws = InverseBakingViewMatrix(i, p, n);
+SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, float radius, uint n) {
+	mat4 bs_from_ws = InverseBakingViewMatrix(i, n);
 	Ray ray_bs = TransformRay(ray, bs_from_ws);
 
 	float l = -(ray_bs.origin.z / ray_bs.direction.z);
@@ -105,9 +108,9 @@ SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, vec3 p, float radius
 /**
  * "SphereHit" sampling scheme
  */
-SphericalImpostorHit IntersectRayBillboard_SphereHit(Ray ray, uint i, vec3 p, float radius, uint n, float hitSphereCorrectionFactor) {
+SphericalImpostorHit IntersectRayBillboard_SphereHit(Ray ray, uint i, float radius, uint n, float hitSphereCorrectionFactor) {
 	vec3 hitPosition;
-	if (!intersectRaySphere(hitPosition, ray, p, radius * hitSphereCorrectionFactor)) {
+	if (!intersectRaySphere(hitPosition, ray, vec3(0.0), radius * hitSphereCorrectionFactor)) {
 		SphericalImpostorHit hit;
 		hit.position = vec3(-1.0);
 		hit.textureCoords = vec3(-1);
@@ -116,21 +119,21 @@ SphericalImpostorHit IntersectRayBillboard_SphereHit(Ray ray, uint i, vec3 p, fl
 	ray.origin = hitPosition;
 	ray.direction = -ViewIndexToDirection(i, n);
 	
-	return IntersectRayBillboard(ray, i, p, radius, n);
+	return IntersectRayBillboard(ray, i, radius, n);
 }
 
 /**
  * Mix of "PlaneHit" and "SphereHit" sampling schemes
  */
-SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, vec3 p, float radius, uint n, float hitSphereCorrectionFactor) {
-	SphericalImpostorHit sphereHit = IntersectRayBillboard_SphereHit(ray, i, p, radius, n, hitSphereCorrectionFactor);
-	SphericalImpostorHit planeHit = IntersectRayBillboard(ray, i, p, radius, n);
+SphericalImpostorHit IntersectRayBillboard_MixedHit(Ray ray, uint i, float radius, uint n, float hitSphereCorrectionFactor) {
+	SphericalImpostorHit sphereHit = IntersectRayBillboard_SphereHit(ray, i, radius, n, hitSphereCorrectionFactor);
+	SphericalImpostorHit planeHit = IntersectRayBillboard(ray, i, radius, n);
 
 	if (sphereHit.textureCoords.x < 0) {
 		return planeHit;
 	}
 
-	float distanceToCenter = length(ray.origin - p - dot(ray.origin - p, ray.direction) / dot(ray.direction,ray.direction) * ray.direction) / radius;
+	float distanceToCenter = length(ray.origin - dot(ray.origin, ray.direction) / dot(ray.direction,ray.direction) * ray.direction) / radius;
 	float t = smoothstep(hitSphereCorrectionFactor * .2, hitSphereCorrectionFactor, distanceToCenter);
 
 	SphericalImpostorHit hit;
@@ -179,16 +182,16 @@ GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) 
 /**
  * Sample a Spherical G-impostor of radius radius and located at world position p
  */
-GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, vec3 p, float radius) {
+GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, float radius) {
 	uint n = impostor.viewCount;
 	uvec4 i;
 	vec2 alpha;
 	DirectionToViewIndices(-ray.direction, n, i, alpha);
 
-	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.x, p, radius, n));
-	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.y, p, radius, n));
-	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.z, p, radius, n));
-	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.w, p, radius, n));
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.x, radius, n));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.y, radius, n));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.z, radius, n));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard(ray, i.w, radius, n));
 	
 	return LerpGFragment(
 		LerpGFragment(g1, g2, alpha.x),
@@ -196,16 +199,16 @@ GFragment IntersectRaySphericalGBillboard(SphericalImpostor impostor, Ray ray, v
 		alpha.y
 	);
 }
-GFragment IntersectRaySphericalGBillboard_SphereHit(SphericalImpostor impostor, Ray ray, vec3 p, float radius, float hitSphereCorrectionFactor) {
+GFragment IntersectRaySphericalGBillboard_SphereHit(SphericalImpostor impostor, Ray ray, float radius, float hitSphereCorrectionFactor) {
 	uint n = impostor.viewCount;
 	uvec4 i;
 	vec2 alpha;
 	DirectionToViewIndices(-ray.direction, n, i, alpha);
 
-	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.x, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.y, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.z, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.w, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.x, radius, n, hitSphereCorrectionFactor));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.y, radius, n, hitSphereCorrectionFactor));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.z, radius, n, hitSphereCorrectionFactor));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_SphereHit(ray, i.w, radius, n, hitSphereCorrectionFactor));
 	
 	return LerpGFragment(
 		LerpGFragment(g1, g2, alpha.x),
@@ -213,16 +216,16 @@ GFragment IntersectRaySphericalGBillboard_SphereHit(SphericalImpostor impostor, 
 		alpha.y
 	);
 }
-GFragment IntersectRaySphericalGBillboard_MixedHit(SphericalImpostor impostor, Ray ray, vec3 p, float radius, float hitSphereCorrectionFactor) {
+GFragment IntersectRaySphericalGBillboard_MixedHit(SphericalImpostor impostor, Ray ray, float radius, float hitSphereCorrectionFactor) {
 	uint n = impostor.viewCount;
 	uvec4 i;
 	vec2 alpha;
 	DirectionToViewIndices(-ray.direction, n, i, alpha);
 
-	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.x, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.y, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.z, p, radius, n, hitSphereCorrectionFactor));
-	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.w, p, radius, n, hitSphereCorrectionFactor));
+	GFragment g1 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.x, radius, n, hitSphereCorrectionFactor));
+	GFragment g2 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.y, radius, n, hitSphereCorrectionFactor));
+	GFragment g3 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.z, radius, n, hitSphereCorrectionFactor));
+	GFragment g4 = SampleBillboard(impostor, IntersectRayBillboard_MixedHit(ray, i.w, radius, n, hitSphereCorrectionFactor));
 	
 	return LerpGFragment(
 		LerpGFragment(g1, g2, alpha.x),
@@ -234,10 +237,13 @@ GFragment IntersectRaySphericalGBillboard_MixedHit(SphericalImpostor impostor, R
 /**
  * Same as IntersectRaySphericalGBillboard wthout interpolation
  */
-GFragment IntersectRaySphericalGBillboardNoInterp(SphericalImpostor impostor, Ray ray, vec3 p, float radius) {
+GFragment IntersectRaySphericalGBillboardNoInterp(SphericalImpostor impostor, Ray ray, float radius) {
 	uint n = impostor.viewCount;
 	uint i = DirectionToViewIndex(-ray.direction, n);
-	GFragment g = SampleBillboard(impostor, IntersectRayBillboard(ray, i, p, radius, n));
+	SphericalImpostorHit hit = IntersectRayBillboard(ray, i, radius, n);
+	//SphericalImpostorHit hit = SphericalImpostorHit(vec3(0.0), vec3(0.0));
+	GFragment g = SampleBillboard(impostor, hit);
+	//GFragment g; initGFragment(g); g.normal = hit.position;
 	return g;
 }
 

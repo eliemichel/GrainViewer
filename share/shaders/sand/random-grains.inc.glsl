@@ -19,7 +19,7 @@ mat4 randomGrainMatrix(int id, vec3 position_ws) {
         vec4(rot[0], 0.0),
         vec4(rot[1], 0.0),
         vec4(rot[2], 0.0),
-        vec4(position_ws, 1.0)
+        vec4(- rot * position_ws, 1.0)
     );
 }
 
