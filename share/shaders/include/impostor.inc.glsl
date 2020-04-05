@@ -116,8 +116,7 @@ SphericalImpostorHit IntersectRayBillboard(Ray ray, uint i, float radius, uint n
 
 	float l = -(ray_bs.origin.z / ray_bs.direction.z);
 	vec3 uv_bs = ray_bs.origin + l * ray_bs.direction;
-	vec2 uv_ts = uv_bs.xy / radius * .5 + .5;
-	uv_ts.y = 1.0 - uv_ts.y;
+	vec2 uv_ts = uv_bs.xy * vec2(1,-1) * 0.5 / radius + 0.5;
 
 	SphericalImpostorHit hit;
 	hit.position = ray.origin + l * ray.direction;
@@ -177,22 +176,22 @@ GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) 
 
 	// Otherwise, sample textures
 	vec4 normalAlpha = texture(impostor.normalAlphaTexture, uvw);
-	vec4 lean1 = vec4(0.0);
-	vec4 lean2 = vec4(0.0);
+	//vec4 lean1 = vec4(0.0);
+	//vec4 lean2 = vec4(0.0);
 	vec4 baseColor = vec4(0.0);
 	vec4 metallicRoughnes = vec4(0.0);
 	if (normalAlpha.a > 0) {
 		baseColor = texture(impostor.baseColorTexture, uvw);
-		lean1 = texture(impostor.lean1Texture, uvw);
-		lean2 = texture(impostor.lean2Texture, uvw);
+		//lean1 = texture(impostor.lean1Texture, uvw);
+		//lean2 = texture(impostor.lean2Texture, uvw);
 		metallicRoughnes = texture(impostor.metallicRoughnessTexture, uvw);
 	}
 
 	GFragment g;
 	g.baseColor = baseColor.rgb;
 	g.normal = normalAlpha.xyz * 2. - 1.;
-	g.lean1 = lean1;
-	g.lean2 = lean2;
+	//g.lean1 = lean1;
+	//g.lean2 = lean2;
 	g.ws_coord = hit.position;
 	g.metallic = metallicRoughnes.x;
 	g.roughness = metallicRoughnes.y;
