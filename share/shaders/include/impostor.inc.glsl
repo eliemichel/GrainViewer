@@ -20,6 +20,8 @@ struct SphericalImpostor {
 	sampler2DArray lean1Texture;
 	sampler2DArray lean2Texture;
 	uint viewCount; // number of precomputed views
+	float metallic;
+	float roughness;
 	bool hasMetallicRoughnessMap;
 	bool hasLeanMapping;
 };
@@ -179,12 +181,14 @@ GFragment SampleBillboard(SphericalImpostor impostor, SphericalImpostorHit hit) 
 	//vec4 lean1 = vec4(0.0);
 	//vec4 lean2 = vec4(0.0);
 	vec4 baseColor = vec4(0.0);
-	vec4 metallicRoughnes = vec4(0.0);
+	vec2 metallicRoughnes = vec2(impostor.metallic, impostor.roughness);
 	if (normalAlpha.a > 0) {
 		baseColor = texture(impostor.baseColorTexture, uvw);
 		//lean1 = texture(impostor.lean1Texture, uvw);
 		//lean2 = texture(impostor.lean2Texture, uvw);
-		metallicRoughnes = texture(impostor.metallicRoughnessTexture, uvw);
+		if (impostor.hasMetallicRoughnessMap) {
+			metallicRoughnes = texture(impostor.metallicRoughnessTexture, uvw).xy;
+		}
 	}
 
 	GFragment g;

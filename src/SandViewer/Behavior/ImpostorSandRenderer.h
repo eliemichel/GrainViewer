@@ -22,6 +22,8 @@ struct ImpostorAtlas {
 	std::unique_ptr<GlTexture> normalAlphaTexture;
 	std::unique_ptr<GlTexture> baseColorTexture;
 	std::unique_ptr<GlTexture> metallicRoughnessTexture;
+	float metallic = 0.0;
+	float roughness = 0.5;
 
 	GLuint viewCount; // number of precomputed views, computed from normalAlphaTexture depth
 	std::unique_ptr<LeanTexture> leanTextures; // generated iff enableLeanMapping is on

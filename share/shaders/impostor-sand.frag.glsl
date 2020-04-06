@@ -185,11 +185,6 @@ void main() {
 	fragment.material_id = pbrMaterial;
 	fragment.ws_coord = outerSphereHitPosition_ws; // for shadow maps
 
-	if (!impostor[0].hasMetallicRoughnessMap) {
-		fragment.metallic = uDefaultMetallic;
-		fragment.roughness = uDefaultRoughness;
-	}
-
 	// Color overrides
 	if (uDebugRenderType) {
 		fragment.baseColor = uDebugRenderColor;

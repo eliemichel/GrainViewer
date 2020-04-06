@@ -24,6 +24,9 @@ bool ImpostorAtlas::deserialize(const rapidjson::Value& json)
 	readAtlas(metallicRoughness);
 #undef readAtlas
 
+	jrOption(json, "metallic", metallic, metallic);
+	jrOption(json, "roughness", roughness, roughness);
+
 	if (normalAlphaTexture && enableLeanMapping) {
 		leanTextures = Filtering::CreateLeanTexture(*normalAlphaTexture);
 	}
@@ -38,6 +41,8 @@ void ImpostorAtlas::setUniforms(const ShaderProgram& shader, GLint& textureUnit,
 {
 	GLint& o = textureUnit;
 	shader.setUniform(prefix + "viewCount", viewCount);
+	shader.setUniform(prefix + "metallic", metallic);
+	shader.setUniform(prefix + "roughness", roughness);
 
 	normalAlphaTexture->bind(o);
 	shader.setUniform(prefix + "normalAlphaTexture", o++);

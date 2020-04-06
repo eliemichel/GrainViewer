@@ -3,7 +3,7 @@
 
 mat3 randomGrainOrientation(int id) {
     vec3 vx = normalize(randVec(vec3(id, id, id)));
-    vec3 vy = normalize(cross(vec3(0,0,sign(vx) * 1 + .001), vx));
+    vec3 vy = normalize(cross(vec3(0,0,sign(-vx) * 1 + .001), vx));
     vec3 vz = normalize(cross(vx, vy));
     float t = 0.0;
     return mat3(vx, vy * cos(t) - vz * sin(t), vy * sin(t) + vz * cos(t));
