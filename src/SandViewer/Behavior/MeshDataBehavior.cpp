@@ -1,10 +1,11 @@
-#include <glm/gtc/type_ptr.hpp>
-
-#include "Logger.h"
-#include "bufferFillers.h"
-#include "ResourceManager.h"
 #include "MeshDataBehavior.h"
 #include "TransformBehavior.h"
+#include "bufferFillers.h"
+#include "ResourceManager.h"
+#include "utils/fileutils.h"
+#include "Logger.h"
+
+#include <glm/gtc/type_ptr.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 // Accessors
@@ -93,7 +94,14 @@ void MeshDataBehavior::start()
 		computeBoundingSphere();
 	}
 
-	// 4. Free mesh from RAM now that it is in VRAM
+	// 4. Get materials
+	std::string textureRoot = baseDir(filename());
+	m_materials.resize(m_mesh->materials().size());
+	for (int i = 0; i < m_materials.size(); ++i) {
+		m_materials[i].fromTinyObj(m_mesh->materials()[i], textureRoot);
+	}
+
+	// 5. Free mesh from RAM now that it is in VRAM
 	m_mesh.reset();
 }
 

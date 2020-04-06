@@ -95,6 +95,10 @@ bool Scene::load(const std::string & filename)
 		for (rapidjson::SizeType i = 0; i < objects.Size(); i++) {
 			auto& o = objects[i];
 
+			if (o.HasMember("ignore") && o["ignore"].IsBool() && o["ignore"].GetBool()) {
+				continue;
+			}
+
 			auto obj = std::make_shared<RuntimeObject>();
 
 			if (o.HasMember("name") && o["name"].IsString()) {

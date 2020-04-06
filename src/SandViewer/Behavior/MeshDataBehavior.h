@@ -1,17 +1,15 @@
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
-
-#include <glad/modernglad.h>
-
-#include <memory>
-#include <glm/glm.hpp>
+#include <OpenGL>
 
 #include "Behavior.h"
 #include "Mesh.h"
 #include "GlBuffer.h"
+#include "StandardMaterial.h"
+
+#include <glm/glm.hpp>
+
+#include <memory>
 
 /**
  * Load mesh from OBJ file to video memory
@@ -21,6 +19,7 @@ public:
 	// Accessors
 	GLsizei pointCount() const;
 	GLuint vao() const;
+	const std::vector<StandardMaterial>& materials() const { return m_materials; }
 
 	// Available only if m_computeBoundingSphere was true upon start
 	bool hasBoundingSphere() const { return m_computeBoundingSphere;  }
@@ -29,6 +28,7 @@ public:
 
 	// Must be called *before* start()
 	void setFilename(const std::string & filename) { m_filename = filename; }
+	const std::string& filename() const { return m_filename; }
 
 public:
 	// Behavior implementation
@@ -51,6 +51,7 @@ private:
 	GLsizei m_pointCount;
 	std::unique_ptr<GlBuffer> m_vertexBuffer;
 	GLuint m_vao;
+	std::vector<StandardMaterial> m_materials;
 };
 
 registerBehaviorType(MeshDataBehavior)

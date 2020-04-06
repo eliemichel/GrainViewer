@@ -1,13 +1,15 @@
 #pragma once
 
-#include <memory>
-#include <fstream>
 #include "Behavior.h"
 #include "PointCloud.h"
 #include "GlTexture.h"
 #include "GlBuffer.h"
 #include "MeshRenderer.h"
 #include "Filtering.h"
+#include "StandardMaterial.h"
+
+#include <memory>
+#include <fstream>
 
 class ShaderProgram;
 class MeshDataBehavior;
@@ -167,7 +169,7 @@ private:
 	std::vector<std::unique_ptr<GlTexture>> m_metallicRoughnessTextures;
 	std::unique_ptr<GlTexture> m_colormapTexture;
 
-	std::vector<MeshRenderer::Material> m_instanceMaterials;
+	std::vector<StandardMaterial> m_instanceMaterials;
 
 	std::string m_outputStats = "";
 	std::ofstream m_outputStatsFile;

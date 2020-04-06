@@ -64,7 +64,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 	}
 
 	// Instance materials
-	MeshRenderer::Material::deserializeArray(json, "instanceMaterials", m_instanceMaterials);
+	jrArray(json, "instanceMaterials", m_instanceMaterials);
 
 	// Shader
 	jrOption(json, "shader", m_impostorShaderName, m_impostorShaderName);
@@ -626,8 +626,7 @@ void SandRenderer::renderInstances(const Camera & camera, const World & world, R
 
 			GLuint matId = 0;
 			for (const auto& mat : m_instanceMaterials) {
-				o = mat.setUniforms(*m_instanceCloudShader, matId, o);
-				++matId;
+				o = mat.setUniforms(*m_instanceCloudShader, MAKE_STR("uMaterial[" << (matId++) << "]."), o);
 			}
 
 			// Render

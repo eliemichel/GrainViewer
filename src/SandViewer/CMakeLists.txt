@@ -186,6 +186,8 @@ set(All_SRC
 	Scene_load.cpp
 	ShadowMap.h
 	ShadowMap.cpp
+	StandardMaterial.h
+	StandardMaterial.cpp
 	Triangle.h
 	TurntableCamera.h
 	TurntableCamera.cpp

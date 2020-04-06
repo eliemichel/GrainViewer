@@ -8,78 +8,7 @@
 #include "TransformBehavior.h"
 #include "GlTexture.h"
 #include "utils/jsonutils.h"
-
-///////////////////////////////////////////////////////////////////////////////
-// Material
-///////////////////////////////////////////////////////////////////////////////
-
-GLuint MeshRenderer::Material::setUniforms(const ShaderProgram & shader, GLuint id, GLuint firstTextureIndex) const
-{
-	GLuint o = firstTextureIndex;
-	const std::string prefix = "material[" + std::to_string(id) + "]";
-	if (baseColorMap) {
-		baseColorMap->bind(static_cast<GLint>(o));
-		shader.setUniform(prefix + ".baseColorMap", static_cast<GLint>(o));
-		++o;
-		shader.setUniform(prefix + ".hasBaseColorMap", true);
-	} else {
-		shader.setUniform(prefix + ".hasBaseColorMap", false);
-	}
-	if (normalMap) {
-		normalMap->bind(static_cast<GLint>(o));
-		shader.setUniform(prefix + ".normalMap", static_cast<GLint>(o));
-		++o;
-		shader.setUniform(prefix + ".hasNormalMap", true);
-	} else {
-		shader.setUniform(prefix + ".hasNormalMap", false);
-	}
-	if (metallicRoughnessMap) {
-		metallicRoughnessMap->bind(static_cast<GLint>(o));
-		shader.setUniform(prefix + ".metallicRoughnessMap", static_cast<GLint>(o));
-		++o;
-		shader.setUniform(prefix + ".hasMetallicRoughnessMap", true);
-	} else {
-		shader.setUniform(prefix + ".hasMetallicRoughnessMap", false);
-	}
-	shader.setUniform(prefix + ".baseColor", baseColor);
-	shader.setUniform(prefix + ".metallic", metallic);
-	shader.setUniform(prefix + ".roughness", roughness);
-	return o;
-}
-
-// private classes for serialization only
-class MaterialModel {
-public:
-	bool deserialize(const rapidjson::Value & json) { JREADp(baseColor); JREADp(metallic); JREADp(roughness); JREADp(baseColorMap); JREADp(normalMap); JREADp(metallicRoughnessMap); return true; }
-
-	glm::vec3 baseColor;
-	float metallic;
-	float roughness;
-	std::string baseColorMap;
-	std::string normalMap;
-	std::string metallicRoughnessMap;
-};
-void MeshRenderer::Material::deserializeArray(const rapidjson::Value& json, const std::string & key, std::vector<MeshRenderer::Material> & output)
-{
-	std::vector<MaterialModel> materialsData;
-	jrArray<MaterialModel>(json, key, materialsData);
-	for (const auto& m : materialsData) {
-		Material mat;
-		if (!m.baseColorMap.empty()) {
-			mat.baseColorMap = ResourceManager::loadTexture(m.baseColorMap);
-		}
-		if (!m.normalMap.empty()) {
-			mat.normalMap = ResourceManager::loadTexture(m.normalMap);
-		}
-		if (!m.metallicRoughnessMap.empty()) {
-			mat.metallicRoughnessMap = ResourceManager::loadTexture(m.metallicRoughnessMap);
-		}
-		mat.baseColor = m.baseColor;
-		mat.metallic = static_cast<GLfloat>(m.metallic);
-		mat.roughness = static_cast<GLfloat>(m.roughness);
-		output.push_back(std::move(mat));
-	}
-}
+#include "utils/strutils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
@@ -87,27 +16,14 @@ void MeshRenderer::Material::deserializeArray(const rapidjson::Value& json, cons
 
 bool MeshRenderer::deserialize(const rapidjson::Value& json)
 {
-	if (json.HasMember("shader")) {
-		if (json["shader"].IsString()) {
-			m_shaderName = json["shader"].GetString();
-		} else {
-			ERR_LOG << "Field 'shader' of MeshRenderer must be a string";
-			return false;
-		}
-	}
-
-	Material::deserializeArray(json, "materials", m_materials);
-
+	jrOption(json, "shader", m_shaderName, m_shaderName);
+	jrArray(json, "materials", m_materials);
 	return true;
 }
 
 void MeshRenderer::start()
 {
 	m_shader = ShaderPool::GetShader(m_shaderName);
-	if (!m_shader) {
-		WARN_LOG << "Using direct shader name in MeshRenderer is depreciated, use 'shaders' section to define shaders.";
-		m_shader = std::make_shared<ShaderProgram>(m_shaderName);
-	}
 	m_meshData = getComponent<MeshDataBehavior>();
 	m_transform = getComponent<TransformBehavior>();
 }
@@ -125,10 +41,10 @@ void MeshRenderer::render(const Camera& camera, const World& world, RenderType t
 		m_shader->setUniform("viewModelMatrix", viewModelMatrix);
 
 		GLuint o = 0;
-		GLuint matId = 0;
-		for (const auto& mat : m_materials) {
-			o = mat.setUniforms(*m_shader, matId, o);
-			++matId;
+		int n = static_cast<int>(std::max(mesh->materials().size(), m_materials.size()));
+		for (int i = 0 ; i < n ; ++i) {
+			const StandardMaterial& mat = i < m_materials.size() ? m_materials[i] : mesh->materials()[i];
+			o = mat.setUniforms(*m_shader, MAKE_STR("uMaterial[" << i << "]."), o);
 		}
 
 		glBindVertexArray(mesh->vao());
