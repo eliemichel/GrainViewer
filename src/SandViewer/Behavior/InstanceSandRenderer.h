@@ -5,6 +5,7 @@
 #include "Behavior.h"
 #include "GlTexture.h"
 #include "utils/ReflectionAttributes.h"
+#include "StandardMaterial.h"
 
 #include <refl.hpp>
 #include <glm/glm.hpp>
@@ -52,6 +53,7 @@ private:
 	std::weak_ptr<IPointCloudData> m_pointData;
 
 	std::unique_ptr<GlTexture> m_colormapTexture;
+	std::vector<StandardMaterial> m_materials; // may be emtpy, in which case materials from MeshData are used
 
 	float m_time;
 };

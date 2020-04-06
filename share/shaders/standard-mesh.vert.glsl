@@ -11,7 +11,6 @@ layout (location = 4) in vec3 tangent;
 out GeometryData {
     vec3 position_ws;
     vec3 normal_ws;
-    vec3 normal_cs;
     vec3 tangent_ws;
     vec2 uv;
     flat uint materialId;
@@ -25,7 +24,6 @@ void main() {
 	gl_Position = projectionMatrix * viewModelMatrix * vec4(position, 1.0);
 	geo.position_ws = (modelMatrix * vec4(position, 1.0)).xyz;
 	geo.normal_ws = mat3(modelMatrix) * normal;
-	geo.normal_cs = mat3(viewModelMatrix) * normal;
 	geo.tangent_ws = tangent;
 	geo.uv = vec2(uv.x, 1.-uv.y);
 	geo.materialId = 0;//materialId;

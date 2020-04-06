@@ -21,8 +21,8 @@ out VertexData {
     vec3 normal_ws;
     vec3 position_ws;
     vec3 tangent_ws;
-    vec2 uv_ts;
-    flat uint matId;
+    vec2 uv;
+    flat uint materialId;
     vec3 baseColor;
 } vert;
 
@@ -62,13 +62,14 @@ void main() {
 
     mat3 ws_from_gs = transpose(mat3(randomGrainMatrix(int(pointId), grainCenter_ws)));
     
-	vec4 p = vec4(ws_from_gs * position * uGrainRadius * uGrainMeshScale + grainCenter_ws, 1.0);
+    vec3 vertexPosition = position;
+	vec4 p = vec4(ws_from_gs * vertexPosition * uGrainRadius * uGrainMeshScale + grainCenter_ws, 1.0);
 
     vert.position_ws = p.xyz;
     vert.normal_ws = ws_from_gs * normal;
     vert.tangent_ws = tangent;
-    vert.uv_ts = vec2(uv.x, 1.-uv.y);
-    vert.matId = 0;
+    vert.uv = vec2(uv.x, 1.-uv.y);
+    vert.materialId = 0;
     vert.baseColor = proceduralColor(vert.position_ws, pointId);
     
     gl_Position = projectionMatrix * viewMatrix * vec4(vert.position_ws, 1.0);

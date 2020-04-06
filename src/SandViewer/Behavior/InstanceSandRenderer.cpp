@@ -18,6 +18,7 @@ bool InstanceSandRenderer::deserialize(const rapidjson::Value & json)
 	if (jrOption(json, "colormap", colormap)) {
 		m_colormapTexture = ResourceManager::loadTexture(colormap);
 	}
+	jrArray(json, "materials", m_materials);
 	autoDeserialize(json, m_properties);
 	return true;
 }
@@ -68,14 +69,11 @@ void InstanceSandRenderer::render(const Camera& camera, const World& world, Rend
 		shader.setUniform("uColormapTexture", o++);
 	}
 
-	// TODO: Get from mesh data component
-	/*
-	GLuint matId = 0;
-	for (const auto& mat : m_instanceMaterials) {
-		o = mat.setUniforms(shader, matId, o);
-		++matId;
+	int n = static_cast<int>(std::max(mesh->materials().size(), m_materials.size()));
+	for (int i = 0; i < n; ++i) {
+		const StandardMaterial& mat = i < m_materials.size() ? m_materials[i] : mesh->materials()[i];
+		o = mat.setUniforms(*m_shader, MAKE_STR("uMaterial[" << i << "]."), o);
 	}
-	*/
 
 	shader.use();
 
