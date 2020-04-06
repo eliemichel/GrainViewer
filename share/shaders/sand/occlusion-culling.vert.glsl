@@ -30,6 +30,6 @@ void main() {
 	geo.radius = uGrainRadius * uGrainInnerRadiusRatio; // inner radius
 	gl_Position = projectionMatrix * geo.position_cs;
 	// The *.15 has no explaination, but it empirically increases occlusion culling
-	gl_PointSize = SpriteSize(geo.radius, gl_Position) * 0.25;
+	gl_PointSize = SpriteSize(geo.radius, gl_Position) * 0.2;
 }
 

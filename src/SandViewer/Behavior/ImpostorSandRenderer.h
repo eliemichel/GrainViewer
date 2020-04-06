@@ -63,6 +63,7 @@ public:
 		bool noDiscard = false;
 		bool precomputeViewMatrices = false; // requires that all impostors use the same number of views
 		bool precomputeInVertex = false; // precompute more things in vertex shader
+		bool prerenderSurface = false;
 		float hitSphereCorrectionFactor = 0.65f;
 	};
 	Properties & properties() { return m_properties; }
@@ -84,6 +85,8 @@ private:
 	static const std::vector<std::string> s_shaderVariantDefines;
 
 private:
+	void draw(const IPointCloudData& pointData, const ShaderProgram& shader) const;
+	void setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const;
 	void precomputeViewMatrices();
 	glm::mat4 modelMatrix() const;
 	std::shared_ptr<ShaderProgram> ImpostorSandRenderer::getShader(ShaderVariantFlagSet flags) const;
@@ -114,6 +117,7 @@ REFL_FIELD(samplingMode)
 REFL_FIELD(noDiscard)
 REFL_FIELD(precomputeViewMatrices)
 REFL_FIELD(precomputeInVertex)
+REFL_FIELD(prerenderSurface)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 

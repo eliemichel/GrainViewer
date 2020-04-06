@@ -137,9 +137,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 	{
 		glDepthMask(GL_TRUE);
 		if (fbo) {
-			//glDisable(GL_DEPTH_TEST);
 			glDepthFunc(GL_ALWAYS);
-
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 		}
@@ -157,55 +155,15 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
-		// Set uniforms
-		glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
-		shader.bindUniformBlock("Camera", camera.ubo());
-		shader.setUniform("modelMatrix", modelMatrix());
-		shader.setUniform("viewModelMatrix", viewModelMatrix);
-
-		autoSetUniforms(shader, properties());
-		if (auto sand = m_sand.lock()) {
-			autoSetUniforms(shader, sand->properties());
+		if (props.prerenderSurface) {
+			setCommonUniforms(shader, camera);
+			shader.setUniform("uPrerenderSurfaceStep", 0);
+			draw(*pointData, shader);
 		}
 
-		shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
-		shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
-		shader.setUniform("uTime", static_cast<GLfloat>(m_time));
-
-		GLint o = 0;
-
-		if (m_colormapTexture) {
-			m_colormapTexture->bind(o);
-			shader.setUniform("uColormapTexture", o++);
-		}
-
-		for (size_t k = 0; k < m_atlases.size(); ++k) {
-			m_atlases[k].setUniforms(shader, o, MAKE_STR("impostor[" << k << "]."));
-		}
-
-		if (props.precomputeViewMatrices) {
-			m_precomputedViewMatrices->bindSsbo(4);
-		}
-
-		if (auto splitter = m_splitter.lock()) {
-			// This is a hack: we reuse the fbo that was used by the splitter and assume nothing else has written to it in the meantime
-			auto occlusionCullingFbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
-			//occlusionCullingFbo->colorTexture(0);
-		}
-
-		// Draw call
-		shader.use();
-		glBindVertexArray(pointData->vao());
-		if (auto ebo = pointData->ebo()) {
-			pointData->vbo().bindSsbo(0);
-			ebo->bindSsbo(1);
-			shader.setUniform("uUsePointElements", true);
-		}
-		else {
-			shader.setUniform("uUsePointElements", false);
-		}
-		glDrawArrays(GL_POINTS, pointData->pointOffset(), pointData->pointCount());
-		glBindVertexArray(0);
+		setCommonUniforms(shader, camera);
+		shader.setUniform("uPrerenderSurfaceStep", 1);
+		draw(*pointData, shader);
 	}
 
 	// 3. Blit auxilliary fbo to main fbo
@@ -247,6 +205,70 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 
 
 //-----------------------------------------------------------------------------
+
+void ImpostorSandRenderer::draw(const IPointCloudData& pointData, const ShaderProgram& shader) const
+{
+	// Draw call
+	shader.use();
+	glBindVertexArray(pointData.vao());
+	if (auto ebo = pointData.ebo()) {
+		pointData.vbo().bindSsbo(0);
+		ebo->bindSsbo(1);
+		shader.setUniform("uUsePointElements", true);
+	}
+	else {
+		shader.setUniform("uUsePointElements", false);
+	}
+	glDrawArrays(GL_POINTS, pointData.pointOffset(), pointData.pointCount());
+	glBindVertexArray(0);
+}
+
+void ImpostorSandRenderer::setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const
+{
+	const Properties& props = properties();
+
+	// Set uniforms
+	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
+	shader.bindUniformBlock("Camera", camera.ubo());
+	shader.setUniform("modelMatrix", modelMatrix());
+	shader.setUniform("viewModelMatrix", viewModelMatrix);
+
+	autoSetUniforms(shader, properties());
+	if (auto sand = m_sand.lock()) {
+		autoSetUniforms(shader, sand->properties());
+	}
+
+	auto pointData = m_pointData.lock();
+	shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));
+	shader.setUniform("uFrameCount", static_cast<GLuint>(pointData->frameCount()));
+	shader.setUniform("uTime", static_cast<GLfloat>(m_time));
+
+	GLint o = 0;
+
+	if (m_colormapTexture) {
+		m_colormapTexture->bind(o);
+		shader.setUniform("uColormapTexture", o++);
+	}
+
+	for (size_t k = 0; k < m_atlases.size(); ++k) {
+		m_atlases[k].setUniforms(shader, o, MAKE_STR("impostor[" << k << "]."));
+	}
+
+	if (props.precomputeViewMatrices) {
+		m_precomputedViewMatrices->bindSsbo(4);
+	}
+
+	shader.setUniform("uUseOcclusionMap", false);
+	if (auto splitter = m_splitter.lock()) {
+		if (splitter->properties().enableOcclusionCulling) {
+			// This is a hack: we reuse the fbo that was used by the splitter and assume nothing else has written to it in the meantime
+			auto occlusionCullingFbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+			glBindTextureUnit(static_cast<GLuint>(o), occlusionCullingFbo->colorTexture(0));
+			shader.setUniform("uOcclusionMap", o++);
+			shader.setUniform("uUseOcclusionMap", true);
+		}
+	}
+}
 
 // Extracted from impostor.inc.glsl
 namespace glsl {
