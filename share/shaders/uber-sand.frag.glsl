@@ -64,6 +64,7 @@ float computeWeight(vec2 uv, float sqDistToCenter) {
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(PASS_BLIT_TO_MAIN_FBO)
 
+#define IN_LINEAR_GBUFFER
 #define OUT_GBUFFER
 #include "include/gbuffer2.inc.glsl"
 
@@ -73,8 +74,6 @@ float computeWeight(vec2 uv, float sqDistToCenter) {
 //uniform sampler2D uDepthTexture; // nope, depth test used as is, just write to gl_FragDepth
 
 // attachments of the secondary fbo
-uniform sampler2D uFboColor0Texture;
-uniform sampler2D uFboColor1Texture;
 uniform sampler2D uFboDepthTexture;
 
 // Problem: semi transparency requires to read from current color attachment
@@ -91,20 +90,17 @@ void main() {
     // add back uEpsilon here -- benchmark-me
     //gl_FragDepth = unlinearizeDepth(linearizeDepth(d) - uEpsilon);
 
-    vec4 in_color = texelFetch(uFboColor0Texture, ivec2(gl_FragCoord.xy), 0);
-    vec4 in_normal = texelFetch(uFboColor1Texture, ivec2(gl_FragCoord.xy), 0);
+    GFragment fragment;
+    autoUnpackGFragment(fragment);
 
 #ifdef NO_DISCARD_IN_PASS_EPSILON_DEPTH
-    if (in_color.a < 0.00001) discard;
+    if (fragment.alpha < 0.00001) discard;
 #endif // NO_DISCARD_IN_PASS_EPSILON_DEPTH
-    float weightNormalization = 1.0 / in_color.a; // inverse sum of integration weights
+    float weightNormalization = 1.0 / fragment.alpha; // inverse sum of integration weights
 
-    GFragment fragment;
-    initGFragment(fragment);
-
-    fragment.baseColor = in_color.rgb * weightNormalization;
+    fragment.baseColor *= weightNormalization;
+    fragment.normal *= weightNormalization;
     fragment.material_id = pbrMaterial;
-    fragment.normal = in_normal.xyz * weightNormalization;
 
     // Fix depth
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
@@ -113,7 +109,7 @@ void main() {
 
     if (uShowSampleCount) {
         fragment.material_id = colormapDebugMaterial;
-        fragment.baseColor = vec3(in_color.a);
+        fragment.baseColor = vec3(fragment.alpha);
     }
 
     if (uDebugRenderType) {
@@ -138,13 +134,14 @@ void main() {
 ///////////////////////////////////////////////////////////////////////////////
 #else // DEFAULT PASS
 
+// If not using shell culling, we render directly to G-buffer, otherwise
+// there is an extra blitting pass to normalize cumulated values.
 #ifdef SHELL_CULLING
-layout (location = 0) out vec4 out_color;
-layout (location = 1) out vec4 out_normal;
+#define OUT_LINEAR_GBUFFER
 #else // SHELL_CULLING
 #define OUT_GBUFFER
-#include "include/gbuffer2.inc.glsl"
 #endif // SHELL_CULLING
+#include "include/gbuffer2.inc.glsl"
 
 in FragmentData {
     vec3 position_ws;
@@ -167,7 +164,13 @@ uniform float uTime;
 #include "include/raytracing.inc.glsl"
 #include "include/bsdf.inc.glsl"
 
+#include "include/impostor.inc.glsl"
+uniform SphericalImpostor uImpostor[3];
+
 void main() {
+    GFragment fragment;
+    initGFragment(fragment);
+
     vec2 uv = gl_PointCoord * 2.0 - 1.0;
     float sqDistToCenter = dot(uv, uv);
 
@@ -219,30 +222,24 @@ void main() {
         baseColor = vec3(abs(step(uv.x, 0.0) - step(uv.y, 0.0)));
     }
 
-    out_color.rgb = baseColor * weight;
-    out_color.a = weight;
-    out_normal.xyz = n * weight;
+    fragment.baseColor.rgb = baseColor * weight;
+    fragment.alpha = weight;
+    fragment.normal = n * weight;
 
     if (uShowSampleCount) {
-        out_color.a = clamp(ceil(antialiasing), 0, 1);
+        fragment.alpha = clamp(ceil(antialiasing), 0, 1);
     }
 
 #ifndef SHELL_CULLING
-    // If not using shell culling, we render directly to G-buffer, otherwise
-    // there is an extra blitting pass to normalize cumulated values.
-    GFragment fragment;
-    initGFragment(fragment);
-    fragment.baseColor = out_color.rgb;
-    fragment.normal = out_normal.xyz;
     fragment.ws_coord = inData.position_ws;
     fragment.material_id = pbrMaterial;
 
     if (uDebugRenderType) {
         fragment.baseColor = uDebugRenderColor;
     }
+#endif // not SHELL_CULLING
 
     autoPackGFragment(fragment);
-#endif // not SHELL_CULLING
 }
 
 ///////////////////////////////////////////////////////////////////////////////

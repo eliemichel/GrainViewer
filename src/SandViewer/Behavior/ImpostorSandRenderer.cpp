@@ -10,67 +10,6 @@
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
 
-bool ImpostorAtlas::deserialize(const rapidjson::Value& json)
-{
-	jrOption(json, "enableLeanMapping", enableLeanMapping);
-
-#define readAtlas(name) \
-	std::string name; \
-	if (jrOption(json, #name, name)) { \
-		name ## Texture = ResourceManager::loadTextureStack(name); \
-	}
-	readAtlas(normalAlpha);
-	readAtlas(baseColor);
-	readAtlas(metallicRoughness);
-#undef readAtlas
-
-	jrOption(json, "metallic", metallic, metallic);
-	jrOption(json, "roughness", roughness, roughness);
-
-	if (normalAlphaTexture && enableLeanMapping) {
-		leanTextures = Filtering::CreateLeanTexture(*normalAlphaTexture);
-	}
-
-	GLuint n = normalAlphaTexture->depth();
-	viewCount = static_cast<GLuint>(sqrt(n / 2));
-
-	return true;
-}
-
-void ImpostorAtlas::setUniforms(const ShaderProgram& shader, GLint& textureUnit, const std::string& prefix) const
-{
-	GLint& o = textureUnit;
-	shader.setUniform(prefix + "viewCount", viewCount);
-	shader.setUniform(prefix + "metallic", metallic);
-	shader.setUniform(prefix + "roughness", roughness);
-
-	normalAlphaTexture->bind(o);
-	shader.setUniform(prefix + "normalAlphaTexture", o++);
-
-	if (leanTextures) {
-		leanTextures->lean1.bind(o);
-		shader.setUniform(prefix + "lean1Texture", o++);
-		leanTextures->lean2.bind(o);
-		shader.setUniform(prefix + "lean2Texture", o++);
-	}
-
-	if (baseColorTexture) {
-		baseColorTexture->bind(o);
-		shader.setUniform(prefix + "baseColorTexture", o++);
-	}
-
-	if (metallicRoughnessTexture) {
-		metallicRoughnessTexture->bind(o);
-		shader.setUniform(prefix + "metallicRoughnesTexture", o++);
-		shader.setUniform(prefix + "hasMetallicRoughnessMap", true);
-	}
-	else {
-		shader.setUniform(prefix + "hasMetallicRoughnessMap", false);
-	}
-
-	shader.setUniform("hasLeanMapping", enableLeanMapping);
-}
-
 //-----------------------------------------------------------------------------
 
 const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
@@ -92,8 +31,6 @@ bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
 	}
 
 	autoDeserialize(json, m_properties);
-
-	jrArray(json, "atlases", m_atlases);
 
 	return true;
 }
@@ -255,8 +192,10 @@ void ImpostorSandRenderer::setCommonUniforms(const ShaderProgram& shader, const 
 		shader.setUniform("uColormapTexture", o++);
 	}
 
-	for (size_t k = 0; k < m_atlases.size(); ++k) {
-		m_atlases[k].setUniforms(shader, o, MAKE_STR("impostor[" << k << "]."));
+	if (auto sand = m_sand.lock()) {
+		for (size_t k = 0; k < sand->atlases().size(); ++k) {
+			o = sand->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
+		}
 	}
 
 	if (props.precomputeViewMatrices) {
@@ -318,11 +257,14 @@ namespace glsl {
 
 void ImpostorSandRenderer::precomputeViewMatrices()
 {
+	auto sand = m_sand.lock();
+	if (!sand) return;
+
 	m_precomputedViewMatrices = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);
 	// Check that viewCount is the same for all impostors
-	GLuint n = m_atlases[0].viewCount;
-	for (int i = 1 ; i < m_atlases.size() ; ++i) {
-		if (m_atlases[i].viewCount != n) {
+	GLuint n = sand->atlases()[0].viewCount;
+	for (int i = 1 ; i < sand->atlases().size() ; ++i) {
+		if (sand->atlases()[i].viewCount != n) {
 			ERR_LOG << "Precomputed view matrices can only be used when all impostors use the same number of views";
 			properties().precomputeViewMatrices = false;
 			return;

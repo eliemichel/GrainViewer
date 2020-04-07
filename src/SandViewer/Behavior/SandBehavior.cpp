@@ -9,5 +9,6 @@
 bool SandBehavior::deserialize(const rapidjson::Value & json)
 {
 	autoDeserialize(json, m_properties);
+	jrArray(json, "atlases", m_atlases);
 	return true;
 }

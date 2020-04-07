@@ -173,6 +173,8 @@ set(All_SRC
 	GlBuffer.cpp
 	GlDeferredShader.h
 	GlDeferredShader.cpp
+	ImpostorAtlasMaterial.h
+	ImpostorAtlasMaterial.cpp
 	Light.h
 	Light.cpp
 	Mesh.h

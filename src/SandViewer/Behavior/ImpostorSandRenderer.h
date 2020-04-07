@@ -6,8 +6,11 @@
 #include "GlTexture.h"
 #include "GlBuffer.h"
 #include "Filtering.h"
+#include "ImpostorAtlasMaterial.h"
+
 #include <refl.hpp>
 #include <glm/glm.hpp>
+
 #include <memory>
 
 class ShaderProgram;
@@ -15,22 +18,6 @@ class TransformBehavior;
 class SandBehavior;
 class IPointCloudData;
 class PointCloudSplitter;
-
-// Matches SphericalImpostor struct in include/impostor.inc.glsl
-struct ImpostorAtlas {
-	bool enableLeanMapping;
-	std::unique_ptr<GlTexture> normalAlphaTexture;
-	std::unique_ptr<GlTexture> baseColorTexture;
-	std::unique_ptr<GlTexture> metallicRoughnessTexture;
-	float metallic = 0.0;
-	float roughness = 0.5;
-
-	GLuint viewCount; // number of precomputed views, computed from normalAlphaTexture depth
-	std::unique_ptr<LeanTexture> leanTextures; // generated iff enableLeanMapping is on
-
-	bool deserialize(const rapidjson::Value& json);
-	void setUniforms(const ShaderProgram& shader, GLint & textureUnit, const std::string& prefix) const;
-};
 
 class ImpostorSandRenderer : public Behavior {
 public:
@@ -95,7 +82,6 @@ private:
 
 private:
 	Properties m_properties;
-	std::vector<ImpostorAtlas> m_atlases;
 
 	std::string m_shaderName = "ImpostorSand";
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders;

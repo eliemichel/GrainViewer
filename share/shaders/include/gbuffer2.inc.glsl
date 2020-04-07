@@ -195,7 +195,7 @@ void autoUnpackGFragment(inout GFragment fragment) {
 layout (location = 0) out vec4 lgbuffer_color0;
 layout (location = 1) out vec4 lgbuffer_color1;
 
-void autoPackLinearGFragment(in GFragment fragment) {
+void autoPackGFragment(in GFragment fragment) {
 	packLinearGFragment(fragment, lgbuffer_color0, lgbuffer_color1);
 }
 
@@ -208,7 +208,7 @@ void autoPackLinearGFragment(in GFragment fragment) {
 layout (binding = 0) uniform sampler2D lgbuffer0;
 layout (binding = 1) uniform sampler2D lgbuffer1;
 
-void autoUnpackLinearGFragment(inout GFragment fragment) {
+void autoUnpackGFragment(inout GFragment fragment) {
 	unpackLinearGFragment(lgbuffer0, lgbuffer1, ivec2(gl_FragCoord.xy), fragment);
 }
 

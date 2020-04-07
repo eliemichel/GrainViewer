@@ -111,7 +111,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	
 	std::shared_ptr<Framebuffer> fbo;
 	if (props.useShellCulling) {
-		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::TwoRgba32fDepth);
+		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::LinearGBufferDepth);
 	}
 
 	// 0. Clear depth
@@ -163,7 +163,13 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 			glDisable(GL_BLEND);
 		}
 
-		setCommonUniforms(shader, camera);
+		GLint o = setCommonUniforms(shader, camera);
+
+		if (auto sand = m_sand.lock()) {
+			for (size_t k = 0; k < sand->atlases().size(); ++k) {
+				o = sand->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
+			}
+		}
 
 		if (props.useShellCulling && (props.shellDepthFalloff || props.useEarlyDepthTest)) {
 			// If we need to read from the current depth buffer
@@ -194,7 +200,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 		GLint o = 0;
 		for (int i = 0; i < fbo->colorTextureCount(); ++i) {
 			glBindTextureUnit(static_cast<GLuint>(o), fbo->colorTexture(i));
-			shader.setUniform(MAKE_STR("uFboColor" << i << "Texture"), o);
+			shader.setUniform(MAKE_STR("lgbuffer" << i), o);
 			++o;
 		}
 		glBindTextureUnit(static_cast<GLuint>(o), fbo->depthTexture());
@@ -235,7 +241,9 @@ glm::mat4 UberSandRenderer::modelMatrix() const {
 	}
 }
 
-void UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Camera & camera) const {
+GLint UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Camera & camera, GLint nextTextureUnit) const {
+	GLint o = nextTextureUnit;
+
 	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
 	shader.bindUniformBlock("Camera", camera.ubo());
 	shader.setUniform("modelMatrix", modelMatrix());
@@ -251,12 +259,13 @@ void UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Cam
 	
 	shader.setUniform("uTime", m_time);
 	
-	GLint o = 0;
 	if (m_colormapTexture) {
 		m_colormapTexture->bind(o);
 		shader.setUniform("uColormapTexture", o);
 		++o;
 	}
+
+	return o;
 }
 
 void UberSandRenderer::bindDepthTexture(ShaderProgram & shader, GLuint textureUnit) const

@@ -71,7 +71,7 @@ uniform bool uPrerenderSurface = false;
 #include "include/gbuffer2.inc.glsl"
 #include "include/impostor.inc.glsl"
 #include "include/zbuffer.inc.glsl"
-uniform SphericalImpostor impostor[3];
+uniform SphericalImpostor uImpostor[3];
 #endif // PRECOMPUTE_IN_VERTEX
 
 void main() {
@@ -114,7 +114,7 @@ void main() {
 	ray_ws.direction = normalize(geo.position_ws - ray_ws.origin);
     Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
 
-    uint n = impostor[0].viewCount;
+    uint n = uImpostor[0].viewCount;
 	DirectionToViewIndices(-ray_gs.direction, n, geo.i, geo.alpha);
 #endif // PRECOMPUTE_IN_VERTEX
 

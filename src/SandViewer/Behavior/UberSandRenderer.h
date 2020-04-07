@@ -77,7 +77,7 @@ private:
 	void renderToGBuffer(const IPointCloudData& pointData, const Camera& camera, const World& world) const;
 	void renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const;
 	glm::mat4 modelMatrix() const;
-	void setCommonUniforms(const ShaderProgram & shader, const Camera & camera) const;
+	GLint setCommonUniforms(const ShaderProgram & shader, const Camera & camera, GLint nextTextureUnit = 0) const;
 	void bindDepthTexture(ShaderProgram & shader, GLuint textureUnit = 7) const;
 	std::shared_ptr<ShaderProgram> getShader(ShaderVariantFlagSet flags = 0) const;
 

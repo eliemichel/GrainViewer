@@ -3,6 +3,7 @@
 
 #include <OpenGL>
 #include "Behavior.h"
+#include "ImpostorAtlasMaterial.h"
 #include <refl.hpp>
 #include <glm/glm.hpp>
 #include <memory>
@@ -17,6 +18,7 @@ class SandBehavior : public Behavior {
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
+	const std::vector<ImpostorAtlasMaterial> & atlases() const { return m_atlases; }
 
 public:
 	// Properties (serialized and displayed in UI)
@@ -34,6 +36,7 @@ public:
 
 private:
 	Properties m_properties;
+	std::vector<ImpostorAtlasMaterial> m_atlases;
 };
 
 #define _ ReflectionAttributes::

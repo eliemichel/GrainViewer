@@ -91,7 +91,7 @@ uniform mat4 viewModelMatrix;
 #include "include/depth.inc.glsl"
 #include "sand/procedural-color.inc.glsl"
 
-uniform SphericalImpostor impostor[3];
+uniform SphericalImpostor uImpostor[3];
 uniform float uGrainInnerRadiusRatio;
 
 uniform float uHitSphereCorrectionFactor = .65;
@@ -172,7 +172,7 @@ void main() {
 		fragment = IntersectRayCube(ray_ws, geo.position_ws, geo.radius);
 		break;
 	default: // IMPOSTOR
-		fragment = SampleImpostor(impostor[0], ray_gs, geo.radius);
+		fragment = SampleImpostor(uImpostor[0], ray_gs, geo.radius);
 		mat3 ws_from_gs_rot = transpose(mat3(geo.gs_from_ws));
 		fragment.normal = ws_from_gs_rot * fragment.normal;
 		break;
