@@ -100,6 +100,7 @@ void main() {
 
     fragment.baseColor *= weightNormalization;
     fragment.normal *= weightNormalization;
+    fragment.roughness *= weightNormalization;
     fragment.material_id = pbrMaterial;
 
     // Fix depth
@@ -148,24 +149,15 @@ in FragmentData {
     vec3 baseColor;
     float radius;
     float screenSpaceDiameter;
+    float metallic;
+    float roughness;
 } inData;
-
-uniform float height = 0.0;
-uniform float metallic = 0.0;
-uniform float roughness = 1.4;
-uniform float occlusion = 1.0;
-uniform vec3 emission = vec3(0.0, 0.0, 0.0);
-uniform vec3 normal = vec3(0.5, 0.5, 1.0);
-uniform float normal_mapping = 0.0;
 
 uniform float uTime;
 
 #include "include/utils.inc.glsl"
 #include "include/raytracing.inc.glsl"
 #include "include/bsdf.inc.glsl"
-
-#include "include/impostor.inc.glsl"
-uniform SphericalImpostor uImpostor[3];
 
 void main() {
     GFragment fragment;
@@ -183,8 +175,6 @@ void main() {
     }
     weight *= antialiasing;
 #else // SHELL_CULLING
-    vec4 out_color = vec4(0.0); // mock outputs
-    vec4 out_normal = vec4(0.0);
     if (uDebugShape != cDebugShapeSquare && sqDistToCenter > 1.0) {
         discard;
     }
@@ -225,6 +215,8 @@ void main() {
     fragment.baseColor.rgb = baseColor * weight;
     fragment.alpha = weight;
     fragment.normal = n * weight;
+    fragment.metallic = inData.metallic * weight;
+    fragment.roughness = inData.roughness * weight;
 
     if (uShowSampleCount) {
         fragment.alpha = clamp(ceil(antialiasing), 0, 1);

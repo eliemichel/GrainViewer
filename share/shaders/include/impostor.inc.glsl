@@ -20,8 +20,10 @@ struct SphericalImpostor {
 	sampler2DArray lean1Texture;
 	sampler2DArray lean2Texture;
 	uint viewCount; // number of precomputed views
+	vec3 baseColor;
 	float metallic;
 	float roughness;
+	bool hasBaseColorMap;
 	bool hasMetallicRoughnessMap;
 	bool hasLeanMapping;
 };

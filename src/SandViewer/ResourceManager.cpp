@@ -172,7 +172,7 @@ std::unique_ptr<GlTexture> ResourceManager::loadTextureStack(const string & text
 
 	auto tex = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
 	tex->setWrapMode(GL_CLAMP_TO_EDGE);
-	tex->storage(1, GL_RGBA8, width, height, stackSize);
+	tex->storage(levels, GL_RGBA8, width, height, stackSize);
 
 	// Read all layers
 	for (size_t i = 0; i < textureFilenames.size(); ++i) {

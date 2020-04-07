@@ -27,6 +27,8 @@ out FragmentData {
 	vec3 baseColor;
 	float radius;
 	float screenSpaceDiameter;
+	float metallic;
+	float roughness;
 } outData;
 
 #include "include/uniform/camera.inc.glsl"
@@ -35,6 +37,11 @@ out FragmentData {
 #include "include/random.inc.glsl"
 #include "include/zbuffer.inc.glsl"
 #include "sand/procedural-color.inc.glsl"
+
+#include "include/raytracing.inc.glsl"
+#include "include/gbuffer2.inc.glsl"
+#include "include/impostor.inc.glsl"
+uniform SphericalImpostor uImpostor[3];
 
 uniform bool uUseShellCulling = true;
 uniform sampler2D uDepthTexture;
@@ -92,7 +99,53 @@ void main() {
 	}
 
 	gl_Position = position_clipspace;
+#ifdef USING_PRECEDURAL_COLOR
 	outData.baseColor = proceduralColor(inData[0].originalPosition_ws, inData[0].vertexId);
+#else // USING_PRECEDURAL_COLOR
+	mat4 gs_from_ws = randomGrainMatrix(int(inData[0].vertexId), outData.position_ws);
+	vec3 ray_ws_origin = (inverseViewMatrix * vec4(0, 0, 0, 1)).xyz;
+	vec3 ray_ws_direction = outData.position_ws - ray_ws_origin;
+	vec3 ray_gs_direction = normalize(mat3(gs_from_ws) * ray_ws_direction);
+
+	uint n = uImpostor[0].viewCount;
+	uvec4 i;
+	vec2 alpha;
+	DirectionToViewIndices(-ray_gs_direction, n, i, alpha);
+	vec2 calpha = vec2(1.) - alpha;
+
+	// base color
+	if (uImpostor[0].hasBaseColorMap) {
+		int level = textureQueryLevels(uImpostor[0].baseColorTexture);
+		mat4 colors = mat4(
+			texelFetch(uImpostor[0].baseColorTexture, ivec3(0, 0, int(i.x)), level - 1),
+			texelFetch(uImpostor[0].baseColorTexture, ivec3(0, 0, int(i.y)), level - 1),
+			texelFetch(uImpostor[0].baseColorTexture, ivec3(0, 0, int(i.z)), level - 1),
+			texelFetch(uImpostor[0].baseColorTexture, ivec3(0, 0, int(i.w)), level - 1)
+		);
+		vec4 c = colors * vec4(vec2(calpha.x, alpha.x) * calpha.y, vec2(calpha.x, alpha.x) * alpha.y);
+		outData.baseColor = c.rgb;
+	} else {
+		outData.baseColor = uImpostor[0].baseColor;
+	}
+
+	// metallic/roughness
+	if (uImpostor[0].hasMetallicRoughnessMap) {
+		int level = textureQueryLevels(uImpostor[0].metallicRoughnessTexture);
+		mat4 colors = mat4(
+			texelFetch(uImpostor[0].metallicRoughnessTexture, ivec3(0, 0, int(i.x)), level - 1),
+			texelFetch(uImpostor[0].metallicRoughnessTexture, ivec3(0, 0, int(i.y)), level - 1),
+			texelFetch(uImpostor[0].metallicRoughnessTexture, ivec3(0, 0, int(i.z)), level - 1),
+			texelFetch(uImpostor[0].metallicRoughnessTexture, ivec3(0, 0, int(i.w)), level - 1)
+		);
+		vec4 c = colors * vec4(vec2(calpha.x, alpha.x) * calpha.y, vec2(calpha.x, alpha.x) * alpha.y);
+		outData.metallic = c.x;
+		outData.roughness = c.y;
+	} else {
+		outData.metallic = uImpostor[0].metallic;
+		outData.roughness = uImpostor[0].roughness;
+	}
+
+#endif // USING_PRECEDURAL_COLOR
 	outData.radius = inData[0].radius;
 	outData.screenSpaceDiameter = SpriteSize_Botsch03(outData.radius, position_cs);
 	//outData.screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);

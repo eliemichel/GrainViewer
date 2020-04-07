@@ -48,6 +48,7 @@ vec3 proceduralColor(vec3 pos, uint pointId) {
 bool isUsingProceduralColor() {
 #if defined(PROCEDURAL_BASECOLOR) || defined(PROCEDURAL_BASECOLOR2) || defined(PROCEDURAL_BASECOLOR3) || defined(PROCEDURAL_BASECOLOR_BLACK)
 	return true;
+#define USING_PRECEDURAL_COLOR
 #else
 	return false;
 #endif // PROCEDURAL_BASECOLOR
