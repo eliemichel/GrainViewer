@@ -27,6 +27,7 @@ out FragmentData {
 	vec3 baseColor;
 	float radius;
 	float screenSpaceDiameter;
+	float diameterOvershot;
 	float metallic;
 	float roughness;
 } outData;
@@ -151,7 +152,9 @@ void main() {
 	//outData.screenSpaceDiameter = SpriteSize(outData.radius, gl_Position);
 	//outData.screenSpaceDiameter = SpriteSize_Botsch03_corrected(outData.radius, position_cs);
 
-	gl_PointSize = outData.screenSpaceDiameter;
+	outData.diameterOvershot = 1.0;
+
+	gl_PointSize = outData.screenSpaceDiameter * outData.diameterOvershot;
 	EmitVertex();
 	EndPrimitive();
 }

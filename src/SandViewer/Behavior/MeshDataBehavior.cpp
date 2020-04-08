@@ -7,6 +7,9 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Accessors
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,7 +98,7 @@ void MeshDataBehavior::start()
 	}
 
 	// 4. Get materials
-	std::string textureRoot = baseDir(filename());
+	std::string textureRoot = fs::absolute(filename()).parent_path().string();
 	m_materials.resize(m_mesh->materials().size());
 	for (int i = 0; i < m_materials.size(); ++i) {
 		m_materials[i].fromTinyObj(m_mesh->materials()[i], textureRoot);

@@ -103,6 +103,19 @@ void main() {
     fragment.roughness *= weightNormalization;
     fragment.material_id = pbrMaterial;
 
+    // LEAN mapping
+    /*
+    fragment.lean1 *= weightNormalization; // first order moments
+    fragment.lean2 *= weightNormalization; // second order moments
+    vec2 B = fragment.lean1.xy;
+    vec3 M = fragment.lean2.xyz;
+    float s = 48.0 // phong exponent must be used but we use ggx :/
+    M.xy += 1./s; // bake roughness into normal distribution
+    vec2 d = M.xy - B.xy * B.xy;
+    float e = M.z - B.x * B.y;
+    mat2 inv_sigma = inverse(mat2(d.x, e, e, d.y));
+    */
+
     // Fix depth
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
     vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
@@ -149,6 +162,7 @@ in FragmentData {
     vec3 baseColor;
     float radius;
     float screenSpaceDiameter;
+    float diameterOvershot;
     float metallic;
     float roughness;
 } inData;
@@ -163,7 +177,7 @@ void main() {
     GFragment fragment;
     initGFragment(fragment);
 
-    vec2 uv = gl_PointCoord * 2.0 - 1.0;
+    vec2 uv = (gl_PointCoord * 2.0 - 1.0) * inData.diameterOvershot;
     float sqDistToCenter = dot(uv, uv);
 
     float antialiasing = 1.0;
@@ -218,9 +232,17 @@ void main() {
     fragment.metallic = inData.metallic * weight;
     fragment.roughness = inData.roughness * weight;
 
+    // LEAN mapping
+    /*
+    vec2 slopes = fragment.normal.xy / fragment.z;
+    fragment.lean1.xy = slopes.xy * weight;
+    fragment.lean2.xy = slopes.xy * slopes.xy * weight;
+    fragment.lean2.z = slopes.x * slopes.y * weight;
+
     if (uShowSampleCount) {
         fragment.alpha = clamp(ceil(antialiasing), 0, 1);
     }
+    */
 
 #ifndef SHELL_CULLING
     fragment.ws_coord = inData.position_ws;
