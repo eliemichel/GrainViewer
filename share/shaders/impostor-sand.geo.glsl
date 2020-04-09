@@ -98,7 +98,6 @@ void main() {
 
     geo.gs_from_ws = randomGrainMatrix(int(geo.id), geo.position_ws);
 
-#ifdef PRECOMPUTE_IN_VERTEX
 	if (uPrerenderSurface && uUseOcclusionMap) {
 		vec2 fragCoord = resolution.xy * (gl_Position.xy / gl_Position.w * 0.5 + 0.5);
 		fragCoord = clamp(fragCoord, vec2(0.5), resolution.xy - vec2(0.5));
@@ -109,6 +108,7 @@ void main() {
 		if (uPrerenderSurfaceStep == 1 && !isSurface) return;
 	}
 
+#ifdef PRECOMPUTE_IN_VERTEX
 	Ray ray_ws;
 	ray_ws.origin = (inverseViewMatrix * vec4(0, 0, 0, 1)).xyz;
 	ray_ws.direction = normalize(geo.position_ws - ray_ws.origin);

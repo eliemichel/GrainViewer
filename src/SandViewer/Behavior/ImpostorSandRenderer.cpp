@@ -100,15 +100,15 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 		if (props.interpolationMode == InterpolationMode::None) flags |= ShaderOptionNoInterpolation;
 		const ShaderProgram& shader = *getShader(flags);
 
-		if (props.prerenderSurface) {
+		setCommonUniforms(shader, camera);
+		shader.setUniform("uPrerenderSurfaceStep", 0);
+		draw(*pointData, shader);
+
+		if (props.prerenderSurface && !props.firstPassOnly) {
 			setCommonUniforms(shader, camera);
-			shader.setUniform("uPrerenderSurfaceStep", 0);
+			shader.setUniform("uPrerenderSurfaceStep", 1);
 			draw(*pointData, shader);
 		}
-
-		setCommonUniforms(shader, camera);
-		shader.setUniform("uPrerenderSurfaceStep", 1);
-		draw(*pointData, shader);
 	}
 
 	// 3. Blit auxilliary fbo to main fbo

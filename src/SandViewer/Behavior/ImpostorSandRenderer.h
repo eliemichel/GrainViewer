@@ -53,6 +53,7 @@ public:
 		bool precomputeViewMatrices = false; // requires that all impostors use the same number of views
 		bool precomputeInVertex = false; // precompute more things in vertex shader
 		bool prerenderSurface = false;
+		bool firstPassOnly = false; // when using prerenderSurface, only draw the surface
 		float hitSphereCorrectionFactor = 0.65f;
 	};
 	Properties & properties() { return m_properties; }
@@ -106,6 +107,7 @@ REFL_FIELD(noDiscard)
 REFL_FIELD(precomputeViewMatrices)
 REFL_FIELD(precomputeInVertex)
 REFL_FIELD(prerenderSurface)
+REFL_FIELD(firstPassOnly)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 

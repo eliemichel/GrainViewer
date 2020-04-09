@@ -109,11 +109,18 @@ uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: 
  * Sample an impostor with different strategies depending on options
  */
 GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_gs, float radius) {
-#if defined(PRECOMPUTE_IN_VERTEX)
-	return aux_IntersectRaySphericalGBillboard(impostor, ray_gs, radius, geo.i, geo.alpha);
-#elif defined(NO_INTERPOLATION)
+#if defined(NO_INTERPOLATION)
 	return IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, radius);
-#else // NO_INTERPOLATION
+#elif defined(PRECOMPUTE_IN_VERTEX)
+	switch (uSamplingMode) {
+	case 0: // PLANEHIT_SAMPLING
+		return aux_IntersectRaySphericalGBillboard(impostor, ray_gs, radius, geo.i, geo.alpha);
+	case 1: // SPHEREHIT_SAMPLING
+		return aux_IntersectRaySphericalGBillboard_SphereHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor, geo.i, geo.alpha);
+	case 2: // MIXEDHIT_SAMPLING
+		return aux_IntersectRaySphericalGBillboard_MixedHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor, geo.i, geo.alpha);
+	}
+#else
 	switch (uSamplingMode) {
 	case 0: // PLANEHIT_SAMPLING
 		return IntersectRaySphericalGBillboard(impostor, ray_gs, radius);
