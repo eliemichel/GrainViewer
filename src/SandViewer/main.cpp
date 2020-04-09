@@ -22,17 +22,15 @@
  * in the Software.
  */
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
-
-#include <glad/modernglad.h> // must be the first include
-#include <cstdlib> // for EXIT_FAILURE and EXIT_SUCCESS
-#include <memory>
+#include <OpenGL>
 
 #include "Ui/Window.h"
 #include "Ui/Gui.h"
 #include "Scene.h"
+#include "GlobalTimer.h"
+
+#include <cstdlib> // for EXIT_FAILURE and EXIT_SUCCESS
+#include <memory>
 
 int main(int argc, char *argv[]) {
 	const char *title = "Sand Viewer -- Copyright (c) 2019 -- Elie Michel / CG Group @ Telecom Paris";
@@ -59,12 +57,14 @@ int main(int argc, char *argv[]) {
 	gui->afterLoading();
 
 	while (!window->shouldClose()) {
+		GlobalTimer::StartFrame();
 		window->pollEvents();
 
 		gui->update();
 		gui->render();
 
 		window->swapBuffers();
+		GlobalTimer::StopFrame();
 	}
 
 	return EXIT_SUCCESS;

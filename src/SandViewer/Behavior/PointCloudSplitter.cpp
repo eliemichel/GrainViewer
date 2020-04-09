@@ -60,7 +60,8 @@ void PointCloudSplitter::update(float time, int frame)
 
 void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, RenderType target)
 {
-	auto timer = GlobalTimer::Start("PointCloudSplitter");
+	ScopedTimer timer("PointCloudSplitter");
+
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
@@ -132,7 +133,6 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 		// Get counters back
 		m_countersSsbo->exportBlock(0, m_counters);
 	}
-	GlobalTimer::Stop(timer);
 }
 
 //-----------------------------------------------------------------------------

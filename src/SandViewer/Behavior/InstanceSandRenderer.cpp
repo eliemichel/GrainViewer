@@ -7,6 +7,7 @@
 #include "ShaderPool.h"
 #include "ResourceManager.h"
 #include "BehaviorRegistry.h"
+#include "GlobalTimer.h"
 
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
@@ -40,6 +41,8 @@ void InstanceSandRenderer::update(float time, int frame)
 
 void InstanceSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
+	ScopedTimer timer("InstanceSandRenderer");
+
 	auto mesh = m_mesh.lock();
 	auto pointData = m_pointData.lock();
 	if (!mesh || !pointData || pointData->pointCount() == 0) return;

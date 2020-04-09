@@ -22,6 +22,7 @@
 #include "Framebuffer.h"
 #include "PostEffect.h"
 #include "BehaviorRegistry.h"
+#include "GlobalTimer.h"
 
 const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"SHELL_CULLING",
@@ -64,6 +65,8 @@ void UberSandRenderer::update(float time, int frame)
 
 void UberSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
+	ScopedTimer timer("UberSandRenderer");
+
 	// Sanity checks
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;

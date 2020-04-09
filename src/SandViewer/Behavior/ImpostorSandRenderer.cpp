@@ -6,6 +6,7 @@
 #include "SandBehavior.h"
 #include "ResourceManager.h"
 #include "utils/ScopedFramebufferOverride.h"
+#include "GlobalTimer.h"
 
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
@@ -53,6 +54,8 @@ void ImpostorSandRenderer::update(float time, int frame)
 
 void ImpostorSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
+	ScopedTimer timer("ImpostorSandRenderer");
+
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
 
