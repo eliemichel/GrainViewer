@@ -30,6 +30,7 @@ const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"PASS_EPSILON_DEPTH",
 	"PASS_BLIT_TO_MAIN_FBO",
 	"NO_DISCARD_IN_PASS_EPSILON_DEPTH",
+	"PSEUDO_LEAN",
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -114,7 +115,12 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	
 	std::shared_ptr<Framebuffer> fbo;
 	if (props.useShellCulling) {
-		fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::LinearGBufferDepth);
+		if (props.pseudoLean) {
+			fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::LeanLinearGBufferDepth);
+		}
+		else {
+			fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::LinearGBufferDepth);
+		}
 	}
 
 	// 0. Clear depth
@@ -128,6 +134,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	if (props.useShellCulling) {
 		ShaderVariantFlagSet flags = ShaderPassEpsilonDepth | ShaderOptionShellCulling;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.pseudoLean) flags |= ShaderOptionPseudoLean;
 		ShaderProgram& shader = *getShader(flags);
 
 		glDepthMask(GL_TRUE);
@@ -151,6 +158,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	{
 		ShaderVariantFlagSet flags = 0;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.pseudoLean) flags |= ShaderOptionPseudoLean;
 		if (props.useShellCulling) flags |= ShaderOptionShellCulling;
 		ShaderProgram& shader = *getShader(flags);
 
@@ -188,6 +196,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	if (props.useShellCulling) {
 		ShaderVariantFlagSet flags = ShaderPassBlitToMainFbo | ShaderOptionShellCulling;
 		if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+		if (props.pseudoLean) flags |= ShaderOptionPseudoLean;
 		ShaderProgram& shader = *getShader(flags);
 
 		scoppedFramebufferOverride.restore();
@@ -223,6 +232,7 @@ void UberSandRenderer::renderToShadowMap(const IPointCloudData& pointData, const
 	const Properties& props = properties();
 	ShaderVariantFlagSet flags = ShaderPassDepth;
 	if (props.noDiscard) flags |= ShaderOptionNoDiscard;
+	if (props.pseudoLean) flags |= ShaderOptionPseudoLean;
 	if (props.useShellCulling) flags |= ShaderOptionShellCulling;
 	ShaderProgram& shader = *getShader(flags);
 

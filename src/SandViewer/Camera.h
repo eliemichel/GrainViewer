@@ -44,6 +44,7 @@ public:
 		Depth = 2,
 		GBufferDepth = 3, // attachements to hold a g-buffer (see gbuffer.inc.glsl plus a depth buffer
 		LinearGBufferDepth = 4, // same with linear g-buffer
+		LeanLinearGBufferDepth = 5, // same with linear g-buffer + (pseudo) lean maps
 		_Count,
 	};
 

@@ -45,6 +45,7 @@ public:
 		bool shellDepthFalloff = true;
 		bool useEarlyDepthTest = true;
 		bool noDiscard = false; // in eps (some artefacts on edges or with low shell depth, but faster)
+		bool pseudoLean = false;
 
 		bool useBbox = false; // if true, remove all points out of the supplied bounding box
 		glm::vec3 bboxMin;
@@ -67,7 +68,8 @@ private:
 		ShaderPassEpsilonDepth = 1 << 2,
 		ShaderPassBlitToMainFbo = 1 << 3,
 		ShaderOptionNoDiscard = 1 << 4,
-		_ShaderVariantFlagsCount = 1 << 5,
+		ShaderOptionPseudoLean = 1 << 5,
+		_ShaderVariantFlagsCount = 1 << 6,
 	};
 	typedef int ShaderVariantFlagSet;
 	static const std::vector<std::string> s_shaderVariantDefines;
@@ -108,6 +110,7 @@ REFL_FIELD(weightMode)
 REFL_FIELD(shellDepthFalloff)
 REFL_FIELD(useEarlyDepthTest)
 REFL_FIELD(noDiscard)
+REFL_FIELD(pseudoLean)
 REFL_FIELD(useBbox)
 REFL_FIELD(bboxMin, Range(-1.0f, 1.0f))
 REFL_FIELD(bboxMax, Range(-1.0f, 1.0f))

@@ -16,8 +16,8 @@ struct GFragment {
 	uint count;
 
 	// Used for G-impostors but not in gbuffer (converted to regular normal)
-	//vec4 lean1;
-	//vec4 lean2;
+	vec4 lean1;
+	vec4 lean2;
 
 };
 
@@ -51,8 +51,8 @@ void initGFragment(out GFragment fragment) {
     fragment.emission = vec3(0.0);
     fragment.alpha = 0.0;
     fragment.count = 0;
-    //fragment.lean1 = vec4(0.0);
-    //fragment.lean2 = vec4(0.0);
+    fragment.lean1 = vec4(0.0);
+    fragment.lean2 = vec4(0.0);
 }
 
 /**
@@ -66,8 +66,8 @@ GFragment LerpGFragment(GFragment ga, GFragment gb, float t) {
 	g.roughness = mix(ga.roughness, gb.roughness, t);
 	g.emission = mix(ga.emission, gb.emission, t);
 	g.alpha = mix(ga.alpha, gb.alpha, t);
-	//g.lean1 = mix(ga.lean1, gb.lean1, t);
-	//g.lean2 = mix(ga.lean2, gb.lean2, t);
+	g.lean1 = mix(ga.lean1, gb.lean1, t);
+	g.lean2 = mix(ga.lean2, gb.lean2, t);
 	g.material_id = ga.material_id; // cannot be interpolated
 
 	// Normal interpolation
@@ -162,6 +162,44 @@ void packLinearGFragment(
 	lgbuffer_color1 = vec4(fragment.normal.xyz, fragment.roughness);
 }
 
+/**
+ * Linear packing of a g-fragment does not hold as much information as regular packing,
+ * but it is compatible with additive rendering.
+ */
+void unpackLeanLinearGFragment(
+	in sampler2D lgbuffer0,
+	in sampler2D lgbuffer1,
+	in sampler2D lgbuffer2,
+	in ivec2 coords, 
+	out GFragment fragment)
+{
+	vec4 data0 = texelFetch(lgbuffer0, coords, 0);
+	vec4 data1 = texelFetch(lgbuffer1, coords, 0);
+	vec4 data2 = texelFetch(lgbuffer2, coords, 0);
+	fragment.baseColor.rgb = data0.rgb;
+	fragment.alpha = data0.a;
+	fragment.lean1.xyz = data1.rgb;
+	fragment.lean2.x = data1.a;
+	fragment.lean2.yz = data2.rg;
+	fragment.roughness = data2.b;
+	fragment.metallic = data2.a;
+}
+
+/**
+ * Linear packing of a g-fragment does not hold as much information as regular packing,
+ * but it is compatible with additive rendering.
+ */
+void packLeanLinearGFragment(
+	in GFragment fragment,
+	out vec4 lgbuffer_color0,
+	out vec4 lgbuffer_color1,
+	out vec4 lgbuffer_color2)
+{
+	lgbuffer_color0 = vec4(fragment.baseColor.rgb, fragment.alpha);
+	lgbuffer_color1 = vec4(fragment.lean1.xyz, fragment.lean2.x);
+	lgbuffer_color2 = vec4(fragment.lean2.yz, fragment.roughness, fragment.metallic);
+}
+
 /////////////////////////////////////////////////////////////////////
 #ifdef OUT_GBUFFER
 
@@ -214,4 +252,28 @@ void autoUnpackGFragment(inout GFragment fragment) {
 
 #endif // IN_LINEAR_GBUFFER
 
+/////////////////////////////////////////////////////////////////////
+#ifdef OUT_LEAN_LINEAR_GBUFFER
 
+layout (location = 0) out vec4 lgbuffer_color0;
+layout (location = 1) out vec4 lgbuffer_color1;
+layout (location = 2) out vec4 lgbuffer_color2;
+
+void autoPackGFragment(in GFragment fragment) {
+	packLeanLinearGFragment(fragment, lgbuffer_color0, lgbuffer_color1, lgbuffer_color2);
+}
+
+#endif // OUT_LEAN_LINEAR_GBUFFER
+
+/////////////////////////////////////////////////////////////////////
+#ifdef IN_LEAN_LINEAR_GBUFFER
+
+layout (binding = 0) uniform sampler2D lgbuffer0;
+layout (binding = 1) uniform sampler2D lgbuffer1;
+layout (binding = 2) uniform sampler2D lgbuffer2;
+
+void autoUnpackGFragment(inout GFragment fragment) {
+	unpackLeanLinearGFragment(lgbuffer0, lgbuffer1, lgbuffer2, ivec2(gl_FragCoord.xy), fragment);
+}
+
+#endif // IN_LEAN_LINEAR_GBUFFER

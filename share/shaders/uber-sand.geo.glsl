@@ -124,7 +124,7 @@ void main() {
 			texelFetch(uImpostor[0].baseColorTexture, ivec3(0, 0, int(i.w)), level - 1)
 		);
 		vec4 c = colors * vec4(vec2(calpha.x, alpha.x) * calpha.y, vec2(calpha.x, alpha.x) * alpha.y);
-		outData.baseColor = c.rgb;
+		outData.baseColor = c.rgb;// * 1.8;
 	} else {
 		outData.baseColor = uImpostor[0].baseColor;
 	}

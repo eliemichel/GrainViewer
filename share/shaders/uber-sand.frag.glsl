@@ -4,6 +4,7 @@
 #pragma varopt PASS_DEPTH PASS_EPSILON_DEPTH PASS_BLIT_TO_MAIN_FBO
 #pragma opt SHELL_CULLING
 #pragma opt NO_DISCARD_IN_PASS_EPSILON_DEPTH
+#pragma opt PSEUDO_LEAN
 
 const int cDebugShapeNone = -1;
 const int cDebugShapeRaytracedSphere = 0; // directly lit sphere, not using ad-hoc lighting
@@ -64,7 +65,11 @@ float computeWeight(vec2 uv, float sqDistToCenter) {
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(PASS_BLIT_TO_MAIN_FBO)
 
+#ifdef PSEUDO_LEAN
+#define IN_LEAN_LINEAR_GBUFFER
+#else // PSEUDO_LEAN
 #define IN_LINEAR_GBUFFER
+#endif // PSEUDO_LEAN
 #define OUT_GBUFFER
 #include "include/gbuffer2.inc.glsl"
 
@@ -103,18 +108,22 @@ void main() {
     fragment.roughness *= weightNormalization;
     fragment.material_id = pbrMaterial;
 
+#ifdef PSEUDO_LEAN
     // LEAN mapping
-    /*
     fragment.lean1 *= weightNormalization; // first order moments
     fragment.lean2 *= weightNormalization; // second order moments
     vec2 B = fragment.lean1.xy;
     vec3 M = fragment.lean2.xyz;
-    float s = 48.0 // phong exponent must be used but we use ggx :/
+    float s = 48.0; // phong exponent must be used but we use ggx :/
     M.xy += 1./s; // bake roughness into normal distribution
-    vec2 d = M.xy - B.xy * B.xy;
+    vec2 diag = M.xy - B.xy * B.xy;
     float e = M.z - B.x * B.y;
-    mat2 inv_sigma = inverse(mat2(d.x, e, e, d.y));
-    */
+    mat2 inv_sigma = inverse(mat2(diag.x, e, e, diag.y));
+
+    fragment.normal = normalize(vec3(fragment.lean1.xy, 1));
+    fragment.normal = mat3(inverseViewMatrix) * fragment.normal;
+    fragment.roughness = length(diag);
+#endif // PSEUDO_LEAN
 
     // Fix depth
     Ray ray_cs = fragmentRay(gl_FragCoord, projectionMatrix);
@@ -151,9 +160,13 @@ void main() {
 // If not using shell culling, we render directly to G-buffer, otherwise
 // there is an extra blitting pass to normalize cumulated values.
 #ifdef SHELL_CULLING
-#define OUT_LINEAR_GBUFFER
+#  ifdef PSEUDO_LEAN
+#    define OUT_LEAN_LINEAR_GBUFFER
+#  else // PSEUDO_LEAN
+#    define OUT_LINEAR_GBUFFER
+#  endif // PSEUDO_LEAN
 #else // SHELL_CULLING
-#define OUT_GBUFFER
+#  define OUT_GBUFFER
 #endif // SHELL_CULLING
 #include "include/gbuffer2.inc.glsl"
 
@@ -233,16 +246,20 @@ void main() {
     fragment.roughness = inData.roughness * weight;
 
     // LEAN mapping
-    /*
-    vec2 slopes = fragment.normal.xy / fragment.z;
+#ifdef PSEUDO_LEAN
+    fragment.normal = mat3(viewMatrix) * fragment.normal;
+    vec2 slopes = fragment.normal.xy / fragment.normal.z;
+    if (fragment.normal.z == 0.0) {
+        slopes = vec2(0.0);
+    }
     fragment.lean1.xy = slopes.xy * weight;
     fragment.lean2.xy = slopes.xy * slopes.xy * weight;
     fragment.lean2.z = slopes.x * slopes.y * weight;
+#endif // PSEUDO_LEAN
 
     if (uShowSampleCount) {
         fragment.alpha = clamp(ceil(antialiasing), 0, 1);
     }
-    */
 
 #ifndef SHELL_CULLING
     fragment.ws_coord = inData.position_ws;
