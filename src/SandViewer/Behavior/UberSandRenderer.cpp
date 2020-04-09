@@ -65,7 +65,7 @@ void UberSandRenderer::update(float time, int frame)
 
 void UberSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer("UberSandRenderer");
+	ScopedTimer timer((target == RenderType::ShadowMap ? "UberSandRenderer_shadowmap" : "UberSandRenderer"));
 
 	// Sanity checks
 	auto pointData = m_pointData.lock();

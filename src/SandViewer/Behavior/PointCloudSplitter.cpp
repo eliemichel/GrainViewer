@@ -60,7 +60,7 @@ void PointCloudSplitter::update(float time, int frame)
 
 void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, RenderType target)
 {
-	ScopedTimer timer("PointCloudSplitter");
+	ScopedTimer timer((target == RenderType::ShadowMap ? "PointCloudSplitter_shadowmap" : "PointCloudSplitter"));
 
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;

@@ -43,6 +43,8 @@ uniform int uShadingMode = 0; // 0: BEAUTY, 1: NORMAL, 2: BASE_COLOR
 uniform float uMaxSampleCount = 40;
 uniform bool uShowSampleCount = false;
 
+uniform float uShadowMapBias;
+
 
 #ifdef OLD_BRDF
 #include "include/bsdf-old.inc.glsl"
@@ -75,9 +77,9 @@ void pbrShading(const in GFragment fragment, out OutputFragment out_fragment)
 			float shadowBias = shadowBiasFromNormal(light[k], fragment.normal);
 			shadowBias = 0.0001; // hardcoded hack
 			//shadowBias = 0.00005;
-			shadow = shadowAt(light[k], fragment.ws_coord, shadowBias);
+			shadow = shadowAt(light[k], fragment.ws_coord, uShadowMapBias);
 			shadow = clamp(shadow, 0.0, 1.0);
-			shadow *= .8;
+			//shadow *= .8;
 		}
 		
 		vec3 toLight = normalize(light[k].position_ws - fragment.ws_coord);

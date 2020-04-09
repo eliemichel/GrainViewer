@@ -54,7 +54,7 @@ void ImpostorSandRenderer::update(float time, int frame)
 
 void ImpostorSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer("ImpostorSandRenderer");
+	ScopedTimer timer((target == RenderType::ShadowMap ? "ImpostorSandRenderer_shadowmap" : "ImpostorSandRenderer"));
 
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;

@@ -20,6 +20,11 @@
 
 using namespace std;
 
+float GlDeferredShader::Properties::ShadowMapBias() const
+{
+	return shadowMapBiasBase * static_cast<float>(pow(10, shadowMapBiasExponent));
+}
+
 GlDeferredShader::GlDeferredShader()
 	: m_shader("deferred-shader")
 {
@@ -122,6 +127,7 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.setUniform("uIsShadowMapEnabled", world.isShadowMapEnabled());
 
 	autoSetUniforms(m_shader, m_properties);
+	m_shader.setUniform("uShadowMapBias", m_properties.ShadowMapBias());
 
 	m_shader.setUniform("uHasColormap", static_cast<bool>(m_colormap));
 	if (m_colormap) {

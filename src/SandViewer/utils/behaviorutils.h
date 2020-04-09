@@ -25,6 +25,7 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 		if constexpr (
 			std::is_same_v<type, bool>
 			|| std::is_same_v<type, float>
+			|| std::is_same_v<type, int>
 			|| std::is_same_v<type, glm::vec3>)
 		{
 			jrOption(json, std::string(member.name), member(properties), member(properties));
@@ -59,6 +60,7 @@ void autoSetUniforms(const ShaderProgram& shader, const T& properties) {
 		if constexpr (
 			std::is_same_v<type, bool>
 			|| std::is_same_v<type, float>
+			|| std::is_same_v<type, int>
 			|| std::is_same_v<type, glm::vec3>)
 		{
 			shader.setUniform(name, member(properties));
@@ -104,13 +106,16 @@ void autoUi(T& properties) {
 		else if constexpr (std::is_same_v<type, float>) {
 			ImGui::SliderFloat(displayName.c_str(), &member(properties), rangeMinimum, rangeMaximum, "%.5f");
 		}
+		else if constexpr (std::is_same_v<type, int>) {
+			ImGui::SliderInt(displayName.c_str(), &member(properties), static_cast<int>(rangeMinimum), static_cast<int>(rangeMaximum));
+		}
 		else if constexpr (std::is_same_v<type, glm::vec3>) {
 			ImGui::SliderFloat3(displayName.c_str(), glm::value_ptr(member(properties)), rangeMinimum, rangeMaximum, "%.5f");
 		}
 		else if constexpr (std::is_enum_v<type>) {
 			// assuming int enum
 			int value = static_cast<int>(member(properties));
-			ImGui::Text(("\n" + displayName).c_str());
+			ImGui::Text(("\n" + displayName + ":").c_str());
 			ImGui::PushID(id++);
 			constexpr auto options = magic_enum::enum_entries<type>();
 			for (const auto& opt : options) {

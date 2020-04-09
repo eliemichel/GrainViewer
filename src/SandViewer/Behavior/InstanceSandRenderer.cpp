@@ -41,7 +41,7 @@ void InstanceSandRenderer::update(float time, int frame)
 
 void InstanceSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer("InstanceSandRenderer");
+	ScopedTimer timer((target == RenderType::ShadowMap ? "InstanceSandRenderer_shadowmap" : "InstanceSandRenderer"));
 
 	auto mesh = m_mesh.lock();
 	auto pointData = m_pointData.lock();

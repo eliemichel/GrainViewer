@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "utils/guiutils.h"
+#include "utils/behaviorutils.h"
 #include "DeferredShadingDialog.h"
 #include "GlTexture.h"
 
@@ -12,22 +13,8 @@ void DeferredShadingDialog::draw()
 		if (ImGui::CollapsingHeader("Deferred Shading", ImGuiTreeNodeFlags_DefaultOpen)) {
 			GlDeferredShader::Properties & props = cont->properties();
 
-			int mode = props.shadingMode;
-			ImGui::Text("\nShading Mode");
-			ImGui::RadioButton("Beauty", &mode, GlDeferredShader::BeautyPass);
-			ImGui::RadioButton("Normal", &mode, GlDeferredShader::NormalPass);
-			ImGui::RadioButton("Base Color", &mode, GlDeferredShader::BaseColorPass);
-			ImGui::RadioButton("Metallic", &mode, GlDeferredShader::MetallicPass);
-			ImGui::RadioButton("Roughness", &mode, GlDeferredShader::RoughnessPass);
-			ImGui::RadioButton("World Position", &mode, GlDeferredShader::WorldPositionPass);
-			ImGui::RadioButton("Depth", &mode, GlDeferredShader::DepthPass);
-			ImGui::RadioButton("Raw GBuffer 0", &mode, GlDeferredShader::RawGBuffer0);
-			ImGui::RadioButton("Raw GBuffer 1", &mode, GlDeferredShader::RawGBuffer1);
-			ImGui::RadioButton("Raw GBuffer 2", &mode, GlDeferredShader::RawGBuffer2);
-			props.shadingMode = static_cast<GlDeferredShader::ShadingMode>(mode);
-
-			ImGui::Checkbox("Transparent film", &props.transparentFilm);
-			ImGui::Checkbox("Show Colormap Dialog", &props.showSampleCount);
+			autoUi(props);
+			ImGui::Text("Shadow Map Bias: %f", props.ShadowMapBias());
 		}
 	}
 }

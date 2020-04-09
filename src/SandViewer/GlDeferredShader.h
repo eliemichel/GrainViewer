@@ -6,17 +6,19 @@
 
 #pragma once
 
-#include <vector>
-#include <memory>
-
-#include <rapidjson/document.h>
-#include <refl.hpp>
 
 #include "ShaderProgram.h"
 #include "Framebuffer.h"
 #include "Camera.h"
 #include "World.h"
 #include "RenderType.h"
+#include "utils/ReflectionAttributes.h"
+
+#include <rapidjson/document.h>
+#include <refl.hpp>
+
+#include <vector>
+#include <memory>
 
 class GlTexture;
 
@@ -39,6 +41,10 @@ public:
 		bool transparentFilm = false;
 		bool showSampleCount = false;
 		float maxSampleCount = 10;
+		float shadowMapBiasBase = 0.1f;
+		int shadowMapBiasExponent = -5;
+
+		float ShadowMapBias() const;
 	};
 public:
 	GlDeferredShader();
@@ -84,9 +90,13 @@ private:
 	};
 };
 
+#define _ ReflectionAttributes::
 REFL_TYPE(GlDeferredShader::Properties)
 REFL_FIELD(shadingMode)
 REFL_FIELD(transparentFilm)
 REFL_FIELD(showSampleCount)
-REFL_FIELD(maxSampleCount)
+REFL_FIELD(maxSampleCount, _ HideInDialog())
+REFL_FIELD(shadowMapBiasBase)
+REFL_FIELD(shadowMapBiasExponent, _ Range(-8, 2))
 REFL_END
+#undef _
