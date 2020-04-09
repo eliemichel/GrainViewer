@@ -48,7 +48,7 @@ private:
 
 private:
 	template<typename DialogType, typename ControllerType>
-	void addDialogGroup(std::string title, std::shared_ptr<ControllerType> controller)
+	void addDialogGroup(std::string title, ControllerType controller)
 	{
 		DialogGroup group;
 		group.title = title;

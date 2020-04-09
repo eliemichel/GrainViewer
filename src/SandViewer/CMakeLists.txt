@@ -153,6 +153,8 @@ set(All_SRC
 	Ui/ImpostorSandRendererDialog.cpp
 	Ui/SandBehaviorDialog.h
 	Ui/SandBehaviorDialog.cpp
+	Ui/GlobalTimerDialog.h
+	Ui/GlobalTimerDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp
@@ -173,6 +175,8 @@ set(All_SRC
 	GlBuffer.cpp
 	GlDeferredShader.h
 	GlDeferredShader.cpp
+	GlobalTimer.h
+	GlobalTimer.cpp
 	ImpostorAtlasMaterial.h
 	ImpostorAtlasMaterial.cpp
 	Light.h

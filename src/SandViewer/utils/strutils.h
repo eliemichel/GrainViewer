@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <sstream>
 
 /**
  * Trim whitespaces string from start (in place)

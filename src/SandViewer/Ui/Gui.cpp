@@ -24,9 +24,11 @@
 #include "Dialog.h"
 #include "RuntimeObject.h"
 #include "ShaderPool.h"
+#include "GlobalTimer.h"
 #include "Ui/SceneDialog.h"
 #include "Ui/DeferredShadingDialog.h"
 #include "Ui/WorldDialog.h"
+#include "Ui/GlobalTimerDialog.h"
 
 using namespace std;
 
@@ -185,6 +187,7 @@ void Gui::setupDialogs()
 		addDialogGroup<SceneDialog>("Scene", m_scene);
 		addDialogGroup<DeferredShadingDialog>("Deferred Shading", m_scene->deferredShader());
 		addDialogGroup<WorldDialog>("World", m_scene->world());
+		addDialogGroup<GlobalTimerDialog>("Timers", GlobalTimer::GetInstance());
 
 		for (const auto& obj : m_scene->objects()) {
 			DialogGroup group;
