@@ -49,6 +49,7 @@ public:
 public:
     struct Properties {
         bool showDiagram = false;
+        float decay = 0.1f;
     };
     Properties& properties() { return m_properties; }
     const Properties& properties() const { return m_properties; }
@@ -79,6 +80,8 @@ private:
         Timer & operator=(const Timer&) = delete;
     };
 
+    // sampleCount must have been incremented first
+    void addSample(double& accumulator, double dt, int sampleCount) noexcept;
     void gatherQueries() noexcept;
 
 private:
@@ -95,6 +98,7 @@ private:
 
 REFL_TYPE(GlobalTimer::Properties)
 REFL_FIELD(showDiagram)
+REFL_FIELD(decay)
 REFL_END
 
 class ScopedTimer {

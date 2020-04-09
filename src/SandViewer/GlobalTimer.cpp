@@ -39,6 +39,8 @@ void GlobalTimer::Stats::reset() noexcept
 	cumulatedGpuFrameOffset = 0.0;
 }
 
+//-----------------------------------------------------------------------------
+
 GlobalTimer::GlobalTimer()
 {}
 
@@ -89,8 +91,8 @@ void GlobalTimer::stop(TimerHandle handle) noexcept
 
 	Stats & stats = m_stats[timer->message];
 	stats.sampleCount++;
-	stats.cumulatedTime += ellapsed;
-	stats.cumulatedFrameOffset += offset;
+	addSample(stats.cumulatedTime, ellapsed, stats.sampleCount);
+	addSample(stats.cumulatedFrameOffset, offset, stats.sampleCount);
 }
 
 void GlobalTimer::startFrame() noexcept
@@ -106,9 +108,24 @@ void GlobalTimer::stopFrame() noexcept
 	double ellapsed = milliseconds(endTime - m_frameTimer.startTime);
 
 	m_frameStats.sampleCount++;
-	m_frameStats.cumulatedTime += ellapsed;
+	addSample(m_frameStats.cumulatedTime, ellapsed, m_frameStats.sampleCount);
 
 	gatherQueries();
+}
+
+void GlobalTimer::addSample(double& accumulator, double dt, int sampleCount) noexcept
+{
+	double decay = properties().decay;
+	if (sampleCount == 1) {
+		accumulator = dt;
+	}
+	else if (decay == 0) {
+		double c = static_cast<double>(sampleCount);
+		accumulator = (dt + accumulator * (c - 1)) / c;
+	}
+	else {
+		accumulator = dt * decay + accumulator * (1 - decay);
+	}
 }
 
 void GlobalTimer::gatherQueries() noexcept
@@ -117,7 +134,8 @@ void GlobalTimer::gatherQueries() noexcept
 	glGetQueryObjectui64v(m_frameTimer.queries[0], GL_QUERY_RESULT, &frameStartNs);
 	glGetQueryObjectui64v(m_frameTimer.queries[1], GL_QUERY_RESULT, &frameEndNs);
 
-	m_frameStats.cumulatedGpuTime += static_cast<double>(frameEndNs - frameStartNs) * 1e-6;
+	double ellapsed = static_cast<double>(frameEndNs - frameStartNs) * 1e-6;
+	addSample(m_frameStats.cumulatedGpuTime, ellapsed, m_frameStats.sampleCount);
 	
 	while (!m_stopped.empty()) {
 		auto it = m_stopped.begin();
@@ -129,8 +147,10 @@ void GlobalTimer::gatherQueries() noexcept
 		glGetQueryObjectui64v(timer->queries[1], GL_QUERY_RESULT, &endNs);
 
 		Stats& stats = m_stats[timer->message];
-		stats.cumulatedGpuTime += static_cast<double>(endNs - startNs) * 1e-6;
-		stats.cumulatedGpuFrameOffset += static_cast<double>(startNs - frameStartNs) * 1e-6;
+		double ellapsed = static_cast<double>(endNs - startNs) * 1e-6;
+		double offset = static_cast<double>(startNs - frameStartNs) * 1e-6;
+		addSample(stats.cumulatedGpuTime, ellapsed, stats.sampleCount);
+		addSample(stats.cumulatedGpuFrameOffset, offset, stats.sampleCount);
 
 		delete timer;
 	}
