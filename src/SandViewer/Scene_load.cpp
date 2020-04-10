@@ -100,10 +100,7 @@ bool Scene::load(const std::string & filename)
 			}
 
 			auto obj = std::make_shared<RuntimeObject>();
-
-			if (o.HasMember("name") && o["name"].IsString()) {
-				obj->name = o["name"].GetString();
-			}
+			obj->deserialize(o);
 
 			// Components
 			std::vector<std::shared_ptr<Behavior>> behaviors;

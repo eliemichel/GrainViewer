@@ -9,6 +9,7 @@
 #include "utils/strutils.h"
 #include "utils/ReflectionAttributes.h"
 #include "ShaderProgram.h"
+#include "ViewLayerMask.h"
 
 // This file is more reflectutils.h than anything else actually
 
@@ -28,7 +29,8 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 			|| std::is_same_v<type, float>
 			|| std::is_same_v<type, int>
 			|| std::is_same_v<type, glm::vec3>
-			|| std::is_same_v<type, glm::vec4>)
+			|| std::is_same_v<type, glm::vec4>
+			|| std::is_same_v<type, ViewLayerMask>)
 		{
 			jrOption(json, name, member(properties), member(properties));
 		}
@@ -81,6 +83,10 @@ void autoSetUniforms(const ShaderProgram& shader, const T& properties) {
 		else if constexpr (std::is_enum_v<type>)
 		{
 			shader.setUniform(name, static_cast<int>(member(properties)));
+		}
+		else if constexpr (std::is_same_v<type, ViewLayerMask>)
+		{
+			// not used by shaders
 		}
 	});
 }

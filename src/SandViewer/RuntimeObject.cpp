@@ -1,5 +1,6 @@
 #include "Behavior.h"
 #include "RuntimeObject.h"
+#include "utils/jsonutils.h"
 
 #define forEachBehavior for (BehaviorIterator it = beginBehaviors(), end = endBehaviors(); it != end; ++it)
 #define forEachBehaviorConst for (ConstBehaviorIterator it = cbeginBehaviors(), end = cendBehaviors(); it != end; ++it)
@@ -58,3 +59,10 @@ void RuntimeObject::onPostRender(float time, int frame)
 #undef forEachBehavior
 #undef forEachBehaviorConst
 #undef b
+
+bool RuntimeObject::deserialize(const rapidjson::Value& json)
+{
+	jrOption(json, "name", name, name);
+	jrOption(json, "viewLayers", viewLayers, viewLayers);
+	return true;
+}

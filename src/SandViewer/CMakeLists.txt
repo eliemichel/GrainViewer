@@ -199,6 +199,8 @@ set(All_SRC
 	Triangle.h
 	TurntableCamera.h
 	TurntableCamera.cpp
+	ViewLayerMask.h
+	ViewLayerMask.cpp
 	World.h
 	World.cpp
 	PostEffect.h

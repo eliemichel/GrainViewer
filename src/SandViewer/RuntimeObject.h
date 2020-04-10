@@ -1,10 +1,13 @@
 #pragma once
 
-#include <string>
 #include "IBehaviorHolder.h"
 #include "Camera.h"
 #include "World.h"
 #include "RenderType.h"
+#include "ViewLayerMask.h"
+
+#include <rapidjson/document.h>
+#include <string>
 
 class RuntimeObject : public IBehaviorHolder {
 public:
@@ -17,5 +20,8 @@ public:
 	void onPreRender(const Camera& camera, const World& world, RenderType target);
 	void onPostRender(float time, int frame);
 
+	bool deserialize(const rapidjson::Value& json);
+
 	std::string name;
+	ViewLayerMask viewLayers;
 };

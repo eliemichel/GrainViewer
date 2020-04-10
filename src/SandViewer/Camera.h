@@ -9,6 +9,8 @@
 #include <OpenGL>
 
 #include "EnvironmentVariables.h"
+#include "ViewLayerMask.h"
+#include "utils/ReflectionAttributes.h"
 
 #include <refl.hpp>
 #include <rapidjson/document.h>
@@ -136,6 +138,8 @@ public:
 
 			bool displayInViewport = true;
 			bool controlInViewport = true; // receive mouse input
+
+			ViewLayerMask viewLayers;
 		};
 		const Properties& properties() const { return m_properties; }
 		Properties & properties(){ return m_properties; }
@@ -210,8 +214,11 @@ protected:
 	ProjectionType m_projectionType;
 };
 
+#define _ ReflectionAttributes::
 REFL_TYPE(Camera::Properties)
 REFL_FIELD(viewRect)
 REFL_FIELD(displayInViewport)
 REFL_FIELD(controlInViewport)
+REFL_FIELD(viewLayers, _ HideInDialog())
 REFL_END
+#undef _

@@ -220,13 +220,17 @@ void Scene::renderCamera(const Camera& camera) const
 	const Camera& prerenderCamera = properties().freezeOcclusionCamera ? *occlusionCamera() : camera;
 	m_world->onPreRender(prerenderCamera);
 	for (auto obj : m_objects) {
-		obj->onPreRender(prerenderCamera, *m_world, RenderType::Default);
+		if (obj->viewLayers & camera.properties().viewLayers) {
+			obj->onPreRender(prerenderCamera, *m_world, RenderType::Default);
+		}
 	}
 
 	// Main Rendering
 	m_world->render(camera);
 	for (auto obj : m_objects) {
-		obj->render(camera, *m_world, RenderType::Default);
+		if (obj->viewLayers & camera.properties().viewLayers) {
+			obj->render(camera, *m_world, RenderType::Default);
+		}
 	}
 
 	if (m_isDeferredShadingEnabled) {
