@@ -6,21 +6,19 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
+#include <OpenGL>
 
-#include <glad/modernglad.h>
+#include "Camera.h"
+#include "TurntableCamera.h"
+#include "Framebuffer.h"
+
+#include <refl.hpp>
 
 #include <memory>
 #include <vector>
 #include <string>
 #include <fstream>
 #include <sstream>
-
-#include "Camera.h"
-#include "TurntableCamera.h"
-#include "Framebuffer.h"
 
 class World;
 class GlDeferredShader;
@@ -57,7 +55,14 @@ public:
 
 	void takeScreenshot() const;
 
+	struct Properties {
+		bool freezeOcclusionCamera = false;
+	};
+	Properties& properties() { return m_properties; }
+	const Properties& properties() const { return m_properties; }
+
 private:
+	std::shared_ptr<Camera> occlusionCamera() const;
 	void measureStats();
 	// TODO: This should be in another section of the code
 	enum RecordFormat {
@@ -71,10 +76,13 @@ private:
 	void recordFrame(const Camera & camera) const;
 
 private:
+	Properties m_properties;
 	std::string m_filename;
 	std::shared_ptr<World> m_world;
 	std::shared_ptr<GlDeferredShader> m_deferredShader;
 	int m_viewportCameraIndex;
+	int m_occlusionCameraIndex;
+	bool m_wasFreezeOcclusionCamera = false;
 	std::vector<std::shared_ptr<Camera>> m_cameras;
 	std::vector<std::shared_ptr<RuntimeObject>> m_objects;
 	std::shared_ptr<AnimationManager> m_animationManager;
@@ -101,3 +109,6 @@ private:
 	int m_height;
 };
 
+REFL_TYPE(Scene::Properties)
+REFL_FIELD(freezeOcclusionCamera)
+REFL_END

@@ -176,6 +176,11 @@ bool Scene::load(const std::string & filename)
 		}
 	}
 
+	// Add an extra camera to visualize occlusion
+	auto camera = std::make_shared<TurntableCamera>();
+	m_cameras.push_back(camera);
+	m_occlusionCameraIndex = static_cast<int>(m_cameras.size() - 1);
+
 	// Scene start
 
 	const glm::vec2 & res = viewportCamera()->resolution();

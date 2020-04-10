@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "utils/guiutils.h"
+#include "utils/behaviorutils.h"
 #include "SceneDialog.h"
 #include "Light.h"
 
@@ -13,6 +14,8 @@ void SceneDialog::draw()
 			if (ImGui::Button("Take Screenshot")) {
 				cont->takeScreenshot();
 			}
+
+			autoUi(cont->properties());
 		}
 	}
 }

@@ -93,6 +93,14 @@ void Scene::update(float time) {
 	}
 
 	m_mustQuit = m_quitAfterFrame >= 0 && m_frameIndex > m_quitAfterFrame;
+
+	// Occlusion camera freeze
+	bool freeze = properties().freezeOcclusionCamera;
+	if (freeze && !m_wasFreezeOcclusionCamera) {
+		// copy viewport camera when freeze starts
+		*occlusionCamera() = *viewportCamera();
+	}
+	m_wasFreezeOcclusionCamera = freeze;
 }
 
 void Scene::render() const {
@@ -125,10 +133,11 @@ void Scene::render() const {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// Pre-rendering
-	m_world->onPreRender(camera);
+	// Pre-rendering -- occlusion
+	const Camera& prerenderCamera = properties().freezeOcclusionCamera  ? *occlusionCamera() : *viewportCamera();
+	m_world->onPreRender(prerenderCamera);
 	for (auto obj : m_objects) {
-		obj->onPreRender(camera, *m_world, RenderType::Default);
+		obj->onPreRender(prerenderCamera, *m_world, RenderType::Default);
 	}
 
 	// Main Rendering
@@ -189,6 +198,11 @@ void Scene::clear()
 std::shared_ptr<Camera> Scene::viewportCamera() const
 {
 	return m_viewportCameraIndex < m_cameras.size() ? m_cameras[m_viewportCameraIndex] : nullptr;
+}
+
+std::shared_ptr<Camera> Scene::occlusionCamera() const
+{
+	return m_occlusionCameraIndex < m_cameras.size() ? m_cameras[m_occlusionCameraIndex] : nullptr;
 }
 
 std::shared_ptr<RuntimeObject> Scene::findObjectByName(const std::string& name) {
