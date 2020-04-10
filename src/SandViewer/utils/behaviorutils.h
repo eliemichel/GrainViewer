@@ -27,7 +27,8 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 			std::is_same_v<type, bool>
 			|| std::is_same_v<type, float>
 			|| std::is_same_v<type, int>
-			|| std::is_same_v<type, glm::vec3>)
+			|| std::is_same_v<type, glm::vec3>
+			|| std::is_same_v<type, glm::vec4>)
 		{
 			jrOption(json, name, member(properties), member(properties));
 		}
@@ -72,7 +73,8 @@ void autoSetUniforms(const ShaderProgram& shader, const T& properties) {
 			std::is_same_v<type, bool>
 			|| std::is_same_v<type, float>
 			|| std::is_same_v<type, int>
-			|| std::is_same_v<type, glm::vec3>)
+			|| std::is_same_v<type, glm::vec3>
+			|| std::is_same_v<type, glm::vec4>)
 		{
 			shader.setUniform(name, member(properties));
 		}
@@ -122,6 +124,9 @@ void autoUi(T& properties) {
 		}
 		else if constexpr (std::is_same_v<type, glm::vec3>) {
 			ImGui::SliderFloat3(displayName.c_str(), glm::value_ptr(member(properties)), rangeMinimum, rangeMaximum, "%.5f");
+		}
+		else if constexpr (std::is_same_v<type, glm::vec4>) {
+			ImGui::SliderFloat4(displayName.c_str(), glm::value_ptr(member(properties)), rangeMinimum, rangeMaximum, "%.5f");
 		}
 		else if constexpr (std::is_enum_v<type>) {
 			// assuming int enum

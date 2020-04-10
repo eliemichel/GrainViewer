@@ -99,6 +99,7 @@ void Scene::update(float time) {
 	if (freeze && !m_wasFreezeOcclusionCamera) {
 		// copy viewport camera when freeze starts
 		*occlusionCamera() = *viewportCamera();
+		occlusionCamera()->properties().displayInViewport = false;
 	}
 	m_wasFreezeOcclusionCamera = freeze;
 }
@@ -129,7 +130,10 @@ void Scene::render() const {
 	}
 
 	const glm::vec2 & res = camera.resolution();
-	glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
+	const glm::vec4 & rect = camera.properties().viewRect;
+	GLint x = static_cast<GLint>(rect.x * m_width);
+	GLint y = static_cast<GLint>(rect.y * m_height);
+	glViewport(x, y, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

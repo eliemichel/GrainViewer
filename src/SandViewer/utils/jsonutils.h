@@ -60,6 +60,11 @@ template<> inline bool _read(glm::vec3 & target, const rapidjson::Value& json) {
 	for (int k = 0 ; k < 3 ; ++k) target[k] = json[k].GetFloat();
 	return true;
 }
+template<> inline bool _read(glm::vec4& target, const rapidjson::Value& json) {
+	if (!json.IsArray() || json.Size() != 4) return false;
+	for (int k = 0; k < 4; ++k) target[k] = json[k].GetFloat();
+	return true;
+}
 template<> inline bool _read(glm::quat & target, const rapidjson::Value& json) {
 	if (!json.IsArray() || json.Size() != 4) return false;
 	for (int k = 0; k < 4; ++k) target[k] = json[k].GetFloat();

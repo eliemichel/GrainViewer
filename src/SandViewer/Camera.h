@@ -8,18 +8,18 @@
 
 #include <OpenGL>
 
-#include <memory>
-#include <string>
-#include <vector>
+#include "EnvironmentVariables.h"
 
+#include <refl.hpp>
+#include <rapidjson/document.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <rapidjson/document.h>
-
-#include "EnvironmentVariables.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 class Framebuffer;
 class AnimationManager;
@@ -127,6 +127,18 @@ public:
 	 */
 	float linearDepth(float zbufferDepth) const;
 
+	public:
+		struct Properties {
+			// xy: offset, relative to screen size
+			// zw: size, relative to screen size
+			// e.g. for fullscreen: (0, 0, 1, 1)
+			glm::vec4 viewRect = glm::vec4(0, 0, 1, 1);
+
+			bool displayInViewport = true;
+		};
+		const Properties& properties() const { return m_properties; }
+		Properties & properties(){ return m_properties; }
+
 protected:
 	/**
 	* Called when mouse moves and rotation has started
@@ -171,6 +183,7 @@ private:
 
 protected:
 	// Core data
+	Properties m_properties;
 	CameraUbo m_uniforms;
 	GLuint m_ubo;
 
@@ -195,3 +208,8 @@ protected:
 	OutputSettings m_outputSettings;
 	ProjectionType m_projectionType;
 };
+
+REFL_TYPE(Camera::Properties)
+REFL_FIELD(viewRect)
+REFL_FIELD(displayInViewport)
+REFL_END

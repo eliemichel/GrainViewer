@@ -37,7 +37,7 @@ public:
 		Precompute, // Not recommended
 	};
 	struct Properties {
-		RenderTypeCaching renderTypeCaching = RenderTypeCaching::Forget;
+		RenderTypeCaching renderTypeCaching = RenderTypeCaching::Cache;
 		bool enableOcclusionCulling = true;
 		bool enableFrustumCulling = true;
 		float instanceLimit = 1.05f; // distance beyond which we switch from instances to impostors
@@ -124,7 +124,7 @@ private:
 
 #define _ ReflectionAttributes::
 REFL_TYPE(PointCloudSplitter::Properties)
-REFL_FIELD(renderTypeCaching)
+REFL_FIELD(renderTypeCaching, _ HideInDialog())
 REFL_FIELD(enableOcclusionCulling)
 REFL_FIELD(enableFrustumCulling)
 REFL_FIELD(instanceLimit, _ Range(0.01f, 3.0f))

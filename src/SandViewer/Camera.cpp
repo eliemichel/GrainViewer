@@ -4,8 +4,10 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#include <iostream>
-#include <algorithm>
+#include "Camera.h"
+#include "Logger.h"
+#include "Framebuffer.h"
+#include "utils/behaviorutils.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -15,9 +17,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
-#include "Logger.h"
-#include "Camera.h"
-#include "Framebuffer.h"
+#include <iostream>
+#include <algorithm>
 
 Camera::Camera()
 	: m_isMouseRotationStarted(false)
@@ -61,7 +62,8 @@ void Camera::updateUbo() {
 void Camera::setResolution(glm::vec2 resolution)
 {
 	if (!m_freezeResolution) {
-		m_uniforms.resolution = resolution;
+		glm::vec4 rect = properties().viewRect;
+		m_uniforms.resolution = resolution * glm::vec2(rect.z, rect.w);
 	}
 
 	updateProjectionMatrix();
@@ -285,8 +287,10 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 
 	jrOption(json, "saveOnDisc", outputSettings().saveOnDisc, outputSettings().saveOnDisc);
 
-	if (json.HasMember("outputFrameBase") && json["outputFrameBase"].IsString()) {
-		std::string outputFrameBase = json["outputFrameBase"].GetString();
+	jrOption(json, "outputFrameBase", outputSettings().saveOnDisc, outputSettings().saveOnDisc);
+
+	std::string outputFrameBase;
+	if (jrOption(json, "outputFrameBase", outputFrameBase)) {
 		outputFrameBase = std::regex_replace(outputFrameBase, std::regex("\\$BASEFILE"), env.baseFile);
 		outputFrameBase = ResourceManager::resolveResourcePath(outputFrameBase);
 		outputSettings().outputFrameBase = outputFrameBase;
@@ -395,35 +399,14 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 		}
 	}
 
-	if (json.HasMember("fov")) {
-		auto& fov = json["fov"];
-		if (!fov.IsNumber()) {
-			ERR_LOG << "camera 'fov' parameter must be a number";
-		}
-		else {
-			setFov(fov.GetFloat());
-		}
-	}
+	float fov;
+	if (jrOption(json, "fov", fov)) setFov(fov);
 
-	if (json.HasMember("near")) {
-		auto& distance = json["near"];
-		if (!distance.IsNumber()) {
-			ERR_LOG << "camera 'near' parameter must be a number";
-		}
-		else {
-			setNearDistance(distance.GetFloat());
-		}
-	}
+	float dist;
+	if (jrOption(json, "near", dist)) setNearDistance(dist);
+	if (jrOption(json, "far", dist)) setFarDistance(dist);
 
-	if (json.HasMember("far")) {
-		auto& distance = json["far"];
-		if (!distance.IsNumber()) {
-			ERR_LOG << "camera 'far' parameter must be a number";
-		}
-		else {
-			setFarDistance(distance.GetFloat());
-		}
-	}
+	autoDeserialize(json, m_properties);
 }
 
 std::ostream& Camera::serialize(std::ostream& out)

@@ -186,14 +186,14 @@ void Gui::setupDialogs()
 {
 	m_dialogGroups.clear();
 	if (m_scene) {
-		addDialogGroup<SceneDialog>("Scene", m_scene);
 		addDialogGroup<DeferredShadingDialog>("Deferred Shading", m_scene->deferredShader());
 		addDialogGroup<WorldDialog>("World", m_scene->world());
 		addDialogGroup<GlobalTimerDialog>("Timers", GlobalTimer::GetInstance());
+		addDialogGroup<SceneDialog>("Scene:", m_scene);
 
 		for (const auto& obj : m_scene->objects()) {
 			DialogGroup group;
-			group.title = obj->name;
+			group.title = " - " + obj->name;
 			IBehaviorHolder::ConstBehaviorIterator it, end;
 			for (it = obj->cbeginBehaviors(), end = obj->cendBehaviors(); it != end;  ++it) {
 				auto dialog = makeComponentDialog(it->first, it->second);
