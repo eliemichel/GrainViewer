@@ -80,17 +80,51 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 		glClearColor(0, 0, 0, 1);
 		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-		const ShaderProgram& shader = *m_occlusionCullingShader;
+		// 1.1. z-prepass (optional)
+		if (props.zPrepass) {
+			occlusionCullingFbo->deactivateColorAttachments();
+			const ShaderProgram& shader = *m_occlusionCullingShader;
 
-		setCommonUniforms(shader, camera);
+			setCommonUniforms(shader, camera);
 
-		shader.use();
-		glBindVertexArray(pointData->vao());
-		pointData->vbo().bindSsbo(1);
-		glDrawArrays(GL_POINTS, 0, m_elementCount);
-		glBindVertexArray(0);
+			shader.use();
+			glBindVertexArray(pointData->vao());
+			pointData->vbo().bindSsbo(1);
+			glDrawArrays(GL_POINTS, 0, m_elementCount);
+			glBindVertexArray(0);
 
-		glTextureBarrier();
+			glTextureBarrier();
+			occlusionCullingFbo->activateColorAttachments();
+		}
+		// 1.2. core pass
+		{
+			ScopedFramebufferOverride scoppedFramebufferOverride;
+
+			glEnable(GL_PROGRAM_POINT_SIZE);
+			if (props.zPrepass) {
+				glDepthMask(GL_FALSE);
+				glDepthFunc(GL_LEQUAL);
+			}
+
+			occlusionCullingFbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::Rgba32fDepth);
+			occlusionCullingFbo->bind();
+			glClearColor(0, 0, 0, 1);
+			glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+			const ShaderProgram& shader = *m_occlusionCullingShader;
+
+			setCommonUniforms(shader, camera);
+
+			shader.use();
+			glBindVertexArray(pointData->vao());
+			pointData->vbo().bindSsbo(1);
+			glDrawArrays(GL_POINTS, 0, m_elementCount);
+			glBindVertexArray(0);
+
+			glTextureBarrier();
+			glDepthMask(GL_TRUE);
+			glDepthFunc(GL_LESS);
+		}
 	}
 
 	// 2. Splitting

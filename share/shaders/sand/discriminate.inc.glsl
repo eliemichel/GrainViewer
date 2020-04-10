@@ -14,6 +14,10 @@ uniform bool uEnableFrustumCulling = true;
 uniform float uInstanceLimit = 1.05; // distance beyond which we switch from instances to impostors
 uniform float uImpostorLimit = 10.0; // distance beyond which we switch from impostors to points
 
+uniform bool uUseBbox = false;
+uniform vec3 uBboxMin;
+uniform vec3 uBboxMax;
+
 bool isInOcclusionCone(vec3 position_cs, vec3 otherGrain_cs, float innerRadius, float outerOverInnerRadius)
 {
 	vec3 closestCone_cs = otherGrain_cs * outerOverInnerRadius;
@@ -62,6 +66,18 @@ uint discriminate(
 	float fac = 4.0;
 	if (uEnableFrustumCulling && SphereFrustumCulling(projectionMatrix, position_cs.xyz, fac*outerRadius)) {
 		return cRenderModelNone;
+	}
+
+	/////////////////////////////////////////
+	// Extra bounding-box culling
+	if (uUseBbox) {
+		if (
+			position.x < uBboxMin.x || position.x > uBboxMax.x ||
+			position.y < uBboxMin.y || position.y > uBboxMax.y ||
+			position.z < uBboxMin.z || position.z > uBboxMax.z
+		) {
+			return cRenderModelNone;
+		}
 	}
 
 	/////////////////////////////////////////
