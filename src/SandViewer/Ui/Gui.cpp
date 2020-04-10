@@ -253,6 +253,10 @@ void Gui::updateImGui() {
 			ImGuiWindowFlags_NoMove |
 			ImGuiWindowFlags_NoCollapse |
 			ImGuiWindowFlags_NoTitleBar);
+
+		// Outliner
+		ImGui::PushID(0);
+
 		int dialogId = 0;
 		bool pressed;
 		for (auto & dg : m_dialogGroups) {
@@ -267,8 +271,12 @@ void Gui::updateImGui() {
 			}
 			ImGui::PopID();
 		}
+
+		ImGui::PopID();
 		
 		// Visible dialogs
+		ImGui::PushID(1);
+
 		dialogId = 0;
 		for (auto & dg : m_dialogGroups) {
 			if (dg.enabled) {
@@ -282,6 +290,9 @@ void Gui::updateImGui() {
 				dialogId += static_cast<int>(dg.dialogs.size());
 			}
 		}
+
+		ImGui::PopID();
+
 		ImGui::End();
 	}
 }
@@ -383,7 +394,8 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 		switch (key) {
 		case GLFW_KEY_LEFT_CONTROL:
 		case GLFW_KEY_RIGHT_CONTROL:
-			--m_isControlPressed;
+			//--m_isControlPressed;
+			m_isControlPressed = 0;
 			break;
 		}
 	}
