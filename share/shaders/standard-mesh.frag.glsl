@@ -16,7 +16,7 @@ in GeometryData {
 #include "include/standard-material.inc.glsl"
 uniform StandardMaterial uMaterial[3];
 
-uniform float normal_mapping = 1.0;
+uniform float uNormalMapping = 1.0;
 
 void main() {
     SurfacePoint surf = SurfacePoint(
@@ -24,7 +24,7 @@ void main() {
         geo.normal_ws,
         geo.tangent_ws,
         geo.uv,
-        normal_mapping
+        uNormalMapping
     );
 
     GFragment fragment = SampleStandardMaterial(uMaterial[geo.materialId], surf);

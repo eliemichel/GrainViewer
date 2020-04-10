@@ -43,6 +43,7 @@ using namespace std;
 #include "InstanceSandRendererDialog.h"
 #include "ImpostorSandRendererDialog.h"
 #include "SandBehaviorDialog.h"
+#include "MeshRendererDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleBehavior(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -60,6 +61,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	handleBehavior(InstanceSandRenderer);
 	handleBehavior(ImpostorSandRenderer);
 	handleBehavior(SandBehavior);
+	handleBehavior(MeshRenderer);
 	return nullptr;
 #undef handleType
 }

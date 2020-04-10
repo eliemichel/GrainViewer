@@ -155,6 +155,8 @@ set(All_SRC
 	Ui/SandBehaviorDialog.cpp
 	Ui/GlobalTimerDialog.h
 	Ui/GlobalTimerDialog.cpp
+	Ui/MeshRendererDialog.h
+	Ui/MeshRendererDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

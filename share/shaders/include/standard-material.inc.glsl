@@ -37,7 +37,7 @@ GFragment SampleStandardMaterial(const StandardMaterial mat, const SurfacePoint 
             normalize(geo.tangent_ws),
             normalize(geo.normal_ws)
         );
-        normal = normalize(geo.normal_ws * geo.normal_mapping + TBN * normal_ts);
+        normal = geo.normal_ws + TBN * normal_ts * geo.normal_mapping * 0.1;
     }
     fragment.normal = normalize(normal);
 

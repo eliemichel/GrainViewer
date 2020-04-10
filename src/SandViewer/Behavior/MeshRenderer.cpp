@@ -9,6 +9,7 @@
 #include "GlTexture.h"
 #include "utils/jsonutils.h"
 #include "utils/strutils.h"
+#include "utils/behaviorutils.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // Behavior implementation
@@ -46,6 +47,8 @@ void MeshRenderer::render(const Camera& camera, const World& world, RenderType t
 			const StandardMaterial& mat = i < m_materials.size() ? m_materials[i] : mesh->materials()[i];
 			o = mat.setUniforms(*m_shader, MAKE_STR("uMaterial[" << i << "]."), o);
 		}
+
+		autoSetUniforms(*m_shader, properties());
 
 		glBindVertexArray(mesh->vao());
 		glDrawArrays(GL_TRIANGLES, 0, mesh->pointCount());
