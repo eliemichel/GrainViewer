@@ -51,8 +51,8 @@ public:
 		SamplingMode samplingMode = SamplingMode::Plane;
 		bool noDiscard = false;
 		bool precomputeViewMatrices = false; // requires that all impostors use the same number of views
-		bool precomputeInVertex = false; // precompute more things in vertex shader
-		bool prerenderSurface = false;
+		bool precomputeInVertex = true; // precompute more things in vertex shader
+		bool prerenderSurface = true;
 		bool firstPassOnly = false; // when using prerenderSurface, only draw the surface
 		float hitSphereCorrectionFactor = 0.65f;
 	};

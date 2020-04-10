@@ -21,6 +21,7 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 	// Deserialize properties using reflection
 	for_each(refl::reflect(properties).members, [&](auto member) {
 		using type = typename decltype(member)::value_type;
+		std::string name = std::string(member.name);
 		// bool, float, etc. properties (whatever is supported by jrOption
 		if constexpr (
 			std::is_same_v<type, bool>
@@ -28,14 +29,24 @@ void autoDeserialize(const rapidjson::Value& json, T& properties) {
 			|| std::is_same_v<type, int>
 			|| std::is_same_v<type, glm::vec3>)
 		{
-			jrOption(json, std::string(member.name), member(properties), member(properties));
+			jrOption(json, name, member(properties), member(properties));
 		}
 		// Enum properties
 		// TODO: use magic_enum to load from strings
 		else if constexpr (std::is_enum_v<type>) {
-			int value = static_cast<int>(member(properties));
-			jrOption(json, std::string(member.name), value, value);
-			member(properties) = static_cast<typename decltype(member)::value_type>(value);
+			if (json.HasMember(name.c_str()) && json[name.c_str()].IsString()) {
+				std::string valueStr = json[name.c_str()].GetString();
+				auto v = magic_enum::enum_cast<type>(valueStr);
+				if (v.has_value()) {
+					member(properties) = v.value();
+				} else {
+					ERR_LOG << "Invalid value '" << valueStr << "' for parameter '" << name << "'";
+				}
+			} else {
+				int value = static_cast<int>(member(properties));
+				jrOption(json, name, value, value);
+				member(properties) = static_cast<typename decltype(member)::value_type>(value);
+			}
 		}
 		else {
 			ERR_LOG << "Unsupported type for property '" << member.name << "'";
