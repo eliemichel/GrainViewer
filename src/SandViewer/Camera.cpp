@@ -287,8 +287,6 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 
 	jrOption(json, "saveOnDisc", outputSettings().saveOnDisc, outputSettings().saveOnDisc);
 
-	jrOption(json, "outputFrameBase", outputSettings().saveOnDisc, outputSettings().saveOnDisc);
-
 	std::string outputFrameBase;
 	if (jrOption(json, "outputFrameBase", outputFrameBase)) {
 		outputFrameBase = std::regex_replace(outputFrameBase, std::regex("\\$BASEFILE"), env.baseFile);

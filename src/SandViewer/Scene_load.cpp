@@ -178,14 +178,14 @@ bool Scene::load(const std::string & filename)
 
 	// Add an extra camera to visualize occlusion
 	auto camera = std::make_shared<TurntableCamera>();
+	camera->properties().displayInViewport = false;
+	camera->properties().controlInViewport = false;
 	m_cameras.push_back(camera);
 	m_occlusionCameraIndex = static_cast<int>(m_cameras.size() - 1);
 
 	// Scene start
 
 	const glm::vec2 & res = viewportCamera()->resolution();
-	DEBUG_LOG << "reso: " << res.x << ", " << res.y;
-	m_deferredShader->setResolution(static_cast<int>(res.x), static_cast<int>(res.y));
 
 	reloadShaders();
 

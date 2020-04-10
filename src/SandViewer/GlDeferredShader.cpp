@@ -31,11 +31,6 @@ GlDeferredShader::GlDeferredShader()
 	glCreateVertexArrays(1, &m_vao);
 }
 
-void GlDeferredShader::lazyInitFramebuffer() const
-{
-	m_framebuffer = std::make_unique<Framebuffer>(m_width, m_height, m_attachments);
-}
-
 GlDeferredShader::~GlDeferredShader()
 {
 	glDeleteVertexArrays(1, &m_vao);
@@ -60,14 +55,13 @@ bool GlDeferredShader::deserialize(const rapidjson::Value & json)
 
 	autoDeserialize(json, m_properties);
 
-	jrOption(json, "attachments", m_attachments, m_attachments);
-	GLenum i = 0;
-	for (auto & att : m_attachments) {
-		att.attachement = GL_COLOR_ATTACHMENT0 + i;
-		++i;
-	}
-
 	return true;
+}
+
+void GlDeferredShader::bindFramebuffer(const Camera& camera) const
+{
+	auto fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::GBufferDepth);
+	fbo->bind();
 }
 
 void GlDeferredShader::reloadShaders()
@@ -83,10 +77,10 @@ void GlDeferredShader::update(float time)
 
 void GlDeferredShader::render(const Camera & camera, const World & world, RenderType target) const
 {
-	if (!m_framebuffer) lazyInitFramebuffer();
+	auto fbo = camera.getExtraFramebuffer(Camera::ExtraFramebufferOption::GBufferDepth);
 
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDepthMask(GL_TRUE);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
@@ -94,15 +88,17 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	m_shader.use();
 	m_shader.bindUniformBlock("Camera", camera.ubo());
 
+	m_shader.setUniform("uBlitOffset", m_blitOffset);
+
 	GLint o = 0;
-	for (int i = 0; i < m_framebuffer->colorTextureCount(); ++i) {
+	for (int i = 0; i < fbo->colorTextureCount(); ++i) {
 		m_shader.setUniform(MAKE_STR("gbuffer" << i), o);
-		glBindTextureUnit(static_cast<GLuint>(o), m_framebuffer->colorTexture(i));
+		glBindTextureUnit(static_cast<GLuint>(o), fbo->colorTexture(i));
 		++o;
 	}
 
 	m_shader.setUniform("in_depth", o);
-	glBindTextureUnit(static_cast<GLuint>(o), m_framebuffer->depthTexture());
+	glBindTextureUnit(static_cast<GLuint>(o), fbo->depthTexture());
 	++o;
 
 	// TODO: Use UBO, move to World
@@ -139,15 +135,4 @@ void GlDeferredShader::render(const Camera & camera, const World & world, Render
 	glBindVertexArray(m_vao);
 	glDrawArrays(GL_POINTS, 0, 1);
 	glBindVertexArray(0);
-}
-
-void GlDeferredShader::setResolution(int width, int height)
-{
-	m_width = width;
-	m_height = height;
-	if (!m_framebuffer) {
-		lazyInitFramebuffer();
-	} else {
-		m_framebuffer->setResolution(width, height);
-	}
 }

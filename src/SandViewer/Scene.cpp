@@ -41,10 +41,11 @@ void Scene::setResolution(int width, int height)
 {
 	m_width = width;
 	m_height = height;
-	if (viewportCamera()) {
-		viewportCamera()->setResolution(width, height);
+	for (auto& camera : m_cameras) {
+		if (camera->properties().displayInViewport) {
+			camera->setResolution(width, height);
+		}
 	}
-	m_deferredShader->setResolution(width, height);
 }
 
 void Scene::reloadShaders() {
@@ -68,8 +69,10 @@ void Scene::update(float time) {
 
 	m_animationManager->update(time, m_frameIndex);
 
-	if (viewportCamera()) {
-		viewportCamera()->update(time);
+	for (auto& camera : m_cameras) {
+		if (camera->properties().displayInViewport) {
+			camera->update(time);
+		}
 	}
 
 	m_world->update(time);
@@ -100,6 +103,7 @@ void Scene::update(float time) {
 		// copy viewport camera when freeze starts
 		*occlusionCamera() = *viewportCamera();
 		occlusionCamera()->properties().displayInViewport = false;
+		occlusionCamera()->properties().controlInViewport = false;
 	}
 	m_wasFreezeOcclusionCamera = freeze;
 }
@@ -110,69 +114,16 @@ void Scene::render() const {
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (!viewportCamera()) {
-		return;
-	}
-	Camera & camera = *viewportCamera();
-
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 	glDisable(GL_DITHER);
 
-	m_world->renderShadowMaps(camera, m_objects);
+	m_world->renderShadowMaps(m_objects);
 
-	if (m_isDeferredShadingEnabled) {
-		m_deferredShader->bindFramebuffer();
-	} else if (camera.targetFramebuffer()) {
-		camera.targetFramebuffer()->bind();
-	} else {
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-
-	const glm::vec2 & res = camera.resolution();
-	const glm::vec4 & rect = camera.properties().viewRect;
-	GLint x = static_cast<GLint>(rect.x * m_width);
-	GLint y = static_cast<GLint>(rect.y * m_height);
-	glViewport(x, y, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Pre-rendering -- occlusion
-	const Camera& prerenderCamera = properties().freezeOcclusionCamera  ? *occlusionCamera() : *viewportCamera();
-	m_world->onPreRender(prerenderCamera);
-	for (auto obj : m_objects) {
-		obj->onPreRender(prerenderCamera, *m_world, RenderType::Default);
-	}
-
-	// Main Rendering
-	m_world->render(camera);
-	for (auto obj : m_objects) {
-		obj->render(camera, *m_world, RenderType::Default);
-	}
-
-	if (m_isDeferredShadingEnabled) {
-		if (camera.targetFramebuffer()) {
-			camera.targetFramebuffer()->bind();
-		} else {
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	for (const auto& camera : m_cameras) {
+		if (camera->properties().displayInViewport) {
+			renderCamera(*camera);
 		}
-		glViewport(0, 0, static_cast<GLsizei>(res.x), static_cast<GLsizei>(res.y));
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		m_deferredShader->render(camera, *m_world, RenderType::Default);
-	}
-
-	if (camera.targetFramebuffer()) {
-		GLint w1 = static_cast<GLint>(camera.resolution().x);
-		GLint h1 = static_cast<GLint>(camera.resolution().y);
-		float ratio = camera.resolution().y / camera.resolution().x;
-
-		GLint w2 = static_cast<GLint>(m_width);
-		GLint h2 = static_cast<GLint>(m_width * ratio);
-		if (h2 > m_height) {
-			w2 = static_cast<GLint>(m_height / ratio);
-			h2 = static_cast<GLint>(m_height);
-		}
-		glBlitNamedFramebuffer(camera.targetFramebuffer()->raw(), 0, 0, 0, w1, h1, 0, 0, w2, h2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	}
 }
 
@@ -239,6 +190,73 @@ void Scene::takeScreenshot() const
 ///////////////////////////////////////////////////////////////////////////////
 // Private methods
 ///////////////////////////////////////////////////////////////////////////////
+
+void Scene::renderCamera(const Camera& camera) const
+{
+	const glm::vec2& res = camera.resolution();
+	const glm::vec4& rect = camera.properties().viewRect;
+	GLint vX0 = static_cast<GLint>(rect.x * m_width);
+	GLint vY0 = static_cast<GLint>(rect.y * m_height);
+	GLsizei vWidth = static_cast<GLsizei>(res.x);
+	GLsizei vHeight = static_cast<GLsizei>(res.y);
+	
+	GLint vX = 0, vY = 0;
+	if (m_isDeferredShadingEnabled) {
+		m_deferredShader->bindFramebuffer(camera);
+	}
+	else if (camera.targetFramebuffer()) {
+		camera.targetFramebuffer()->bind();
+	}
+	else {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		vX = vX0;  vY = vY0;
+	}
+
+	glViewport(vX, vY, vWidth, vHeight);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	// Pre-rendering -- occlusion
+	const Camera& prerenderCamera = properties().freezeOcclusionCamera ? *occlusionCamera() : camera;
+	m_world->onPreRender(prerenderCamera);
+	for (auto obj : m_objects) {
+		obj->onPreRender(prerenderCamera, *m_world, RenderType::Default);
+	}
+
+	// Main Rendering
+	m_world->render(camera);
+	for (auto obj : m_objects) {
+		obj->render(camera, *m_world, RenderType::Default);
+	}
+
+	if (m_isDeferredShadingEnabled) {
+		if (camera.targetFramebuffer()) {
+			camera.targetFramebuffer()->bind();
+		}
+		else {
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			vX = vX0;  vY = vY0;
+			m_deferredShader->setBlitOffset(vX, vY);
+		}
+		glViewport(vX, vY, vWidth, vHeight);
+		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		m_deferredShader->render(camera, *m_world, RenderType::Default);
+	}
+
+	if (camera.targetFramebuffer()) {
+		GLint w1 = static_cast<GLint>(camera.resolution().x);
+		GLint h1 = static_cast<GLint>(camera.resolution().y);
+		float ratio = camera.resolution().y / camera.resolution().x;
+
+		GLint w2 = static_cast<GLint>(m_width);
+		GLint h2 = static_cast<GLint>(m_width * ratio);
+		if (h2 > m_height) {
+			w2 = static_cast<GLint>(m_height / ratio);
+			h2 = static_cast<GLint>(m_height);
+		}
+		glBlitNamedFramebuffer(camera.targetFramebuffer()->raw(), 0, 0, 0, w1, h1, vX, vY, w2, h2, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+}
 
 void Scene::measureStats()
 {

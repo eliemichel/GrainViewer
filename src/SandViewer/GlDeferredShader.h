@@ -14,6 +14,7 @@
 #include "RenderType.h"
 #include "utils/ReflectionAttributes.h"
 
+#include <glm/glm.hpp>
 #include <rapidjson/document.h>
 #include <refl.hpp>
 
@@ -52,15 +53,13 @@ public:
 
 	void addShaderDefine(const std::string & def) { m_shader.define(def); }
 
-	void bindFramebuffer() const { m_framebuffer->bind(); };
+	void bindFramebuffer(const Camera& camera) const;
 
 	bool deserialize(const rapidjson::Value & json);
 	void reloadShaders();
 	void update(float time);
 
 	void render(const Camera & camera, const World & world, RenderType target) const;
-
-	void setResolution(int width, int height);
 
 	Properties & properties() { return m_properties; }
 	const Properties & properties() const { return m_properties; }
@@ -69,25 +68,14 @@ public:
 	// Use only if hasColorMap is truc
 	const GlTexture & colormap() const { return *m_colormap; }
 
-private:
-	// Lazy init: it's const but mutates m_framebuffer anyway
-	void lazyInitFramebuffer() const;
+	void setBlitOffset(GLint x, GLint y) { m_blitOffset = glm::vec2(static_cast<float>(x), static_cast<float>(y)); }
 
 private:
+	Properties m_properties;
 	ShaderProgram m_shader;
-	mutable std::unique_ptr<Framebuffer> m_framebuffer; // mutable because lazily initialized
 	GLuint m_vao;
 	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
-
-	int m_width = 1920;
-	int m_height = 1080;
-	Properties m_properties;
-
-	std::vector<ColorLayerInfo> m_attachments = {
-		{ GL_RGBA32F,  GL_COLOR_ATTACHMENT0 },
-		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT1 },
-		{ GL_RGBA32UI, GL_COLOR_ATTACHMENT2 },
-	};
+	glm::vec2 m_blitOffset = glm::vec2(0.0f); // offset when writing to output framebuffer
 };
 
 #define _ ReflectionAttributes::

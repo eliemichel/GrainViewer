@@ -225,6 +225,10 @@ void autoUnpackGFragment(inout GFragment fragment) {
 	unpackGFragment(gbuffer0, gbuffer1, gbuffer2, ivec2(gl_FragCoord.xy), fragment);
 }
 
+void autoUnpackGFragmentWithOffset(inout GFragment fragment, vec2 offset) {
+	unpackGFragment(gbuffer0, gbuffer1, gbuffer2, ivec2(gl_FragCoord.xy - offset), fragment);
+}
+
 #endif // IN_GBUFFER
 
 /////////////////////////////////////////////////////////////////////

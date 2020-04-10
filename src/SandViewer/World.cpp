@@ -139,7 +139,7 @@ void World::render(const Camera & camera) const
 	glDepthFunc(GL_LESS);
 }
 
-void World::renderShadowMaps(const Camera & camera, const std::vector<std::shared_ptr<RuntimeObject>> & objects) const
+void World::renderShadowMaps(const std::vector<std::shared_ptr<RuntimeObject>> & objects) const
 {
 	if (!isShadowMapEnabled()) {
 		return;

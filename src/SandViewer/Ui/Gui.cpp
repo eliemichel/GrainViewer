@@ -324,8 +324,15 @@ void Gui::onResize(int width, int height) {
 	}
 }
 
+#define forAllCameras(method) \
+for (auto& camera : m_scene->cameras()) { \
+	if (camera->properties().controlInViewport) { \
+		camera->method(); \
+	} \
+}
+
 void Gui::onMouseButton(int button, int action, int mods) {
-	if (m_imguiFocus || !m_scene || !m_scene->viewportCamera()) {
+	if (m_imguiFocus || !m_scene) {
 		return;
 	}
 
@@ -334,28 +341,28 @@ void Gui::onMouseButton(int button, int action, int mods) {
 	switch (button) {
 	case GLFW_MOUSE_BUTTON_LEFT:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera()->startMouseRotation();
+			forAllCameras(startMouseRotation);
 		}
 		else {
-			m_scene->viewportCamera()->stopMouseRotation();
+			forAllCameras(stopMouseRotation);
 		}
 		break;
 
 	case GLFW_MOUSE_BUTTON_MIDDLE:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera()->startMouseZoom();
+			forAllCameras(startMouseZoom);
 		}
 		else {
-			m_scene->viewportCamera()->stopMouseZoom();
+			forAllCameras(stopMouseZoom);
 		}
 		break;
 
 	case GLFW_MOUSE_BUTTON_RIGHT:
 		if (action == GLFW_PRESS) {
-			m_scene->viewportCamera()->startMousePanning();
+			forAllCameras(startMousePanning);
 		}
 		else {
-			m_scene->viewportCamera()->stopMousePanning();
+			forAllCameras(stopMousePanning);
 		}
 		break;
 	}
@@ -369,8 +376,12 @@ void Gui::onCursorPosition(double x, double y) {
 		return;
 	}
 
-	if (m_scene && m_scene->viewportCamera()) {
-		m_scene->viewportCamera()->updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+	if (m_scene) {
+		for (auto& camera : m_scene->cameras()) {
+			if (camera->properties().controlInViewport) {
+				camera->updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+			}
+		}
 	}
 }
 
@@ -434,15 +445,11 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 			break;
 
 		case GLFW_KEY_A:
-			if (m_scene->viewportCamera()) {
-				m_scene->viewportCamera()->tiltLeft();
-			}
+			forAllCameras(tiltLeft);
 			break;
 
 		case GLFW_KEY_E:
-			if (m_scene->viewportCamera()) {
-				m_scene->viewportCamera()->tiltRight();
-			}
+			forAllCameras(tiltRight);
 			break;
 
 		case GLFW_KEY_C:
@@ -468,3 +475,4 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 	}
 }
 
+#undef forAllCameras

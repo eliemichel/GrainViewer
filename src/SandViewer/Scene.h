@@ -44,6 +44,7 @@ public:
 
 	std::shared_ptr<Camera> viewportCamera() const;
 	inline const std::vector<std::shared_ptr<RuntimeObject>> & objects() const { return m_objects; }
+	inline const std::vector<std::shared_ptr<Camera>>& cameras() const { return m_cameras; }
 
 	std::shared_ptr<World> world() { return m_world; }
 	std::shared_ptr<GlDeferredShader> deferredShader() { return m_deferredShader; }
@@ -55,6 +56,7 @@ public:
 
 	void takeScreenshot() const;
 
+public:
 	struct Properties {
 		bool freezeOcclusionCamera = false;
 	};
@@ -62,6 +64,7 @@ public:
 	const Properties& properties() const { return m_properties; }
 
 private:
+	void renderCamera(const Camera & camera) const;
 	std::shared_ptr<Camera> occlusionCamera() const;
 	void measureStats();
 	// TODO: This should be in another section of the code

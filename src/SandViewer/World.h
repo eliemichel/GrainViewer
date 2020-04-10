@@ -25,7 +25,7 @@ public:
 	void reloadShaders();
 	void onPreRender(const Camera & camera) const;
 	void render(const Camera & camera) const;
-	void renderShadowMaps(const Camera & camera, const std::vector<std::shared_ptr<RuntimeObject>> & objects) const;
+	void renderShadowMaps(const std::vector<std::shared_ptr<RuntimeObject>> & objects) const;
 
 	const std::vector<std::shared_ptr<Light>> & lights() const { return m_lights; }
 

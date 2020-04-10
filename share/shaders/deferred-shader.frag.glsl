@@ -44,6 +44,7 @@ uniform float uMaxSampleCount = 40;
 uniform bool uShowSampleCount = false;
 
 uniform float uShadowMapBias;
+uniform vec2 uBlitOffset = vec2(0.0);
 
 
 #ifdef OLD_BRDF
@@ -96,7 +97,7 @@ void pbrShading(const in GFragment fragment, out OutputFragment out_fragment)
 
 void main() {
 	GFragment fragment;
-	autoUnpackGFragment(fragment);
+	autoUnpackGFragmentWithOffset(fragment, uBlitOffset);
 
 	OutputFragment out_fragment;
 	switch (fragment.material_id) {

@@ -135,6 +135,7 @@ public:
 			glm::vec4 viewRect = glm::vec4(0, 0, 1, 1);
 
 			bool displayInViewport = true;
+			bool controlInViewport = true; // receive mouse input
 		};
 		const Properties& properties() const { return m_properties; }
 		Properties & properties(){ return m_properties; }
@@ -212,4 +213,5 @@ protected:
 REFL_TYPE(Camera::Properties)
 REFL_FIELD(viewRect)
 REFL_FIELD(displayInViewport)
+REFL_FIELD(controlInViewport)
 REFL_END
