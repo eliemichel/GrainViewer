@@ -46,6 +46,7 @@ public:
 		bool useBbox = false; // if true, remove all points out of the supplied bounding box
 		glm::vec3 bboxMin;
 		glm::vec3 bboxMax;
+		float occluderMapSpriteScale = 0.2f;
 	};
 	enum class RenderModel {
 		Instance = 0,
@@ -132,6 +133,7 @@ REFL_FIELD(zPrepass)
 REFL_FIELD(useBbox)
 REFL_FIELD(bboxMin, _ Range(-1, 1))
 REFL_FIELD(bboxMax, _ Range(-1, 1))
+REFL_FIELD(occluderMapSpriteScale)
 REFL_END
 #undef _
 

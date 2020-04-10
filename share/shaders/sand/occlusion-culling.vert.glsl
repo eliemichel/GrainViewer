@@ -16,6 +16,7 @@ out Geometry {
 uniform float uOuterOverInnerRadius = 1.0 / 0.5;
 uniform float uGrainRadius;
 uniform float uGrainInnerRadiusRatio;
+uniform float uOccluderMapSpriteScale = 0.2;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
@@ -30,6 +31,6 @@ void main() {
 	geo.radius = uGrainRadius * uGrainInnerRadiusRatio; // inner radius
 	gl_Position = projectionMatrix * geo.position_cs;
 	// The *.15 has no explaination, but it empirically increases occlusion culling
-	gl_PointSize = SpriteSize(geo.radius, gl_Position) * 0.2;
+	gl_PointSize = SpriteSize(geo.radius, gl_Position) * uOccluderMapSpriteScale;
 }
 
