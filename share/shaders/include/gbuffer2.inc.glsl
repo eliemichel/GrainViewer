@@ -105,7 +105,7 @@ void unpackGFragment(
 	fragment.roughness = data1.w;
 
 	tmp = unpackHalf2x16(data3.y);
-	fragment.emission = vec3(unpackHalf2x16(data3.x), tmp.x);
+	fragment.lean2.xyz = vec3(unpackHalf2x16(data3.x), tmp.x);
 	fragment.metallic = tmp.y;
 	fragment.count = data3.w;
 }
@@ -124,8 +124,8 @@ void packGFragment(
 		fragment.material_id
 	);
 	gbuffer_color2 = uvec4(
-		packHalf2x16(fragment.emission.xy),
-		packHalf2x16(vec2(fragment.emission.z, fragment.metallic)),
+		packHalf2x16(fragment.lean2.xy),
+		packHalf2x16(vec2(fragment.lean2.z, fragment.metallic)),
 		packHalf2x16(vec2(0.0, 0.0)),
 		fragment.count
 	);

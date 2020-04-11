@@ -29,8 +29,9 @@ void main() {
 
     GFragment fragment = SampleStandardMaterial(uMaterial[geo.materialId], surf);
 
-    fragment.metallic = 1.0;
-    //fragment.roughness = 0.5;
+    fragment.roughness = pow(fragment.roughness, 0.5);
+    //fragment.metallic = 0.0;
+    //fragment.roughness = 0.2;
     //fragment.normal = normalize(cross(geo.normal_ws, geo.tangent_ws));
     //fragment.normal = normalize(vec3(texture(uMaterial[geo.materialId].normalMap, geo.uv)) * 2.0 - 1.0);
 
