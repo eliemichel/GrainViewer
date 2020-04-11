@@ -109,9 +109,14 @@ uniform int uSamplingMode = 0; // 0: PLANEHIT_SAMPLING 1: SPHEREHIT_SAMPLING 2: 
  * Sample an impostor with different strategies depending on options
  */
 GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_gs, float radius) {
-#if defined(NO_INTERPOLATION)
+#ifdef NO_INTERPOLATION
+#  ifdef PRECOMPUTE_IN_VERTEX
+	return aux_IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, radius, geo.i.x);
+#  else // PRECOMPUTE_IN_VERTEX
 	return IntersectRaySphericalGBillboardNoInterp(impostor, ray_gs, radius);
-#elif defined(PRECOMPUTE_IN_VERTEX)
+#  endif // PRECOMPUTE_IN_VERTEX
+#else // NO_INTERPOLATION
+#  ifdef PRECOMPUTE_IN_VERTEX
 	switch (uSamplingMode) {
 	case 0: // PLANEHIT_SAMPLING
 		return aux_IntersectRaySphericalGBillboard(impostor, ray_gs, radius, geo.i, geo.alpha);
@@ -120,7 +125,7 @@ GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_g
 	case 2: // MIXEDHIT_SAMPLING
 		return aux_IntersectRaySphericalGBillboard_MixedHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor, geo.i, geo.alpha);
 	}
-#else
+#  else // PRECOMPUTE_IN_VERTEX
 	switch (uSamplingMode) {
 	case 0: // PLANEHIT_SAMPLING
 		return IntersectRaySphericalGBillboard(impostor, ray_gs, radius);
@@ -129,6 +134,7 @@ GFragment SampleImpostor(const in SphericalImpostor impostor, const in Ray ray_g
 	case 2: // MIXEDHIT_SAMPLING
 		return IntersectRaySphericalGBillboard_MixedHit(impostor, ray_gs, radius, uHitSphereCorrectionFactor);
 	}
+#  endif // PRECOMPUTE_IN_VERTEX
 #endif // NO_INTERPOLATION
 }
 

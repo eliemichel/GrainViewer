@@ -72,7 +72,7 @@ void DirectionToViewIndices(vec3 d, uint n, out uvec4 i, out vec2 alpha) {
 vec3 ViewIndexToDirection(uint i, uint n) {
 #ifdef PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 	mat4 m = impostorViewMatrices[i];
-	return vec3(m[2].xyz);
+	return vec3(m[0].z, m[1].z, m[2].z);
 #else // PRECOMPUTE_IMPOSTOR_VIEW_MATRICES
 	float eps = -1;
 	uint n2 = n * n;
@@ -274,14 +274,15 @@ GFragment IntersectRaySphericalGBillboard_MixedHit(SphericalImpostor impostor, R
 /**
  * Same as IntersectRaySphericalGBillboard wthout interpolation
  */
+ GFragment aux_IntersectRaySphericalGBillboardNoInterp(SphericalImpostor impostor, Ray ray, float radius, uint i) {
+	uint n = impostor.viewCount;
+	GFragment g = SampleBillboard(impostor, IntersectRayBillboard(ray, i, radius, n));
+	return g;
+}
 GFragment IntersectRaySphericalGBillboardNoInterp(SphericalImpostor impostor, Ray ray, float radius) {
 	uint n = impostor.viewCount;
 	uint i = DirectionToViewIndex(-ray.direction, n);
-	SphericalImpostorHit hit = IntersectRayBillboard(ray, i, radius, n);
-	//SphericalImpostorHit hit = SphericalImpostorHit(vec3(0.0), vec3(0.0));
-	GFragment g = SampleBillboard(impostor, hit);
-	//GFragment g; initGFragment(g); g.normal = hit.position;
-	return g;
+	return aux_IntersectRaySphericalGBillboardNoInterp(impostor, ray, radius, i);
 }
 
 /**

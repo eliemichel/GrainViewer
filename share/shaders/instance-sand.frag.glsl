@@ -18,9 +18,7 @@ in VertexData {
 #include "include/standard-material.inc.glsl"
 uniform StandardMaterial uMaterial[3];
 
-uniform float uRoughness = 0.5;
-uniform float uMetallic = 0.0;
-uniform float uNormalMapping = 1.0;
+uniform float uNormalMapping = 10.0;
 
 uniform bool uDebugRenderType = false;
 uniform vec3 uDebugRenderColor = vec3(172.0/255.0, 23.0/255.0, 1.0/255.0);
@@ -28,15 +26,13 @@ uniform vec3 uDebugRenderColor = vec3(172.0/255.0, 23.0/255.0, 1.0/255.0);
 #include "include/random.inc.glsl"
 #include "sand/procedural-color.inc.glsl"
 
-uniform float normal_mapping = 1.0;
-
 void main() {
     SurfacePoint surf = SurfacePoint(
         vert.position_ws,
         vert.normal_ws,
         vert.tangent_ws,
         vert.uv,
-        normal_mapping
+        uNormalMapping
     );
 
     GFragment fragment = SampleStandardMaterial(uMaterial[vert.materialId], surf);

@@ -115,7 +115,11 @@ void main() {
     Ray ray_gs = TransformRay(ray_ws, geo.gs_from_ws);
 
     uint n = uImpostor[0].viewCount;
+#  ifdef NO_INTERPOLATION
+	geo.i.x = DirectionToViewIndex(-ray_gs.direction, n);
+#  else // NO_INTERPOLATION
 	DirectionToViewIndices(-ray_gs.direction, n, geo.i, geo.alpha);
+#  endif // NO_INTERPOLATION
 #endif // PRECOMPUTE_IN_VERTEX
 
 	EmitVertex();
