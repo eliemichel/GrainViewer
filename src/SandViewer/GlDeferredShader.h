@@ -42,6 +42,9 @@ public:
 		bool transparentFilm = false;
 		bool showSampleCount = false;
 		float maxSampleCount = 10;
+		bool debugVectors = false;
+		float debugVectorsScale = 0.1f;
+		float debugVectorsGrid = 20.0f;
 		float shadowMapBiasBase = 0.1f;
 		int shadowMapBiasExponent = -5;
 
@@ -50,8 +53,6 @@ public:
 public:
 	GlDeferredShader();
 	~GlDeferredShader();
-
-	void addShaderDefine(const std::string & def) { m_shader.define(def); }
 
 	void bindFramebuffer(const Camera& camera) const;
 
@@ -72,7 +73,7 @@ public:
 
 private:
 	Properties m_properties;
-	ShaderProgram m_shader;
+	ShaderProgram m_shader, m_debugShader;
 	GLuint m_vao;
 	std::unique_ptr<GlTexture> m_colormap; // colormap used as ramp for outputting debug images
 	glm::vec2 m_blitOffset = glm::vec2(0.0f); // offset when writing to output framebuffer
@@ -84,6 +85,9 @@ REFL_FIELD(shadingMode)
 REFL_FIELD(transparentFilm)
 REFL_FIELD(showSampleCount)
 REFL_FIELD(maxSampleCount, _ HideInDialog())
+REFL_FIELD(debugVectors)
+REFL_FIELD(debugVectorsScale, _ Range(0, 2))
+REFL_FIELD(debugVectorsGrid, _ Range(0, 40))
 REFL_FIELD(shadowMapBiasBase)
 REFL_FIELD(shadowMapBiasExponent, _ Range(-8, 2))
 REFL_END

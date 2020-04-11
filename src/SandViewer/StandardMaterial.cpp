@@ -39,6 +39,9 @@ void StandardMaterial::fromTinyObj(const tinyobj::material_t& mat, const std::st
 	if (!mat.metallic_texname.empty()) {
 		metallicMap = ResourceManager::loadTexture(joinPath(textureRoot, mat.metallic_texname));
 	}
+	if (!mat.reflection_texname.empty()) {
+		metallicMap = ResourceManager::loadTexture(joinPath(textureRoot, mat.reflection_texname));
+	}
 	if (!mat.specular_highlight_texname.empty()) {
 		roughnessMap = ResourceManager::loadTexture(joinPath(textureRoot, mat.specular_highlight_texname));
 	}

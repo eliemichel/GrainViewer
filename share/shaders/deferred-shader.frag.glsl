@@ -1,12 +1,15 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma variant WHITE_BACKGROUND TRANSPARENT_BACKGROUND OLD_BRDF
 #pragma variant SHOW_NORMAL SHOW_BASECOLOR SHOW_POSITION SHOW_RAW_BUFFER1 SHOW_ROUGHNESS
 #pragma variant HDR REINHART
+#pragma opt WHITE_BACKGROUND
+#pragma opt TRANSPARENT_BACKGROUND
+#pragma opt OLD_BRDF
+#pragma opt DEBUG_VECTORS
 
-#define WHITE_BACKGROUND
 #define HDR
+#define WHITE_BACKGROUND
 
 #include "include/uniform/camera.inc.glsl"
 #include "include/utils.inc.glsl"
@@ -46,6 +49,8 @@ uniform bool uShowSampleCount = false;
 uniform float uShadowMapBias;
 uniform vec2 uBlitOffset = vec2(0.0);
 
+uniform float uDebugVectorsScale = 0.1;
+uniform float uDebugVectorsGrid = 20;
 
 #ifdef OLD_BRDF
 #include "include/bsdf-old.inc.glsl"
@@ -243,6 +248,45 @@ void main() {
 			out_fragment.radiance.a = 1.0;
 		}
 	}
+
+#ifdef DEBUG_VECTORS
+	vec2 sampledPixel = resolution * 0.5;
+
+	sampledPixel = (floor(gl_FragCoord.xy / uDebugVectorsGrid) + vec2(0.5)) * uDebugVectorsGrid;
+
+	vec2 delta = gl_FragCoord.xy - sampledPixel;
+	GFragment f2;
+	autoUnpackGFragmentWithOffset(f2, delta);
+	vec4 debug = vec4(0.0);
+
+	vec4 position_cs = viewMatrix * vec4(normalize(f2.normal), 1.0);
+	vec4 position_ps = projectionMatrix * vec4(position_cs.xyz, 1.0);
+	vec2 fragCoord = resolution.xy * (position_ps.xy / position_ps.w * 0.5 + 0.5);
+
+	vec4 zero_cs = viewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 zero_ps = projectionMatrix * vec4(zero_cs.xyz, 1.0);
+	vec2 zeroCoord = resolution.xy * (zero_ps.xy / zero_ps.w * 0.5 + 0.5);
+
+	//vec_cs.xy = vec2(1.0, 1.0);
+	vec2 vec_cs = fragCoord - zeroCoord;
+	float len = length(vec_cs);
+
+	vec_cs = normalize(vec_cs);
+
+	//debug.a = smoothstep(0.9, 1.0, dot(normalize(delta), vec_cs.xy));
+	delta = transpose(mat2(vec_cs, vec_cs.yx * vec2(-1,1))) * delta;
+
+	float arrow = smoothstep(1.0, 0.5, abs(delta.y)) * step(0, delta.x) * step(delta.x, len * uDebugVectorsScale);
+	arrow += smoothstep(4.0, 2.0, dot(delta,delta));
+	float shadow = smoothstep(1.0, 0.5, abs(delta.y - 1)) * step(0, delta.x) * step(delta.x, len * uDebugVectorsScale);
+
+	debug.rgb = vec3(1. - arrow);
+
+	debug.a = arrow + shadow * 0.4;
+
+	// comp debug vector
+	out_fragment.radiance.rgb = mix(out_fragment.radiance.rgb, debug.rgb, debug.a);
+#endif // DEBUG_VECTORS
 
 	out_fragment.normal = fragment.normal;
 	out_fragment.radiance.a = 1.0;

@@ -33,11 +33,11 @@ GFragment SampleStandardMaterial(const StandardMaterial mat, const SurfacePoint 
         vec3 normal_ts = vec3(texture(mat.normalMap, geo.uv)) * 2.0 - 1.0;
         // Normal mapping
         mat3 TBN = mat3(
-            normalize(cross(geo.normal_ws, geo.tangent_ws)),
-            normalize(geo.tangent_ws),
+            normalize(-geo.tangent_ws),
+            normalize(-cross(geo.normal_ws, geo.tangent_ws)),
             normalize(geo.normal_ws)
         );
-        normal = geo.normal_ws + TBN * normal_ts * geo.normal_mapping * 0.1;
+        normal = geo.normal_ws + TBN * normal_ts * geo.normal_mapping;
     }
     fragment.normal = normalize(normal);
 
