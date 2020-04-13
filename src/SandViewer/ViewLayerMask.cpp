@@ -14,6 +14,8 @@ bool ViewLayerMask::deserialize(const rapidjson::Value& json)
 		}
 		bit = bit << 1;
 	}
+
+	return true;
 }
 
 bool ViewLayerMask::operator&(const ViewLayerMask& other) const

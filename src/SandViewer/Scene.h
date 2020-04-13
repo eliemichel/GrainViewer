@@ -55,6 +55,10 @@ public:
 	std::shared_ptr<RuntimeObject> findObjectByName(const std::string& name);
 
 	void takeScreenshot() const;
+	void play();
+	void pause();
+	void togglePause();
+	bool isPaused() const;
 
 public:
 	struct Properties {
@@ -98,6 +102,9 @@ private:
 	std::vector<uint8_t> m_pixels;
 	mutable std::vector<GLfloat> m_floatPixels; // for EXR screenshots
 
+	float m_time;
+	float m_timeOffset = 0.0f;
+	bool m_paused = false;
 	float m_fps;
 	int m_quitAfterFrame = -1; // -1 to deactivate this feature, otherwise automatically quit the program after the specified frame (usefull for batch rendering)
 	bool m_mustQuit = false;

@@ -18,15 +18,23 @@ uniform float uGrainRadius;
 uniform float uGrainInnerRadiusRatio;
 uniform float uOccluderMapSpriteScale = 0.2;
 
+uniform uint uFrameCount;
+uniform uint uPointCount;
+uniform float uTime;
+uniform float uFps = 25.0;
+
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "../include/uniform/camera.inc.glsl"
 
 #include "../include/utils.inc.glsl"
 #include "../include/sprite.inc.glsl"
+#include "../include/anim.inc.glsl"
 
 void main() {
-	vec4 position_ms = vec4(vbo[gl_VertexID].position.xyz, 1.0);
+	uint pointId = AnimatedPointId2(gl_VertexID, uFrameCount, uPointCount, uTime, uFps);
+
+	vec4 position_ms = vec4(vbo[pointId].position.xyz, 1.0);
 	geo.position_cs = viewModelMatrix * position_ms;
 	geo.radius = uGrainRadius * uGrainInnerRadiusRatio; // inner radius
 	gl_Position = projectionMatrix * geo.position_cs;

@@ -59,26 +59,34 @@ void Scene::reloadShaders() {
 }
 
 void Scene::update(float time) {
-	++m_frameIndex;
-	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
-		// If recording, slow down the game to ensure that it will play back correctly
-		time = m_frameIndex / m_fps;
-	} else {
-		m_frameIndex = static_cast<int>(time * m_fps);
+	if (m_paused) {
+		m_timeOffset = time - m_time;
+	}
+	else {
+		m_time = time - m_timeOffset;
+		++m_frameIndex;
 	}
 
-	m_animationManager->update(time, m_frameIndex);
+	
+	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
+		// If recording, slow down the game to ensure that it will play back correctly
+		m_time = m_frameIndex / m_fps;
+	} else {
+		m_frameIndex = static_cast<int>(m_time * m_fps);
+	}
+
+	m_animationManager->update(m_time, m_frameIndex);
 
 	for (auto& camera : m_cameras) {
 		if (camera->properties().displayInViewport) {
-			camera->update(time);
+			camera->update(m_time);
 		}
 	}
 
-	m_world->update(time);
+	m_world->update(m_time);
 
 	for (auto obj : m_objects) {
-		obj->update(time, m_frameIndex);
+		obj->update(m_time, m_frameIndex);
 	}
 
 	// Prepare output framebuffer
@@ -136,7 +144,7 @@ void Scene::onPostRender(float time)
 	}
 
 	for (auto obj : m_objects) {
-		obj->onPostRender(time, m_frameIndex);
+		obj->onPostRender(m_time, m_frameIndex);
 	}
 }
 
@@ -185,6 +193,26 @@ void Scene::takeScreenshot() const
 
 	ss << ".exr";
 	recordFrame(*viewportCamera(), ss.str(), RecordExr);
+}
+
+void Scene::play()
+{
+	m_paused = false;
+}
+
+void Scene::pause()
+{
+	m_paused = true;
+}
+
+void Scene::togglePause()
+{
+	m_paused = !m_paused;
+}
+
+bool Scene::isPaused() const
+{
+	return m_paused;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

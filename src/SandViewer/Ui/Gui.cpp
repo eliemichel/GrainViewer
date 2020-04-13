@@ -471,6 +471,10 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 				}
 			}
 			break;
+
+		case GLFW_KEY_SPACE:
+			m_scene->togglePause();
+			break;
 		}
 	}
 }

@@ -15,6 +15,17 @@ void SceneDialog::draw()
 				cont->takeScreenshot();
 			}
 
+			if (cont->isPaused()) {
+				if (ImGui::Button("Play")) {
+					cont->play();
+				}
+			}
+			else {
+				if (ImGui::Button("Pause")) {
+					cont->pause();
+				}
+			}
+
 			autoUi(cont->properties());
 		}
 	}

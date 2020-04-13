@@ -60,6 +60,7 @@ void main() {
 
     vec3 grainCenter_ws = (modelMatrix * vec4(pointVertexAttributes[animPointId].position.xyz, 1.0)).xyz;
 
+    pointId = animPointId%20; // WTF?
     mat3 ws_from_gs = transpose(mat3(randomGrainMatrix(int(pointId), grainCenter_ws)));
     
     vec3 vertexPosition = position;

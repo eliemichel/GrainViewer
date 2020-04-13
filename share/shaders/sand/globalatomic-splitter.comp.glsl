@@ -30,6 +30,8 @@ layout (std430, binding = 2) restrict writeonly buffer elementBufferSsbo {
 	uint elementBuffer[];
 };
 
+#include "../include/anim.inc.glsl"
+
 /**
  * getRenderType(): Get the index of the model to use for a given element.
  * Several options to investigate:
@@ -64,8 +66,6 @@ uniform float uOuterOverInnerRadius; // 1./uGrainInnerRadiusRatio
 uniform mat4 modelMatrix;
 uniform mat4 viewModelMatrix;
 #include "../include/uniform/camera.inc.glsl"
-
-#include "../include/anim.inc.glsl"
 
 #include "discriminate.inc.glsl"
 
@@ -131,7 +131,8 @@ void main() {
 // Finally write to element buffer
 	type = getRenderType(i);
 	beforeIncrement = atomicAdd(counters[type].count, 1);
-	elementBuffer[counters[type].offset + beforeIncrement] = i;
+	uint pointId = AnimatedPointId2(i, uFrameCount, uPointCount, uTime, uFps);
+	elementBuffer[counters[type].offset + beforeIncrement] = pointId;
 
 #endif // STEP	
 

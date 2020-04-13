@@ -96,6 +96,7 @@ void main() {
     
     gl_PointSize = SpriteSize(geo.radius, gl_Position);
 
+    geo.id = animPointId%20; // WTF?
     geo.gs_from_ws = randomGrainMatrix(int(geo.id), geo.position_ws);
 
 	if (uPrerenderSurface && uUseOcclusionMap) {
