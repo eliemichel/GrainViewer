@@ -96,6 +96,10 @@ ShaderPool::ShaderPool()
 		"GltfMesh",
 		{ "gltf-mesh", ShaderProgram::RenderShader, {} }
 		});
+	m_defaultShaders.insert({
+		"MipMapUsingAlpha",
+		{ "mipmap-using-alpha", ShaderProgram::RenderShader, {} }
+		});
 }
 
 void ShaderPool::addShader(

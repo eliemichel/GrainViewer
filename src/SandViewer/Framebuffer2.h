@@ -6,11 +6,9 @@
 
 #pragma once
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
+#include <OpenGL>
 
-#include <glad/modernglad.h>
+class GlTexture;
 
 /**
  * New version of Framebuffer, but teh latter is used in so many places that as
@@ -27,6 +25,7 @@ public:
 
 	void bind() const;
 	GLuint raw() const { return m_raw; }
+	void attachTexture(int attachment, const GlTexture & texture, GLint level);
 
 private:
 	GLuint m_raw;

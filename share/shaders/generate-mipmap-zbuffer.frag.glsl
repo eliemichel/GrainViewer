@@ -6,7 +6,7 @@ in vec2 uv;
 uniform sampler2D previousLevel;
 
 void main() {
-    ivec2 d = ivec2(1, 0);
+    ivec2 d = ivec2(-1, 0);
     ivec2 xy = ivec2(2 * gl_FragCoord.xy);
     float z00 = texelFetch(previousLevel, xy + d.yy, 0).r;
     float z10 = texelFetch(previousLevel, xy + d.xy, 0).r;

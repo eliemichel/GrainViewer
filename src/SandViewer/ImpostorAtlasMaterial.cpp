@@ -3,6 +3,7 @@
 #include "utils/jsonutils.h"
 #include "utils/fileutils.h"
 #include "ResourceManager.h"
+#include "Filtering.h"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -29,6 +30,10 @@ bool ImpostorAtlasMaterial::deserialize(const rapidjson::Value& json)
 
 	GLuint n = normalAlphaTexture->depth();
 	viewCount = static_cast<GLuint>(sqrt(n / 2));
+
+	if (baseColorTexture && normalAlphaTexture) {
+		Filtering::MipMapUsingAlpha(*baseColorTexture, *normalAlphaTexture);
+	}
 
 	return true;
 }

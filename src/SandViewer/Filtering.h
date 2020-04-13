@@ -57,6 +57,12 @@ public:
 		s_mipmapDepthBufferGenerator->generate(framebuffer);
 	}
 
+	/**
+	 * Generate mipmaps for a textures weighted by the alpha channel of another one.
+	 * (override this texture's alpha)
+	 */
+	static void MipMapUsingAlpha(GlTexture& texture, const GlTexture& alpha);
+
 private:
 	static std::unique_ptr<MipmapDepthBufferGenerator> s_mipmapDepthBufferGenerator;
 	static std::unique_ptr<Framebuffer2> s_postEffectFramebuffer;

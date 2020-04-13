@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "Filtering.h"
 #include "ShaderPool.h"
+#include "utils/ScopedFramebufferOverride.h"
 
 std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectFramebuffer;
@@ -114,6 +115,63 @@ void Filtering::BlitDepth(GlTexture & destination, const GlTexture & source, con
 	BlitDepth(destination, source.raw(), shader);
 }
 
+void Filtering::MipMapUsingAlpha(GlTexture& texture, const GlTexture& alpha)
+{
+	ScopedFramebufferOverride framebufferOverride;
+
+	Framebuffer2 fbo;
+	fbo.bind();
+	std::vector<GLenum> drawBuffers(1);
+	drawBuffers[0] = GL_COLOR_ATTACHMENT0;
+	glNamedFramebufferDrawBuffers(fbo.raw(), static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
+
+	const ShaderProgram& shader = *ShaderPool::GetShader("MipMapUsingAlpha");
+	shader.use();
+	texture.bind(0);
+	shader.setUniform("uPreviousLevel", 0);
+	alpha.bind(1);
+	shader.setUniform("uAlphaLevel", 1);
+
+	// Save texture limits
+	GLint w, h, numLayers;
+	glGetTextureLevelParameteriv(texture.raw(), 0, GL_TEXTURE_WIDTH, &w);
+	glGetTextureLevelParameteriv(texture.raw(), 0, GL_TEXTURE_HEIGHT, &h);
+	glGetTextureLevelParameteriv(texture.raw(), 0, GL_TEXTURE_DEPTH, &numLayers);
+
+	GLint baseLevel, maxLevel;
+	glGetTextureParameteriv(texture.raw(), GL_TEXTURE_BASE_LEVEL, &baseLevel);
+	glGetTextureParameteriv(texture.raw(), GL_TEXTURE_MAX_LEVEL, &maxLevel);
+	GLsizei numLevels = static_cast<GLsizei>(1 + floor(log2(std::max(w, h))));
+
+	for (GLsizei level = 0; level < numLevels - 1; ++level) {
+		shader.setUniform("uLevel", static_cast<GLint>(level));
+
+		GLsizei nextLevel = level + 1;
+		GLint w, h;
+		glGetTextureLevelParameteriv(texture.raw(), nextLevel, GL_TEXTURE_WIDTH, &w);
+		glGetTextureLevelParameteriv(texture.raw(), nextLevel, GL_TEXTURE_HEIGHT, &h);
+
+		glTextureParameteri(texture.raw(), GL_TEXTURE_BASE_LEVEL, level);
+		glTextureParameteri(texture.raw(), GL_TEXTURE_MAX_LEVEL, level);
+
+		fbo.attachTexture(0, texture, nextLevel);
+
+		glViewport(0, 0, w, h);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		for (GLint layer = 0; layer < numLayers; ++layer) {
+			shader.setUniform("uLayer", layer);
+			PostEffect::Draw();
+		}
+
+		glTextureBarrier();
+	}
+
+	// Restore mipmap limits
+	glTextureParameteri(texture.raw(), GL_TEXTURE_BASE_LEVEL, baseLevel);
+	glTextureParameteri(texture.raw(), GL_TEXTURE_MAX_LEVEL, maxLevel);
+}
+
 //-----------------------------------------------------------------------------
 
 MipmapDepthBufferGenerator::MipmapDepthBufferGenerator()
@@ -149,7 +207,7 @@ void MipmapDepthBufferGenerator::generate(Framebuffer & framebuffer)
 		glNamedFramebufferTexture(framebuffer.raw(), GL_DEPTH_ATTACHMENT, framebuffer.depthTexture(), nextLevel);
 		glViewport(0, 0, w, h);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		draw(false /* disableDepthTest */);
+		DrawWithDepthTest();
 		glTextureBarrier();
 	}
 
