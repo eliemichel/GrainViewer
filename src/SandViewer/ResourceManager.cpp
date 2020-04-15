@@ -105,18 +105,20 @@ std::unique_ptr<GlTexture> ResourceManager::loadTexture(const std::string & file
 		tex = loadTextureSOIL(fullFilename, levels);
 	}
 
-	tex->setWrapMode(GL_REPEAT);
+	if (tex) {
+		tex->setWrapMode(GL_REPEAT);
 
-	// TODO
-	/*
-	if (GL_EXT_texture_filter_anisotropic) {
-		GLfloat maxi;
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxi);
-		glTextureParameterf(tex, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxi);
+		// TODO
+		/*
+		if (GL_EXT_texture_filter_anisotropic) {
+			GLfloat maxi;
+			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxi);
+			glTextureParameterf(tex, GL_TEXTURE_MAX_ANISOTROPY_EXT, maxi);
+		}
+		*/
+
+		tex->generateMipmap();
 	}
-	*/
-
-	tex->generateMipmap();
 
 	return tex;
 }
@@ -342,7 +344,29 @@ bool ResourceManager::saveTexture(const std::string & filename, const GlTexture 
 	return saveImage(filename, w, h, pixels.data());
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level, bool vflip)
+bool ResourceManager::saveTextureStack(const std::string& dirname, const GlTexture& texture, bool vflip)
+{
+	GLint level = 0;
+	GLint d;
+	glGetTextureLevelParameteriv(texture.raw(), level, GL_TEXTURE_DEPTH, &d);
+
+	fs::path dir = ResourceManager::resolveResourcePath(dirname);
+	if (!fs::is_directory(dir) && !fs::create_directories(dir)) {
+		DEBUG_LOG << "Could not create directory " << dirname;
+		return false;
+	}
+
+	for (GLint slice = 0; slice < d; ++slice) {
+		fs::path slicename = dir / string_format("view%04d.png", slice);
+		if (!saveTexture_libpng(slicename.string(), texture, level, vflip, slice)) {
+			//return false;
+		}
+	}
+
+	return true;
+}
+
+bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level, bool vflip, GLint slice)
 {
 	// Avoid padding
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -369,9 +393,9 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 		return false;
 	}
 
-	if (d != 1) {
-		WARN_LOG << "Texture depth is clamped to 1 upon saving";
-		d = 1;
+	if (slice >= d) {
+		ERR_LOG << "Texture depth " << d << " is lower than the selected slice " << slice;
+		return false;
 	}
 
 	GLint internalformat;
@@ -384,24 +408,24 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	case GL_DEPTH_COMPONENT24:
 	case GL_DEPTH_COMPONENT32:
 	{
-		GLsizei byteCount = w * h * d;
+		GLsizei byteCount = w * h;
 		pixels = std::vector<png_byte>(byteCount, 0);
-		glGetTextureSubImage(tex, 0, 0, 0, 0, w, h, d, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
 		return stbi_write_png(filename.c_str(), w, h, 1, pixels.data(), w) == 0;
 	}
 	default:
 	{
-		GLsizei byteCount = 4 * w * h * d;
+		GLsizei byteCount = 4 * w * h;
 		pixels.resize(byteCount);
-		glGetTextureSubImage(tex, 0, 0, 0, 0, w, h, d, GL_RGBA, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_RGBA, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
 		return stbi_write_png(filename.c_str(), w, h, 4, pixels.data(), 4 * w) == 0;
 	}
 	}
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level, bool vflip)
+bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level, bool vflip, GLint slice)
 {
-	return saveTexture_libpng(filename, texture.raw(), level, vflip);
+	return saveTexture_libpng(filename, texture.raw(), level, vflip, slice);
 }
 
 bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint tex, GLint level)

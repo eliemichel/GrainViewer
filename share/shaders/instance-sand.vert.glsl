@@ -70,7 +70,7 @@ void main() {
     vert.normal_ws = ws_from_gs * normal;
     vert.tangent_ws = tangent;
     vert.uv = vec2(uv.x, 1.-uv.y);
-    vert.materialId = 0;
+    vert.materialId = materialId;
     vert.baseColor = proceduralColor(vert.position_ws, pointId);
     
     gl_Position = projectionMatrix * viewMatrix * vec4(vert.position_ws, 1.0);

@@ -104,6 +104,9 @@ void main() {
 	GFragment fragment;
 	autoUnpackGFragmentWithOffset(fragment, uBlitOffset);
 
+	// fix normals
+	if ((mat3(viewMatrix) * fragment.normal).z < 0) fragment.normal = -fragment.normal;
+
 	OutputFragment out_fragment;
 	switch (fragment.material_id) {
 	case pbrMaterial:
@@ -243,7 +246,7 @@ void main() {
 
 	if (uTransparentFilm) {
 		if (fragment.material_id == worldMaterial) {
-			out_fragment.radiance = vec4(1.0, 1.0, 1.0, 0.0);
+			out_fragment.radiance = vec4(0.0);
 		} else {
 			out_fragment.radiance.a = 1.0;
 		}

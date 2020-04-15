@@ -123,6 +123,9 @@ void main() {
     fragment.normal = normalize(vec3(fragment.lean1.xy, 1));
     fragment.normal = mat3(inverseViewMatrix) * fragment.normal;
     fragment.roughness = length(diag);
+#else // PSEUDO_LEAN
+    float dev = clamp(pow(1. - length(fragment.normal), 0.2), 0, 1);
+    fragment.roughness = mix(fragment.roughness, 1.0, dev);
 #endif // PSEUDO_LEAN
 
     // Fix depth

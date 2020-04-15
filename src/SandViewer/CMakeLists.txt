@@ -119,6 +119,8 @@ set(All_SRC
 	utils/behaviorutils.cpp
 	utils/ScopedFramebufferOverride.h
 	utils/ReflectionAttributes.h
+	utils/impostor.glsl.h
+	utils/impostor.glsl.cpp
 
 	Ui/Dialog.h
 	Ui/Widgets.h

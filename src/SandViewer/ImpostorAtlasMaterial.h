@@ -11,6 +11,7 @@
 #include <memory>
 
 class ShaderProgram;
+class MeshDataBehavior;
 
 /**
  * Matches SphericalImpostor struct in include/impostor.inc.glsl
@@ -28,6 +29,15 @@ struct ImpostorAtlasMaterial
 	GLuint viewCount; // number of precomputed views, computed from normalAlphaTexture depth
 	std::unique_ptr<LeanTexture> leanTextures; // generated iff enableLeanMapping is on
 
+	bool bake = false;
+	// If 'bake' is true, impostor is computed in engine at startup rather than being loaded from files.
+	// in this case, the following options are used:
+	int angularDefinition = 128; // rounded to the closest number such that 2n²
+	int spatialDefinition = 128; // number of pixels on each dimension of a precomputed view
+
 	bool deserialize(const rapidjson::Value& json);
 	GLint setUniforms(const ShaderProgram& shader, const std::string& prefix, GLint nextTextureUnit) const;
+
+private:
+	void bakeMaps(const MeshDataBehavior& mesh, float radius, glm::vec3 center);
 };

@@ -100,6 +100,10 @@ ShaderPool::ShaderPool()
 		"MipMapUsingAlpha",
 		{ "mipmap-using-alpha", ShaderProgram::RenderShader, {} }
 		});
+	m_defaultShaders.insert({
+		"BakeImpostorAtlas",
+		{ "bake-impostor-atlas", ShaderProgram::RenderShader, {} }
+		});
 }
 
 void ShaderPool::addShader(
