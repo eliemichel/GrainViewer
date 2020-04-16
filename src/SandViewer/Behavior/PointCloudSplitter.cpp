@@ -8,8 +8,12 @@
 #include "utils/behaviorutils.h"
 #include "Framebuffer.h"
 #include "GlobalTimer.h"
+#include "ResourceManager.h"
 
 #include <magic_enum.hpp>
+
+#include <filesystem>
+namespace fs = std::filesystem;
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -18,6 +22,11 @@ bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	jrOption(json, "occlusionCullingShader", m_occlusionCullingShaderName, m_occlusionCullingShaderName);
 	autoDeserialize(json, m_properties);
+
+	if (jrOption(json, "outputStats", m_outputStats)) {
+		initStats();
+	}
+
 	return true;
 }
 
@@ -167,6 +176,8 @@ void PointCloudSplitter::onPreRender(const Camera& camera, const World& world, R
 		// Get counters back
 		m_countersSsbo->exportBlock(0, m_counters);
 	}
+
+	writeStats();
 }
 
 //-----------------------------------------------------------------------------
@@ -274,4 +285,26 @@ std::shared_ptr<ShaderProgram> PointCloudSplitter::getShader(RenderTypeShaderVar
 		m_shaders[index] = ShaderPool::GetShader(variantName);
 	}
 	return m_shaders[index];
+}
+
+void PointCloudSplitter::initStats()
+{
+	m_outputStats = ResourceManager::resolveResourcePath(m_outputStats);
+	fs::create_directories(fs::path(m_outputStats).parent_path());
+	m_outputStatsFile.open(m_outputStats);
+	m_outputStatsFile << "frame;instanceCount;impostorCount;pointCount;noneCount\n";
+	m_statFrame = 0;
+}
+
+void PointCloudSplitter::writeStats()
+{
+	if (!m_outputStatsFile.is_open()) return;
+	m_outputStatsFile << m_statFrame << ";";
+
+	m_outputStatsFile << m_counters[static_cast<int>(RenderModel::Instance)].count << ";";
+	m_outputStatsFile << m_counters[static_cast<int>(RenderModel::Impostor)].count << ";";
+	m_outputStatsFile << m_counters[static_cast<int>(RenderModel::Point)].count << ";";
+	m_outputStatsFile << m_counters[static_cast<int>(RenderModel::None)].count << "\n";
+
+	++m_statFrame;
 }

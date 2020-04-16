@@ -1,5 +1,11 @@
 ﻿#include "GlobalTimer.h"
 #include "Logger.h"
+#include "ResourceManager.h"
+#include "utils/jsonutils.h"
+#include "utils/behaviorutils.h"
+
+#include <filesystem>
+namespace fs = std::filesystem;
 
 int GlobalTimer::StatsUi::s_counter = 0;
 
@@ -59,6 +65,17 @@ GlobalTimer::~GlobalTimer()
 	}
 }
 
+bool GlobalTimer::deserialize(const rapidjson::Value& json)
+{
+	autoDeserialize(json, properties());
+
+	if (jrOption(json, "outputStats", m_outputStats)) {
+		initStats();
+	}
+
+	return true;
+}
+
 GlobalTimer::TimerHandle GlobalTimer::start(const std::string& message) noexcept
 {
 	Timer *timer = new Timer();
@@ -86,13 +103,13 @@ void GlobalTimer::stop(TimerHandle handle) noexcept
 	}
 	m_pool.erase(timer);
 	m_stopped.insert(timer);
-	double ellapsed = milliseconds(endTime - timer->startTime);
-	double offset = milliseconds(timer->startTime - m_frameTimer.startTime);
 
-	Stats & stats = m_stats[timer->message];
+	Stats& stats = m_stats[timer->message];
 	stats.sampleCount++;
-	addSample(stats.cumulatedTime, ellapsed, stats.sampleCount);
-	addSample(stats.cumulatedFrameOffset, offset, stats.sampleCount);
+	stats.lastTime = milliseconds(endTime - timer->startTime);
+	stats.lastFrameOffset = milliseconds(timer->startTime - m_frameTimer.startTime);
+	addSample(stats.cumulatedTime, stats.lastTime, stats.sampleCount);
+	addSample(stats.cumulatedFrameOffset, stats.lastFrameOffset, stats.sampleCount);
 }
 
 void GlobalTimer::startFrame() noexcept
@@ -105,12 +122,20 @@ void GlobalTimer::stopFrame() noexcept
 {
 	auto endTime = std::chrono::high_resolution_clock::now();
 	glQueryCounter(m_frameTimer.queries[1], GL_TIMESTAMP);
-	double ellapsed = milliseconds(endTime - m_frameTimer.startTime);
-
 	m_frameStats.sampleCount++;
-	addSample(m_frameStats.cumulatedTime, ellapsed, m_frameStats.sampleCount);
+	m_frameStats.lastTime = milliseconds(endTime - m_frameTimer.startTime);
+	addSample(m_frameStats.cumulatedTime, m_frameStats.lastTime, m_frameStats.sampleCount);
 
 	gatherQueries();
+	writeStats();
+}
+
+void GlobalTimer::resetAllStats() noexcept
+{
+	m_frameStats.reset();
+	for (auto& s : m_stats) {
+		s.second.reset();
+	}
 }
 
 void GlobalTimer::addSample(double& accumulator, double dt, int sampleCount) noexcept
@@ -134,8 +159,8 @@ void GlobalTimer::gatherQueries() noexcept
 	glGetQueryObjectui64v(m_frameTimer.queries[0], GL_QUERY_RESULT, &frameStartNs);
 	glGetQueryObjectui64v(m_frameTimer.queries[1], GL_QUERY_RESULT, &frameEndNs);
 
-	double ellapsed = static_cast<double>(frameEndNs - frameStartNs) * 1e-6;
-	addSample(m_frameStats.cumulatedGpuTime, ellapsed, m_frameStats.sampleCount);
+	m_frameStats.lastGpuTime = static_cast<double>(frameEndNs - frameStartNs) * 1e-6;
+	addSample(m_frameStats.cumulatedGpuTime, m_frameStats.lastGpuTime, m_frameStats.sampleCount);
 	
 	while (!m_stopped.empty()) {
 		auto it = m_stopped.begin();
@@ -147,19 +172,61 @@ void GlobalTimer::gatherQueries() noexcept
 		glGetQueryObjectui64v(timer->queries[1], GL_QUERY_RESULT, &endNs);
 
 		Stats& stats = m_stats[timer->message];
-		double ellapsed = static_cast<double>(endNs - startNs) * 1e-6;
-		double offset = static_cast<double>(startNs - frameStartNs) * 1e-6;
-		addSample(stats.cumulatedGpuTime, ellapsed, stats.sampleCount);
-		addSample(stats.cumulatedGpuFrameOffset, offset, stats.sampleCount);
+		stats.lastGpuTime = static_cast<double>(endNs - startNs) * 1e-6;
+		stats.lastGpuFrameOffset = static_cast<double>(startNs - frameStartNs) * 1e-6;
+		addSample(stats.cumulatedGpuTime, stats.lastGpuTime, stats.sampleCount);
+		addSample(stats.cumulatedGpuFrameOffset, stats.lastGpuFrameOffset, stats.sampleCount);
 
 		delete timer;
 	}
 }
 
-void GlobalTimer::resetAllStats() noexcept
+void GlobalTimer::initStats() noexcept
 {
-	m_frameStats.reset();
-	for (auto& s : m_stats) {
-		s.second.reset();
+	m_outputStats = ResourceManager::resolveResourcePath(m_outputStats);
+	fs::create_directories(fs::path(m_outputStats).parent_path());
+	m_outputStatsFile.open(m_outputStats);
+	m_outputStatsFile << "frame;raw counters(json);smoothed counters(json)\n";
+	m_statFrame = 0;
+}
+
+void GlobalTimer::writeStats() noexcept
+{
+	if (!m_outputStatsFile.is_open()) return;
+
+	m_outputStatsFile << m_statFrame << ";";
+
+	m_outputStatsFile
+		<< "{\"Frame\": {"
+		<< "\"time\": " << m_frameStats.lastTime << ", "
+		<< "\"frameOffset\": " << m_frameStats.lastFrameOffset << ", "
+		<< "\"gpuTime\": " << m_frameStats.lastGpuTime << ", "
+		<< "\"gpuFrameOffset\": " << m_frameStats.lastGpuFrameOffset << "}";
+	for (const auto& s : m_stats) {
+		m_outputStatsFile
+			<< ", \"" << s.first << "\": {"
+			<< "\"time\": " << s.second.lastTime << ", "
+			<< "\"frameOffset\": " << s.second.lastFrameOffset << ", "
+			<< "\"gpuTime\": " << s.second.lastGpuTime << ", "
+			<< "\"gpuFrameOffset\": " << s.second.lastGpuFrameOffset << "}";
 	}
+	m_outputStatsFile << "};";
+
+	m_outputStatsFile
+		<< "{\"Frame\": {"
+		<< "\"time\": " << m_frameStats.cumulatedTime << ", "
+		<< "\"frameOffset\": " << m_frameStats.cumulatedFrameOffset << ", "
+		<< "\"gpuTime\": " << m_frameStats.cumulatedGpuTime << ", "
+		<< "\"gpuFrameOffset\": " << m_frameStats.cumulatedGpuFrameOffset << "}";
+	for (const auto& s : m_stats) {
+		m_outputStatsFile
+			<< ", \"" << s.first << "\": {"
+			<< "\"time\": " << s.second.cumulatedTime << ", "
+			<< "\"frameOffset\": " << s.second.cumulatedFrameOffset << ", "
+			<< "\"gpuTime\": " << s.second.cumulatedGpuTime << ", "
+			<< "\"gpuFrameOffset\": " << s.second.cumulatedGpuFrameOffset << "}";
+	}
+	m_outputStatsFile << "}\n";
+
+	++m_statFrame;
 }

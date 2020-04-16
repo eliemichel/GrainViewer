@@ -4,32 +4,27 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
+#include <OpenGL>
 
-#include <glad/modernglad.h>
+#include "ResourceManager.h"
+#include "EnvironmentVariables.h"
+#include "utils/strutils.h"
+#include "utils/fileutils.h"
+#include "GlTexture.h"
+#include "Logger.h"
+
+#include <glm/glm.hpp>
+#include <png.h>
+#include <stb_image.h>
+#include <stb_image_write.h>
+#include <tinyexr.h>
+#include <TinyPngOut.hpp>
 
 #include <cmath>
 #include <fstream>
 #include <algorithm>
 #include <filesystem>
 namespace fs = std::filesystem;
-
-#include <glm/glm.hpp>
-#include <png.h>
-
-#include "utils/strutils.h"
-#include "utils/fileutils.h"
-
-#include <stb_image.h>
-#include <stb_image_write.h>
-#include <tinyexr.h>
-#include <TinyPngOut.hpp>
-
-#include "GlTexture.h"
-#include "Logger.h"
-#include "ResourceManager.h"
 
 std::string ResourceManager::s_shareDir = SHARE_DIR;
 std::string ResourceManager::s_resourceRoot = SHARE_DIR;
@@ -52,10 +47,11 @@ std::string ResourceManager::resourceRoot() {
 }
 
 std::string ResourceManager::resolveResourcePath(const std::string & uri) {
-	if (startsWith(uri, "res://")) {
-		return resolvePath(uri.substr(6), shareDir());
+	std::string evaluated = EnvironmentVariables::Eval(uri);
+	if (startsWith(evaluated, "res://")) {
+		return resolvePath(evaluated.substr(6), shareDir());
 	} else {
-		return resolvePath(uri, resourceRoot());
+		return resolvePath(evaluated, resourceRoot());
 	}
 }
 

@@ -48,6 +48,8 @@ set(AugenCore_SRC
 	Logger.cpp
 	ResourceManager.h
 	ResourceManager.cpp
+	EnvironmentVariables.h
+	EnvironmentVariables.cpp
 	Shader.h
 	Shader.cpp
 	ShaderPool.h
@@ -168,7 +170,6 @@ set(All_SRC
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h
-	EnvironmentVariables.h
 	Filtering.h
 	Filtering.cpp
 	Framebuffer.h

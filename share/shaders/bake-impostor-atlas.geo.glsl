@@ -1,6 +1,16 @@
 #version 450 core
 #include "sys:defines"
 
+#pragma opt BLIT
+
+///////////////////////////////////////////////////////////////////////////////
+#ifdef BLIT
+
+#include "include/standard-posteffect.geo.inc.glsl"
+
+///////////////////////////////////////////////////////////////////////////////
+#else // BLIT
+
 in VertexData {
     vec3 position_ws;
     vec3 normal_ws;
@@ -19,6 +29,7 @@ out GeometryData {
 } geo;
 
 uniform uint uReducedViewCount = 1;
+uniform vec2 uScreenSpaceOffset = vec2(0.0);
 
 #include "include/uniform/camera.inc.glsl"
 #include "include/utils.inc.glsl"
@@ -44,7 +55,11 @@ void main() {
 		geo.materialId = vert[i].materialId;
 		gl_Position = uProjectionMatrix * bakingViewMatrix * vec4(geo.position_ws, 1.0);
 		gl_Position.y *= -1;
+		gl_Position.xy += uScreenSpaceOffset * gl_Position.w;
 		EmitVertex();
 	}
 	EndPrimitive();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+#endif // BLIT

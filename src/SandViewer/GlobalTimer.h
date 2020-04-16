@@ -1,6 +1,8 @@
 #pragma once
 
 #include <OpenGL>
+
+#include <rapidjson/document.h>
 #include <glm/glm.hpp>
 #include <refl.hpp>
 
@@ -9,6 +11,7 @@
 #include <set>
 #include <map>
 #include <memory>
+#include <fstream>
 
 /**
  * Global timer is used as a singleton to record render timings using both CPU
@@ -32,6 +35,12 @@ public:
         double cumulatedGpuTime = 0.0;
         double cumulatedGpuFrameOffset = 0.0;
 
+        // for stats recording
+        double lastTime = 0.0;
+        double lastFrameOffset = 0.0;
+        double lastGpuTime = 0.0;
+        double lastGpuFrameOffset = 0.0;
+
         // for UI -- not reset by reset()
         mutable StatsUi ui;
 
@@ -49,7 +58,7 @@ public:
 public:
     struct Properties {
         bool showDiagram = false;
-        float decay = 0.1f;
+        float decay = 0.05f;
     };
     Properties& properties() { return m_properties; }
     const Properties& properties() const { return m_properties; }
@@ -59,6 +68,8 @@ public:
     ~GlobalTimer();
     GlobalTimer& operator=(const GlobalTimer&) = delete;
     GlobalTimer(const GlobalTimer&) = delete;
+
+    bool deserialize(const rapidjson::Value& json);
 
     TimerHandle start(const std::string & message) noexcept;
     void stop(TimerHandle handle) noexcept;
@@ -83,6 +94,8 @@ private:
     // sampleCount must have been incremented first
     void addSample(double& accumulator, double dt, int sampleCount) noexcept;
     void gatherQueries() noexcept;
+    void initStats() noexcept;
+    void writeStats() noexcept;
 
 private:
     static std::shared_ptr<GlobalTimer> s_instance;
@@ -94,6 +107,11 @@ private:
     std::set<Timer*> m_pool; // running timers
     std::set<Timer*> m_stopped; // stopped timers of which queries are waiting to get read back
     std::map<std::string, Stats> m_stats; // cumulated statistics
+
+    // stats
+    std::string m_outputStats;
+    std::ofstream m_outputStatsFile;
+    int m_statFrame = 0;
 };
 
 REFL_TYPE(GlobalTimer::Properties)

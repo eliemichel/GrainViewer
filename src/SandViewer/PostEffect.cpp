@@ -8,6 +8,12 @@ void PostEffect::Draw(bool disableDepthTest)
 	s_instance->draw(disableDepthTest);
 }
 
+void PostEffect::DrawInstanced(int n)
+{
+	if (!s_instance) s_instance = std::make_unique<PostEffect>();
+	s_instance->draw(true, n);
+}
+
 PostEffect::PostEffect()
 {
 	static GLfloat points[] = {
@@ -32,10 +38,10 @@ PostEffect::~PostEffect()
 	glDeleteBuffers(1, &m_vbo);
 }
 
-void PostEffect::draw(bool disableDepthTest)
+void PostEffect::draw(bool disableDepthTest, int instances)
 {
 	if (disableDepthTest) glDisable(GL_DEPTH_TEST);
 	glBindVertexArray(m_vao);
-	glDrawArrays(GL_TRIANGLES, 0, 3);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 3, instances);
 }
 

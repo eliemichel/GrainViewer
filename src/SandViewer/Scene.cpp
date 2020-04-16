@@ -68,7 +68,7 @@ void Scene::update(float time) {
 	}
 
 	
-	if (viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) {
+	if ((viewportCamera() && viewportCamera()->outputSettings().isRecordEnabled) || properties().realTime) {
 		// If recording, slow down the game to ensure that it will play back correctly
 		m_time = m_frameIndex / m_fps;
 	} else {

@@ -104,6 +104,10 @@ ShaderPool::ShaderPool()
 		"BakeImpostorAtlas",
 		{ "bake-impostor-atlas", ShaderProgram::RenderShader, {} }
 		});
+	m_defaultShaders.insert({
+		"BakeImpostorAtlas_Blit",
+		{ "bake-impostor-atlas", ShaderProgram::RenderShader, { "BLIT" } }
+		});
 }
 
 void ShaderPool::addShader(

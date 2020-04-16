@@ -18,7 +18,7 @@ in VertexData {
 #include "include/standard-material.inc.glsl"
 uniform StandardMaterial uMaterial[3];
 
-uniform float uNormalMapping = 0.5;
+uniform float uNormalMapping = 5.0;
 
 uniform bool uDebugRenderType = false;
 uniform vec3 uDebugRenderColor = vec3(172.0/255.0, 23.0/255.0, 1.0/255.0);

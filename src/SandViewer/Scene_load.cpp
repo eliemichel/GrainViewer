@@ -9,19 +9,23 @@
 #include "RuntimeObject.h"
 #include "utils/strutils.h"
 #include "utils/fileutils.h"
+#include "utils/jsonutils.h"
+#include "utils/behaviorutils.h"
 #include "Scene.h"
 #include "ShaderPool.h"
 #include "EnvironmentVariables.h"
 #include "BehaviorRegistry.h"
 #include "Behavior.h"
 #include "GlDeferredShader.h"
+#include "GlobalTimer.h"
+
 
 bool Scene::load(const std::string & filename)
 {
 	clear();
 	m_filename = filename;
 
-	EnvironmentVariables env;
+	EnvironmentVariables & env = *EnvironmentVariables::GetInstance();
 	env.baseFile = fs::path(m_filename).stem().string();
 
 	rapidjson::Document d;
@@ -133,6 +137,9 @@ bool Scene::load(const std::string & filename)
 
 	if (root.HasMember("scene")) {
 		auto& scene = root["scene"];
+
+		autoDeserialize(scene, properties());
+
 		if (scene.HasMember("quitAfterFrame")) {
 			if (scene["quitAfterFrame"].IsInt()) {
 				m_quitAfterFrame = scene["quitAfterFrame"].GetInt();
@@ -171,6 +178,10 @@ bool Scene::load(const std::string & filename)
 				WARN_LOG << "'statsCountColors' field of 'scene' must be an array of vec3";
 			}
 		}
+	}
+
+	if (root.HasMember("GlobalTimer")) {
+		GlobalTimer::GetInstance()->deserialize(root["GlobalTimer"]);
 	}
 
 	// Add an extra camera to visualize occlusion

@@ -132,11 +132,12 @@ GLint ImpostorAtlasMaterial::setUniforms(const ShaderProgram& shader, const std:
 }
 
 
-static void initTexture(std::unique_ptr<GlTexture> & texture, GLsizei width, GLsizei depth, GLsizei levels)
+static std::unique_ptr<GlTexture> initTexture(GLsizei width, GLsizei depth, GLsizei levels, GLenum internalformat = GL_RGBA8)
 {
-	texture = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
+	auto texture = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
 	texture->setWrapMode(GL_CLAMP_TO_EDGE);
-	texture->storage(levels, GL_RGBA8, width, width, depth);
+	texture->storage(levels, internalformat, width, width, depth);
+	return texture;
 }
 
 void ImpostorAtlasMaterial::bakeMaps(const MeshDataBehavior & mesh, float scale, glm::vec3 center)
@@ -147,33 +148,40 @@ void ImpostorAtlasMaterial::bakeMaps(const MeshDataBehavior & mesh, float scale,
 	GLsizei levels = static_cast<GLsizei>(1 + floor(log2(width)));
 	DEBUG_LOG << "Baking impostor atlas of size " << width << "x" << width << "x" << depth;
 	LOG << "A scale factor of " << scale << " and an offset of (" << center.x << ", " << center.y << ", " << center.z << ") are applied to the object at bake time";
-	
-	initTexture(normalAlphaTexture, width, depth, levels);
-	initTexture(baseColorTexture, width, depth, levels);
-	initTexture(metallicRoughnessTexture, width, depth, levels);
 
-	// temp texture for z-buffer
-	auto depthTexture = std::make_unique<GlTexture>(GL_TEXTURE_2D_ARRAY);
-	depthTexture->setWrapMode(GL_CLAMP_TO_EDGE);
-	depthTexture->storage(levels, GL_DEPTH_COMPONENT24, width, width, depth);
+	int msaa = 2;
+	float onePixel = 2.0f / static_cast<float>(width);
+	
+	normalAlphaTexture = initTexture(width, depth, levels);
+	baseColorTexture = initTexture(width, depth, levels);
+	metallicRoughnessTexture = initTexture(width, depth, levels);
+
+	// temp textures for msaa
+	auto depthMsaa = initTexture(width, depth, levels, GL_DEPTH_COMPONENT24);
+	auto normalAlphaMsaa = initTexture(width, depth, levels);
+	auto baseColorMsaa = initTexture(width, depth, levels);
+	auto metallicRoughnessMsaa = initTexture(width, depth, levels);
 
 	Framebuffer2 fbo;
-	fbo.attachDepthTexture(*depthTexture, 0);
 	fbo.attachTexture(0, *normalAlphaTexture, 0);
 	fbo.attachTexture(1, *baseColorTexture, 0);
 	fbo.attachTexture(2, *metallicRoughnessTexture, 0);
 	fbo.enableDrawBuffers(3);
-	if (!fbo.check()) {
-		ERR_LOG << "Incomplete Framebuffer";
-	}
 	fbo.bind();
+
+	Framebuffer2 fboMsaa;
+	fboMsaa.attachDepthTexture(*depthMsaa, 0);
+	fboMsaa.attachTexture(0, *normalAlphaMsaa, 0);
+	fboMsaa.attachTexture(1, *baseColorMsaa, 0);
+	fboMsaa.attachTexture(2, *metallicRoughnessMsaa, 0);
+	fboMsaa.enableDrawBuffers(3);
+
 	glViewport(0, 0, width, width);
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glEnable(GL_DEPTH_TEST);
-
 	const ShaderProgram & shader = *ShaderPool::GetShader("BakeImpostorAtlas");
+	const ShaderProgram& blitShader = *ShaderPool::GetShader("BakeImpostorAtlas_Blit");
 
 	shader.setUniform("uModelMatrix", glm::translate(glm::mat4(1), -center));
 	shader.setUniform("uProjectionMatrix", glm::ortho(-scale, scale, -scale , scale, -scale, scale));
@@ -186,10 +194,40 @@ void ImpostorAtlasMaterial::bakeMaps(const MeshDataBehavior & mesh, float scale,
 		o = mat.setUniforms(shader, MAKE_STR("uMaterial[" << i << "]."), o);
 	}
 
-	shader.use();
-	glBindVertexArray(mesh.vao());
-	glDrawArraysInstanced(GL_TRIANGLES, 0, mesh.pointCount(), angularDefinition);
-	glBindVertexArray(0);
+	blitShader.setUniform("uMultiplier", 1.0f / static_cast<float>(msaa * msaa));
+	normalAlphaMsaa->bind(0);
+	blitShader.setUniform("uNormalAlpha", 0);
+	baseColorMsaa->bind(1);
+	blitShader.setUniform("uBaseColor", 1);
+	metallicRoughnessMsaa->bind(2);
+	blitShader.setUniform("uMetallicRoughness", 2);
+
+	for (int xx = 0; xx < msaa; ++xx) {
+		for (int yy = 0; yy < msaa; ++yy) {
+			
+			float dx = xx / static_cast<float>(msaa - 1) - 0.5f;
+			float dy = yy / static_cast<float>(msaa - 1) - 0.5f;
+
+			shader.setUniform("uScreenSpaceOffset", glm::vec2(dx * onePixel, dy * onePixel));
+
+			fboMsaa.bind();
+			shader.use();
+			glDisable(GL_BLEND);
+			glEnable(GL_DEPTH_TEST);
+			glClearColor(0, 0, 0, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glBindVertexArray(mesh.vao());
+			glDrawArraysInstanced(GL_TRIANGLES, 0, mesh.pointCount(), angularDefinition);
+			glBindVertexArray(0);
+
+			fbo.bind();
+			blitShader.use();
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_ONE, GL_ONE);
+			PostEffect::DrawInstanced(angularDefinition);
+		}
+	}
 
 	glTextureBarrier();
 

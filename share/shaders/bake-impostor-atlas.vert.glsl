@@ -1,6 +1,16 @@
 #version 450 core
 #include "sys:defines"
 
+#pragma opt BLIT
+
+///////////////////////////////////////////////////////////////////////////////
+#ifdef BLIT
+
+#include "include/standard-posteffect.vert.inc.glsl"
+
+///////////////////////////////////////////////////////////////////////////////
+#else // BLIT
+
 // From MeshDataBehavior VAO
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
@@ -28,3 +38,5 @@ void main() {
 	vert.layer = gl_InstanceID;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+#endif // BLIT

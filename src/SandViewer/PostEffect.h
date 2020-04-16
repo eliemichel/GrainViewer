@@ -15,12 +15,13 @@ class PostEffect
 public:
 	// Use static instance
 	static void Draw(bool disableDepthTest = true);
+	static void DrawInstanced(int n);
 	static void DrawWithDepthTest() { Draw(false); }
 
 public:
 	PostEffect();
 	~PostEffect();
-	void draw(bool disableDepthTest = true);
+	void draw(bool disableDepthTest = true, int instances = 1);
 
 private:
 	GLuint m_vao;

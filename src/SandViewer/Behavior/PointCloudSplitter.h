@@ -9,6 +9,7 @@
 
 #include <refl.hpp>
 
+#include <fstream>
 #include <memory>
 #include <vector>
 
@@ -95,6 +96,9 @@ private:
 	std::shared_ptr<ShaderProgram> getShader(RenderTypeCaching renderType, int step) const; // for convenience
 	std::shared_ptr<ShaderProgram> getShader(RenderTypeShaderVariant renderType, StepShaderVariant step) const;
 
+	void initStats();
+	void writeStats();
+
 private:
 	Properties m_properties;
 
@@ -120,6 +124,11 @@ private:
 	int m_local_size_x = 128;
 	int m_xWorkGroups;
 	float m_time;
+
+	// stats
+	std::string m_outputStats;
+	std::ofstream m_outputStatsFile;
+	int m_statFrame = 0;
 };
 
 #define _ ReflectionAttributes::
