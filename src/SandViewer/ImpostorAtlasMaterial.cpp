@@ -88,6 +88,9 @@ bool ImpostorAtlasMaterial::deserialize(const rapidjson::Value& json)
 	if (baseColorTexture && normalAlphaTexture) {
 		Filtering::MipMapUsingAlpha(*baseColorTexture, *normalAlphaTexture);
 	}
+	if (metallicRoughnessTexture && normalAlphaTexture) {
+		Filtering::MipMapUsingAlpha(*metallicRoughnessTexture, *normalAlphaTexture);
+	}
 
 	return true;
 }
@@ -119,7 +122,7 @@ GLint ImpostorAtlasMaterial::setUniforms(const ShaderProgram& shader, const std:
 
 	if (metallicRoughnessTexture) {
 		metallicRoughnessTexture->bind(o);
-		shader.setUniform(prefix + "metallicRoughnesTexture", o++);
+		shader.setUniform(prefix + "metallicRoughnessTexture", o++);
 	}
 	shader.setUniform(prefix + "hasMetallicRoughnessMap", static_cast<bool>(metallicRoughnessTexture));
 	
@@ -187,6 +190,8 @@ void ImpostorAtlasMaterial::bakeMaps(const MeshDataBehavior & mesh, float scale,
 	glBindVertexArray(mesh.vao());
 	glDrawArraysInstanced(GL_TRIANGLES, 0, mesh.pointCount(), angularDefinition);
 	glBindVertexArray(0);
+
+	glTextureBarrier();
 
 	normalAlphaTexture->generateMipmap();
 	baseColorTexture->generateMipmap();

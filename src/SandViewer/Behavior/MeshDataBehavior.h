@@ -47,6 +47,7 @@ private:
 	bool m_computeBoundingSphere = false;
 	glm::vec3 m_boundingSphereCenter;
 	float m_boundingSphereRadius;
+	glm::vec3 m_offset = glm::vec3(0);
 
 	GLsizei m_pointCount;
 	std::unique_ptr<GlBuffer> m_vertexBuffer;

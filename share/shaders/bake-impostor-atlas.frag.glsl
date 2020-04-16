@@ -33,6 +33,8 @@ void main() {
     out_normalAlpha.rgb = normalize(fragment.normal.xyz) * 0.5 + 0.5;
     out_normalAlpha.a = 1.0;
     out_baseColor.rgb = fragment.baseColor.rgb;
+    out_baseColor.a = 1.0;
     out_metallicRoughness.x = fragment.metallic;
     out_metallicRoughness.y = fragment.roughness;
+    out_metallicRoughness.a = 1.0;
 }

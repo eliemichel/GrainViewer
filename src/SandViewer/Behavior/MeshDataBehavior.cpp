@@ -3,6 +3,7 @@
 #include "bufferFillers.h"
 #include "ResourceManager.h"
 #include "utils/fileutils.h"
+#include "utils/jsonutils.h"
 #include "Logger.h"
 
 #include <glm/gtc/type_ptr.hpp>
@@ -30,31 +31,14 @@ GLuint MeshDataBehavior::vao() const
 
 bool MeshDataBehavior::deserialize(const rapidjson::Value & json)
 {
-	if (json.HasMember("filename")) {
-		if (json["filename"].IsString()) {
-			m_filename = json["filename"].GetString();
-		} else {
-			ERR_LOG << "Field 'filename' of MeshDataBehavior must be a string";
-			return false;
-		}
-	}
-
-	if (json.HasMember("computeBoundingSphere")) {
-		if (json["computeBoundingSphere"].IsBool()) {
-			m_computeBoundingSphere = json["computeBoundingSphere"].GetBool();
-		}
-		else {
-			ERR_LOG << "Field 'computeBoundingSphere' of MeshDataBehavior must be a boolean";
-			return false;
-		}
-	}
-
-	if (m_filename == "") {
+	if (!jrOption(json, "filename", m_filename, m_filename)) {
 		ERR_LOG << "MeshDataBehavior requires a filename to load";
 		return false;
 	}
-
 	m_filename = ResourceManager::resolveResourcePath(m_filename);
+
+	jrOption(json, "computeBoundingSphere", m_computeBoundingSphere, m_computeBoundingSphere);
+	jrOption(json, "offset", m_offset, m_offset);
 
 	return true;
 }
@@ -81,7 +65,11 @@ void MeshDataBehavior::start()
 	m_vertexBuffer->addBlockAttribute(0, 1);  // materialId
 	m_vertexBuffer->addBlockAttribute(0, 3);  // tangent
 	m_vertexBuffer->alloc();
-	m_vertexBuffer->fillBlock(0, fillPointAttributes, *m_mesh);
+
+	BufferFiller filler(*m_mesh);
+	filler.setGlobalOffset(m_offset);
+	m_vertexBuffer->fillBlock<PointAttributes>(0, [filler](PointAttributes* attr, size_t count) { filler.fill(attr, count); });
+	//m_vertexBuffer->fillBlock(0, filler.fill);
 
 	// Build VAO
 	glCreateVertexArrays(1, &m_vao);
@@ -130,7 +118,8 @@ void MeshDataBehavior::computeBoundingSphere()
 	for (auto s : m_mesh->shapes()) {
 		const auto & indices = s.mesh.indices;
 		for (size_t i = 0; i < indices.size(); ++i) {
-			glm::vec3 P = matrix * glm::vec4(glm::make_vec3(&v[3 * indices[i].vertex_index]), 1.0);
+			glm::vec3 P0 = glm::make_vec3(&v[3 * indices[i].vertex_index]);
+			glm::vec3 P = matrix * glm::vec4(P0 + m_offset, 1.0);
 			bb_min = glm::min(bb_min, P);
 			bb_max = glm::max(bb_max, P);
 		}

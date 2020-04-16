@@ -8,7 +8,14 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-void fillPointAttributes(PointAttributes *attributes, size_t nbElements, const Mesh & scene) {
+
+void BufferFiller::fill(PointAttributes* attributes, size_t nbElements) const
+{
+	BufferFiller::Fill(attributes, nbElements, m_mesh, m_globalOffset);
+}
+
+void BufferFiller::Fill(PointAttributes *attributes, size_t nbElements, const Mesh & scene, glm::vec3 globalOffset)
+{
 	const std::vector<float> & v = scene.attrib().vertices;
 	const std::vector<float> & n = scene.attrib().normals;
 	const std::vector<float> & uv = scene.attrib().texcoords;
@@ -20,9 +27,9 @@ void fillPointAttributes(PointAttributes *attributes, size_t nbElements, const M
 		for (size_t i = 0; i < indices.size(); ++i) {
 			offset = shapeOffset + i;
 			vi = indices[i].vertex_index;
-			attributes[offset].position[0] = static_cast<GLfloat>(v[3 * vi + 0]);
-			attributes[offset].position[1] = static_cast<GLfloat>(v[3 * vi + 1]);
-			attributes[offset].position[2] = static_cast<GLfloat>(v[3 * vi + 2]);
+			attributes[offset].position[0] = static_cast<GLfloat>(v[3 * vi + 0]) + globalOffset[0];
+			attributes[offset].position[1] = static_cast<GLfloat>(v[3 * vi + 1]) + globalOffset[1];
+			attributes[offset].position[2] = static_cast<GLfloat>(v[3 * vi + 2]) + globalOffset[2];
 
 			ni = indices[i].normal_index;
 			if (ni >= 0) {
@@ -63,4 +70,9 @@ void fillPointAttributes(PointAttributes *attributes, size_t nbElements, const M
 
 		shapeOffset += indices.size();
 	}
+}
+
+void fillPointAttributes(PointAttributes* attributes, size_t nbElements, const Mesh& scene)
+{
+	BufferFiller::Fill(attributes, nbElements, scene, glm::vec3(0));
 }
