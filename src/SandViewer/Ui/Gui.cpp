@@ -301,9 +301,12 @@ void Gui::render() {
 	if (m_scene) {
 		m_scene->render();
 	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (m_scene->properties().ui) {
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
 
 	if (m_scene) {
 		m_scene->onPostRender(static_cast<float>(glfwGetTime()) - m_startTime);
@@ -442,6 +445,10 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 			else {
 				m_scene->reloadShaders();
 			}
+			break;
+
+		case GLFW_KEY_U:
+			m_scene->properties().ui = !m_scene->properties().ui;
 			break;
 
 		case GLFW_KEY_A:

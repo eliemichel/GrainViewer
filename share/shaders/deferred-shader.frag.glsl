@@ -172,12 +172,12 @@ void main() {
 		}
 	}
 	//gl_FragDepth = texelFetch(in_depth, ivec2(gl_FragCoord.xy), 0).r;
-
+//#define REINHART
 	// Tone mapping
 #ifdef HDR
 // TODO: look at filmic tone mapping
 #ifdef REINHART
-	out_fragment.radiance = out_fragment.radiance / (out_fragment.radiance + 1.0);
+	out_fragment.radiance = 4.*out_fragment.radiance / (out_fragment.radiance + 1.0);
 #else
 	const float exposure = 3.5;
 	out_fragment.radiance = 1.0 - exp(-out_fragment.radiance * exposure);
@@ -246,7 +246,7 @@ void main() {
 
 	if (uTransparentFilm) {
 		if (fragment.material_id == worldMaterial) {
-			out_fragment.radiance = vec4(0.0);
+			out_fragment.radiance = vec4(1, 1, 1, 0);
 		} else {
 			out_fragment.radiance.a = 1.0;
 		}

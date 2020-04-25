@@ -133,6 +133,8 @@ void main() {
     vec3 cs_coord = (linearizeDepth(d) - uEpsilon) * ray_cs.direction;
     fragment.ws_coord = (inverseViewMatrix * vec4(cs_coord, 1.0)).xyz;
 
+    //fragment.baseColor *= 0.8;
+
     if (uShowSampleCount) {
         fragment.material_id = colormapDebugMaterial;
         fragment.baseColor = vec3(fragment.alpha);
@@ -141,6 +143,7 @@ void main() {
     if (uDebugRenderType) {
         fragment.baseColor = uDebugRenderColor;
     }
+
 
     autoPackGFragment(fragment);
 }

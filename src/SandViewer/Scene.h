@@ -64,6 +64,7 @@ public:
 	struct Properties {
 		bool freezeOcclusionCamera = false;
 		bool realTime = false;
+		bool ui = true;
 	};
 	Properties& properties() { return m_properties; }
 	const Properties& properties() const { return m_properties; }
@@ -123,4 +124,5 @@ private:
 REFL_TYPE(Scene::Properties)
 REFL_FIELD(freezeOcclusionCamera)
 REFL_FIELD(realTime)
+REFL_FIELD(ui)
 REFL_END
