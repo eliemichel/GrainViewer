@@ -21,7 +21,7 @@ extern "C" {
 	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 }
 
-bool mainGui(const std::string & filename);
+bool mainGui(const rapidjson::Value& json);
 
 int main(int argc, char **argv)
 {
@@ -38,7 +38,11 @@ Based on Burley19 and HeitzNeyret18.
 		filename = std::string(argv[1]);
 	}
 
-	return mainGui(filename) ? EXIT_SUCCESS : EXIT_FAILURE;
+	rapidjson::Document document;
+	if (!openJson(filename, document)) return false;
+	const rapidjson::Value& root = document["augen"];
+
+	return mainGui(root) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 std::unique_ptr<QuadMeshData> quad;
@@ -108,6 +112,50 @@ std::unique_ptr<GlTexture> accumulate(const GlTexture& histogram)
 	return cdf;
 }
 
+std::unique_ptr<GlTexture> inverseCdf(const GlTexture& cdf)
+{
+	// Create texture
+	auto invcdf = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	invcdf->storage(1, GL_R32I, 256, 4);
+	glTextureParameteri(invcdf->raw(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(invcdf->raw(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	invcdf->generateMipmap();
+
+
+
+	// TODO: compute on GPU
+	int count = cdf.width() * cdf.height();
+	std::vector<GLint> data(count);
+	std::vector<GLint> invdata(count);
+	glGetTextureImage(cdf.raw(), 0, GL_RED_INTEGER, GL_INT, count * sizeof(GLint), data.data());
+
+	for (size_t k = 0; k < 4; ++k) {
+		GLint *d = data.data() + k * 256;
+		GLint* invd = invdata.data() + k * 256;
+		float total = static_cast<float>(d[255]);
+		int last_c = -1;
+		float x0 = 0;
+		for (int i = 0; i < 256; ++i) {
+			float x1 = static_cast<float>(d[i]) * 255 / total;
+			for (int c = last_c + 1; c + 1 <= floor(x1); ++c) {
+				float fc = static_cast<float>(c);
+				float fi = static_cast<float>(i);
+				invd[c] = static_cast<int>(ceil((fi + (fc - x0 + 1) / (x1 - x0)) * total / 256));
+				assert(c == last_c + 1);
+				last_c = c;
+			}
+			x0 = x1;
+		}
+		for (int c = last_c + 1; c < 256; ++c) {
+			invd[c] = d[255];
+		}
+	}
+
+	invcdf->subImage(0, 0, 0, invcdf->width(), invcdf->height(), GL_RED_INTEGER, GL_INT, invdata.data());
+
+	return invcdf;
+}
+
 void drawHistogram(const GlTexture & histogram, const GlTexture& image, float x, float y, float w, float h)
 {
 	const ShaderProgram& shader = *ShaderPool::GetShader("HistogramQuad");
@@ -120,18 +168,34 @@ void drawHistogram(const GlTexture & histogram, const GlTexture& image, float x,
 	quad->draw();
 }
 
-bool mainGui(const std::string & filename)
+std::unique_ptr<GlTexture> applyCdf(const GlTexture& input, const GlTexture& cdf)
+{
+	auto output = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	output->storage(input.levels(), GL_RGBA8, input.width(), input.height());
+
+	// Compute histogram
+	const ShaderProgram& shader = *ShaderPool::GetShader("HistogramTransform");
+	glBindImageTexture(0, input.raw(), 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA8);
+	glBindImageTexture(1, output->raw(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	glBindImageTexture(2, cdf.raw(), 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32I);
+	shader.use();
+	glDispatchCompute(input.width(), input.height(), 1);
+	glTextureBarrier();
+
+	output->generateMipmap();
+
+	return output;
+}
+
+bool mainGui(const rapidjson::Value& json)
 {
 	LOG << "Openning OpenGL context";
-	glm::vec2 res(800, 600);
+	glm::vec2 res(1200, 700);
 	Window window(static_cast<int>(res.x), static_cast<int>(res.y), "Histogram Tools");
 	if (!window.isValid()) return false;
 
 	// Load shaders
-	ShaderPool::AddShader("Quad", "quad");
-	ShaderPool::AddShader("HistogramQuad", "histogram-quad");
-	ShaderPool::AddShader("Histogram", "histogram", ShaderProgram::ComputeShader);
-
+	if (json.HasMember("shaders")) ShaderPool::Deserialize(json["shaders"]);
 	ShaderPool::GetShader("Quad")->setUniform("uResolution", res);
 	ShaderPool::GetShader("HistogramQuad")->setUniform("uResolution", res);
 
@@ -139,27 +203,36 @@ bool mainGui(const std::string & filename)
 	quad->start();
 
 	// Load textures
-	rapidjson::Document document;
-	if (!openJson(filename, document)) return false;
-	const rapidjson::Value & json = document["augen"]["histogram"];
-
+	const rapidjson::Value& histJson = json["histogram"];
 	std::string textureFilename;
-	jrOption(json, "inputTexture1", textureFilename);
+	jrOption(histJson, "inputTexture1", textureFilename);
 	auto inputTexture1 = ResourceManager::loadTexture(textureFilename);
-	jrOption(json, "inputTexture2", textureFilename);
+	jrOption(histJson, "inputTexture2", textureFilename);
 	auto inputTexture2 = ResourceManager::loadTexture(textureFilename);
 
+	// Main
 	auto histogram1 = computeHistogram(*inputTexture1);
 	auto histogram2 = computeHistogram(*inputTexture2);
 
 	auto cdf1 = accumulate(*histogram1);
 	auto cdf2 = accumulate(*histogram2);
+	auto invCdf1 = inverseCdf(*cdf1);
+	auto invCdf2 = inverseCdf(*cdf2);
+
+	auto tmp = applyCdf(*inputTexture1, *cdf1);
+	auto outputTexture1 = applyCdf(*tmp, *invCdf2);
+	auto histogramOutput1 = computeHistogram(*outputTexture1);
+	auto cdfOuput1 = accumulate(*histogramOutput1);
 	
 	// Draw textures
-	drawTextureFit(*inputTexture1, 0, 0, res.x/2, res.y/2);
-	drawTextureFit(*inputTexture2, res.x/2, 0, res.x/2, res.y/2);
-	drawHistogram(*cdf1, *inputTexture1, 0, res.y/2, res.x / 2, res.y/2);
-	drawHistogram(*cdf2, *inputTexture2, res.x/2, res.y / 2, res.x / 2, res.y / 2);
+	drawTextureFit(*inputTexture1, 0, 0, res.x/3, res.y * 0.6f);
+	drawHistogram(*cdf1, *inputTexture1, 0, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+
+	drawTextureFit(*inputTexture2, res.x/3, 0, res.x/3, res.y * 0.6f);
+	drawHistogram(*cdf2, *inputTexture2, res.x/3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+
+	drawTextureFit(*outputTexture1, 2*res.x / 3, 0, res.x / 3, res.y * 0.6f);
+	drawHistogram(*cdfOuput1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 	
 	window.swapBuffers();
 	while (!window.shouldClose()) window.pollEvents();

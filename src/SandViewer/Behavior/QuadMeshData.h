@@ -18,7 +18,7 @@ public:
 
 private:
 	std::unique_ptr<GlBuffer> m_vbo;
-	GLuint m_vao;
+	GLuint m_vao = 0;
 };
 
 registerBehaviorType(QuadMeshData)

@@ -12,6 +12,7 @@ ShaderProgram::ShaderProgram(const std::string& shaderName)
 	: m_shaderName(shaderName)
 	, m_type(RenderShader)
 	, m_isValid(false)
+	, m_programId(0)
 {}
 
 ShaderProgram::~ShaderProgram()

@@ -27,6 +27,7 @@ public:
 	GLsizei width() const { return m_width; }
 	GLsizei height() const { return m_height; }
 	GLsizei depth() const { return m_depth; }
+	GLsizei levels() const { return m_levels; }
 	GLenum target() const { return m_target; }
 
 	bool isValid() const { return m_id != invalid; }
@@ -45,4 +46,5 @@ private:
 	GLsizei m_width;
 	GLsizei m_height;
 	GLsizei m_depth;
+	GLsizei m_levels;
 };

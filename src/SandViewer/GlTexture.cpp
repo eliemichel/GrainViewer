@@ -9,6 +9,7 @@ GlTexture::GlTexture(GLenum target)
 	, m_width(0)
 	, m_height(0)
 	, m_depth(0)
+	, m_levels(1)
 {
 	glCreateTextures(m_target, 1, &m_id);
 
@@ -17,11 +18,21 @@ GlTexture::GlTexture(GLenum target)
 	setWrapMode(GL_CLAMP_TO_EDGE);
 }
 
+GlTexture::GlTexture(GLuint id, GLenum target)
+	: m_id(id)
+	, m_target(target)
+	, m_width(0)
+	, m_height(0)
+	, m_depth(0)
+	, m_levels(1)
+{}
+
 void GlTexture::storage(GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth)
 {
 	m_width = width;
 	m_height = height;
 	m_depth = depth;
+	m_levels = levels;
 	glTextureStorage3D(m_id, levels, internalFormat, width, height, depth);
 }
 
@@ -30,6 +41,7 @@ void GlTexture::storage(GLsizei levels, GLenum internalFormat, GLsizei width, GL
 	m_width = width;
 	m_height = height;
 	m_depth = 1;
+	m_levels = levels;
 	glTextureStorage2D(m_id, levels, internalFormat, width, height);
 }
 
@@ -54,11 +66,6 @@ void GlTexture::setWrapMode(GLenum wrap) const
 	glTextureParameteri(m_id, GL_TEXTURE_WRAP_T, wrap);
 	glTextureParameteri(m_id, GL_TEXTURE_WRAP_R, wrap);
 }
-
-GlTexture::GlTexture(GLuint id, GLenum target)
-	: m_id(id)
-	, m_target(target)
-{}
 
 GlTexture::~GlTexture()
 {
