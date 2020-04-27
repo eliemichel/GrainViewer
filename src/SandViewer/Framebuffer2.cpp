@@ -44,7 +44,7 @@ void Framebuffer2::enableDrawBuffers(int n)
 {
 	std::vector<GLenum> drawBuffers(n);
 	for (size_t k = 0; k < n; ++k) {
-		drawBuffers[k] = GL_COLOR_ATTACHMENT0 + k;
+		drawBuffers[k] = GL_COLOR_ATTACHMENT0 + static_cast<GLenum>(k);
 	}
 	glNamedFramebufferDrawBuffers(m_raw, static_cast<GLsizei>(drawBuffers.size()), &drawBuffers[0]);
 }

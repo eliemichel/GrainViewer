@@ -4,18 +4,7 @@
 // Copyright (C) 2017 Élie Michel.
 // **************************************************
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
-
-#include <glad/modernglad.h>
-
-#include <iostream>
-
-#include <GLFW/glfw3.h>
-#include <imgui.h>
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include <OpenGL>
 
 #include "Logger.h"
 #include "Gui.h"
@@ -30,12 +19,21 @@
 #include "Ui/WorldDialog.h"
 #include "Ui/GlobalTimerDialog.h"
 
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
+#include <iostream>
+
 using namespace std;
 
 // TODO: Find a way to avoid this function
+#ifdef WITH_GPL
+#include "Sand6DataDialog.h"
+#endif // WITH_GPL
 #include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
-#include "Sand6DataDialog.h"
 #include "FarSandRendererDialog.h"
 #include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
@@ -44,6 +42,7 @@ using namespace std;
 #include "ImpostorSandRendererDialog.h"
 #include "SandBehaviorDialog.h"
 #include "MeshRendererDialog.h"
+#include "QuadMeshDataDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleBehavior(T) \
 	if (type == TypeName<T>().Get()) { \
@@ -51,9 +50,11 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 		dialog->setControlledBehavior(std::dynamic_pointer_cast<T>(component)); \
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
+#ifdef WITH_GPL
+	handleBehavior(Sand6Data);
+#endif // WITH_GPL
 	handleBehavior(SandRenderer);
 	handleBehavior(LightGizmo);
-	handleBehavior(Sand6Data);
 	handleBehavior(FarSandRenderer);
 	handleBehavior(UberSandRenderer);
 	handleBehavior(TransformBehavior);
@@ -62,9 +63,44 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 	handleBehavior(ImpostorSandRenderer);
 	handleBehavior(SandBehavior);
 	handleBehavior(MeshRenderer);
+	handleBehavior(QuadMeshData);
 	return nullptr;
 #undef handleType
 }
+
+//-----------------------------------------------------------------------------
+
+void Gui::Init(const Window & window)
+{
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGui_ImplGlfw_InitForOpenGL(window.glfw(), true);
+	ImGui_ImplOpenGL3_Init("#version 150");
+	ImGui::GetStyle().WindowRounding = 0.0f;
+}
+
+void Gui::NewFrame()
+{
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
+}
+
+void Gui::DrawFrame()
+{
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
+
+void Gui::Shutdown()
+{
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+}
+
+//-----------------------------------------------------------------------------
 
 static void printUsage() {
 	cerr
@@ -117,18 +153,15 @@ void Gui::setupCallbacks()
 	}
 }
 
+//-----------------------------------------------------------------------------
+
 Gui::Gui(std::shared_ptr<Window> window)
 	: m_window(window)
 	, m_scene(nullptr)
 {
 	setupCallbacks();
 
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
-	ImGui_ImplGlfw_InitForOpenGL(window->glfw(), true);
-	ImGui_ImplOpenGL3_Init("#version 150");
-	ImGui::GetStyle().WindowRounding = 0.0f;
+	Init(*window);
 
 	int width, height;
 	glfwGetFramebufferSize(window->glfw(), &width, &height);
@@ -136,9 +169,7 @@ Gui::Gui(std::shared_ptr<Window> window)
 }
 
 Gui::~Gui() {
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
+	Shutdown();
 }
 
 void Gui::setScene(std::shared_ptr<Scene> scene)
@@ -149,9 +180,7 @@ void Gui::setScene(std::shared_ptr<Scene> scene)
 
 void Gui::beforeLoading()
 {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+	NewFrame();
 	ImGui::SetNextWindowSize(ImVec2(m_windowWidth, m_windowHeight));
 	ImGui::SetNextWindowPos(ImVec2(0.f, 0.f));
 	ImGui::Begin("Reload", nullptr,
@@ -163,8 +192,7 @@ void Gui::beforeLoading()
 	ImGui::Text(" ");
 	ImGui::Text("Loading scene...");
 	ImGui::End();
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	DrawFrame();
 	if (auto window = m_window.lock()) {
 		glfwSwapBuffers(window->glfw());
 	}
@@ -219,9 +247,7 @@ void Gui::update() {
 }
 
 void Gui::updateImGui() {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+	NewFrame();
 	ImVec4 clear_color = ImColor(114, 144, 154);
 	static float f = 0.0f;
 	ImGui::SetNextWindowPos(ImVec2(0.f, 0.f));
@@ -304,8 +330,7 @@ void Gui::render() {
 
 	if (m_scene->properties().ui) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		DrawFrame();
 	}
 
 	if (m_scene) {

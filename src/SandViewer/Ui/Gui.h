@@ -16,6 +16,12 @@ class Dialog;
 
 class Gui {
 public:
+	// For tools that don't use the main Gui
+	static void Init(const Window & window);
+	static void NewFrame();
+	static void DrawFrame();
+	static void Shutdown();
+public:
 	Gui(std::shared_ptr<Window> window);
 	~Gui();
 

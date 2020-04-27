@@ -147,6 +147,10 @@ def dirname(p, n): # recursive dirname
 	return dirname(path.dirname(p), n - 1) if n > 0 else p
 ROOT = path.join(dirname(path.realpath(__file__), 4), "src", "SandViewer")
 
+if len(sys.argv) == 1:
+	print("Usage: add_behavior <BehaviorName>")
+	exit(1)
+
 name = sys.argv[1]
 
 data = {

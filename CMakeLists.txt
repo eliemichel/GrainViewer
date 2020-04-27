@@ -26,6 +26,7 @@ project(SandViewer)
 include(cmake/utils.cmake)
 
 option(DEV_MOD "Build in dev mode, use share directory from source tree rather than installation tree" ON)
+option(WITH_GPL "Enable GPL components" OFF)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

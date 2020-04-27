@@ -23,6 +23,8 @@
 
 typedef rapidjson::Writer<rapidjson::OStreamWrapper> JsonWriter;
 
+bool openJson(const std::string& filename, rapidjson::Document& d);
+
 bool jrString(const rapidjson::Value& json, const std::string & key, std::string & target, const std::string & parentName);
 
 template<typename T> inline bool _read(T & target, const rapidjson::Value& json) {

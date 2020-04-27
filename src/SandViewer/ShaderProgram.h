@@ -65,6 +65,8 @@ public:
 
 	void copy(const ShaderProgram & other);
 
+	GLuint raw() const { return m_programId; }
+
 private:
 	std::string m_shaderName;
 	ShaderProgramType m_type;

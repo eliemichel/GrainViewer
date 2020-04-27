@@ -20,11 +20,15 @@
 # from, out of or in connection with the software or the use or other dealings
 # in the Software.
 
-if(DEV_MOD)
+if (DEV_MOD)
 	add_definitions(-DSHARE_DIR="${PROJECT_SOURCE_DIR}/share")
-else()
+else ()
 	add_definitions(-DSHARE_DIR="./share")
-endif()
+endif ()
+
+if (WITH_GPL)
+	add_definitions(-DWITH_GPL)
+endif ()
 
 enable_cpp17()
 enable_multiprocessor_compilation()
@@ -74,7 +78,6 @@ set(GPL_SRC
 
 set(All_SRC
 	${AugenCore_SRC}
-	${GPL_SRC}
 
 	Behavior/IPointCloudData.h
 	Behavior/GltfDataBehavior.h
@@ -107,6 +110,8 @@ set(All_SRC
 	Behavior/ImpostorSandRenderer.cpp
 	Behavior/SandBehavior.h
 	Behavior/SandBehavior.cpp
+	Behavior/QuadMeshData.h
+	Behavior/QuadMeshData.cpp
 
 	utils/shader.h
 	utils/shader.cpp
@@ -161,6 +166,8 @@ set(All_SRC
 	Ui/GlobalTimerDialog.cpp
 	Ui/MeshRendererDialog.h
 	Ui/MeshRendererDialog.cpp
+	Ui/QuadMeshDataDialog.h
+	Ui/QuadMeshDataDialog.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp
@@ -213,11 +220,6 @@ set(All_SRC
 	bufferFillers.cpp
 )
 
-set(SRC
-	main.cpp
-	${All_SRC}
-)
-
 set(LIBS
 	modernglad
 	glfw
@@ -231,7 +233,20 @@ set(LIBS
 	tinygltf
 	nanoflann
 	refl-cpp
-	sand6 # ! GPL
+)
+
+set(GPL_LIBS
+	sand6
+)
+
+if (WITH_GPL)
+	set(All_SRC ${All_SRC} ${GPL_SRC})
+	set(LIBS ${LIBS} ${GPL_LIBS})
+endif ()
+
+set(SRC
+	main.cpp
+	${All_SRC}
 )
 
 if(CMAKE_COMPILER_IS_GNUCC)
@@ -391,4 +406,19 @@ target_link_libraries(SandViewerTests LINK_PRIVATE ${LIBS})
 set_property(TARGET SandViewerTests PROPERTY FOLDER "Tests")
 target_compile_definitions(SandViewerTests PRIVATE -DNOMINMAX)
 group_source_by_folder(${SandViewerTests_SRC})
+
+###############################################################################
+# Histogram
+
+set(Histogram_SRC
+	Tools/Histogram.cpp
+	${All_SRC}
+)
+
+add_executable(Histogram ${Histogram_SRC})
+target_include_directories(Histogram PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(Histogram LINK_PRIVATE ${LIBS})
+set_property(TARGET Histogram PROPERTY FOLDER "Tools")
+target_compile_definitions(Histogram PRIVATE -DNOMINMAX)
+group_source_by_folder(${Histogram_SRC})
 

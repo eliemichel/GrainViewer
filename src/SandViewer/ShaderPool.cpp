@@ -75,39 +75,39 @@ ShaderPool::ShaderPool()
 	m_defaultShaders.insert({
 		"GenerateLeanMaps_Image2D",
 		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_2D" } }
-		});
+	});
 	m_defaultShaders.insert({
 		"GenerateLeanMaps_Image2DArray",
 		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_2D_ARRAY" } }
-		});
+	});
 	m_defaultShaders.insert({
 		"GenerateLeanMaps_Image3D",
 		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_3D" } }
-		});
+	});
 	m_defaultShaders.insert({
 		"GenerateMipmapDepthBuffer",
 		{ "generate-mipmap-zbuffer", ShaderProgram::RenderShader, {} }
-		});
+	});
 	m_defaultShaders.insert({
 		"DepthToColorBuffer",
 		{ "depth-to-color", ShaderProgram::RenderShader, {} }
-		});
+	});
 	m_defaultShaders.insert({
 		"GltfMesh",
 		{ "gltf-mesh", ShaderProgram::RenderShader, {} }
-		});
+	});
 	m_defaultShaders.insert({
 		"MipMapUsingAlpha",
 		{ "mipmap-using-alpha", ShaderProgram::RenderShader, {} }
-		});
+	});
 	m_defaultShaders.insert({
 		"BakeImpostorAtlas",
 		{ "bake-impostor-atlas", ShaderProgram::RenderShader, {} }
-		});
+	});
 	m_defaultShaders.insert({
 		"BakeImpostorAtlas_Blit",
 		{ "bake-impostor-atlas", ShaderProgram::RenderShader, { "BLIT" } }
-		});
+	});
 }
 
 void ShaderPool::addShader(

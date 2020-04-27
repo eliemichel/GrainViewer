@@ -132,4 +132,7 @@ add_subdirectory(tinypngout)
 add_subdirectory(tinygltf)
 add_subdirectory(nanoflann)
 add_subdirectory(refl-cpp)
-add_subdirectory(sand6) # ! GPL
+
+if (WITH_GPL)
+	add_subdirectory(sand6)
+endif ()
