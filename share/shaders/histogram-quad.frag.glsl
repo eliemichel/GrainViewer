@@ -13,7 +13,7 @@ void main() {
 		texelFetch(uHistogram, ivec2(uv.x * 255, 1), 0).x,
 		texelFetch(uHistogram, ivec2(uv.x * 255, 2), 0).x,
 		texelFetch(uHistogram, ivec2(uv.x * 255, 3), 0).x
-	) * uNormalization * 25.6;
+	) * uNormalization;
     color = step(vec4(1. - uv.y), hist);
     //color = vec4(hist.rgb, 1.0);
 }
