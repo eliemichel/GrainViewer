@@ -10,13 +10,11 @@ class GlTexture {
 public:
 	explicit GlTexture(GLenum target);
 	explicit GlTexture(GLuint id, GLenum target); // move from raw gl texture. This object will take care of deleting texture
-
+	~GlTexture();
 	GlTexture(const GlTexture&) = delete;
-	void operator=(const GlTexture&) = delete;
+	GlTexture& operator=(const GlTexture&) = delete;
 	GlTexture(GlTexture&&) = default;
 	GlTexture& operator=(GlTexture&&) = default;
-
-	~GlTexture();
 
 	void storage(GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height, GLsizei depth);
 	void storage(GLsizei levels, GLenum internalFormat, GLsizei width, GLsizei height);
