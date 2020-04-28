@@ -306,6 +306,24 @@ std::unique_ptr<GlTexture> applyCdf(const GlTexture& input, const GlTexture& cdf
 	return output;
 }
 
+std::unique_ptr<GlTexture> tileTexture(const GlTexture& input)
+{
+	auto output = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	output->storage(input.levels(), GL_RGBA8, input.width(), input.height());
+
+	// Compute histogram
+	const ShaderProgram& shader = *ShaderPool::GetShader("TileTexture");
+	input.bind(0);
+	shader.setUniform("uInputTexture", 0);
+	glBindImageTexture(0, output->raw(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA8);
+	shader.use();
+	glDispatchCompute(input.width(), input.height(), 1);
+	glTextureBarrier();
+
+	output->generateMipmap();
+	return output;
+}
+
 bool mainGui(const rapidjson::Value& json)
 {
 	LOG << "Openning OpenGL context";
@@ -345,6 +363,9 @@ bool mainGui(const rapidjson::Value& json)
 	auto cdfOuput1 = accumulate(*histogramOutput1);
 	auto histogramOuput1 = decumulate(*cdfOuput1);
 
+	auto tiled1 = tileTexture(*inputTexture1);
+	auto histogramTiled1 = computeHistogram(*tiled1);
+
 	// Test
 	auto histogram1b = decumulate(*cdf1);
 	if (!histogramEq(*histogram1, *histogram1b)) {
@@ -363,8 +384,8 @@ bool mainGui(const rapidjson::Value& json)
 	drawTextureFit(*inputTexture2, res.x/3, 0, res.x/3, res.y * 0.6f);
 	drawHistogram(*invgCdf, *inputTexture2, res.x/3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 
-	drawTextureFit(*outputTexture1, 2*res.x / 3, 0, res.x / 3, res.y * 0.6f);
-	drawHistogram(*histogramOuput1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawTextureFit(*tiled1, 2*res.x / 3, 0, res.x / 3, res.y * 0.6f);
+	drawHistogram(*histogramTiled1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 	
 	window.swapBuffers();
 	while (!window.shouldClose()) window.pollEvents();
