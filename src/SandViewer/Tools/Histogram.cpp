@@ -7,6 +7,7 @@
 #include "Ui/Window.h"
 #include "Ui/Gui.h"
 #include "utils/jsonutils.h"
+#include "utils/mathutils.h"
 #include "Behavior/QuadMeshData.h"
 
 #include <imgui.h>
@@ -112,6 +113,126 @@ std::unique_ptr<GlTexture> accumulate(const GlTexture& histogram)
 	return cdf;
 }
 
+std::unique_ptr<GlTexture> makeGaussianCdf(float sigma)
+{
+	// Create texture
+	auto cdf = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	cdf->storage(1, GL_R32I, 256, 4);
+	glTextureParameteri(cdf->raw(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(cdf->raw(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	cdf->generateMipmap();
+
+	int count = cdf->width() * cdf->height();
+	std::vector<GLint> data(count);
+	
+	float N = 1.0f / (2 * sqrt(2) * sigma);
+	for (size_t k = 0; k < 4; ++k) {
+		GLint* d = data.data() + k * 256;
+		for (size_t i = 255; i > 0; --i) {
+			float x = static_cast<float>(i) / 255;
+			d[i] = static_cast<int>(1e6f * 0.5f * (1 + djerf((2*x-1)*N)));
+		}
+	}
+
+	cdf->subImage(0, 0, 0, cdf->width(), cdf->height(), GL_RED_INTEGER, GL_INT, data.data());
+	return cdf;
+}
+
+std::unique_ptr<GlTexture> makeGaussianInverseCdf(float sigma)
+{
+	// Create texture
+	auto cdf = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	cdf->storage(1, GL_R32I, 256, 4);
+	glTextureParameteri(cdf->raw(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(cdf->raw(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	cdf->generateMipmap();
+
+	int count = cdf->width() * cdf->height();
+	std::vector<GLint> data(count);
+
+	float N = sqrt(2) * sigma;
+	for (size_t k = 0; k < 4; ++k) {
+		GLint* d = data.data() + k * 256;
+		for (size_t i = 255; i > 0; --i) {
+			float x = static_cast<float>(i) / 255;
+			d[i] = static_cast<int>(1e6f * (0.5f + N * djerfinv(2 * x - 1)));
+		}
+		d[255] = static_cast<int>(1e6f);
+	}
+
+	cdf->subImage(0, 0, 0, cdf->width(), cdf->height(), GL_RED_INTEGER, GL_INT, data.data());
+	return cdf;
+}
+
+std::unique_ptr<GlTexture> decumulate(const GlTexture& cdf)
+{
+	// Create texture
+	auto histogram = std::make_unique<GlTexture>(GL_TEXTURE_2D);
+	histogram->storage(1, GL_R32I, 256, 4);
+	glTextureParameteri(histogram->raw(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(histogram->raw(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	histogram->generateMipmap();
+
+	// TODO: compute on GPU
+	int count = cdf.width() * cdf.height();
+	std::vector<GLint> data(count);
+	glGetTextureImage(cdf.raw(), 0, GL_RED_INTEGER, GL_INT, count * sizeof(GLint), data.data());
+
+	for (size_t k = 0; k < 4; ++k) {
+		GLint* d = data.data() + k * 256;
+		for (size_t i = 255; i > 0; --i) {
+			d[i] -= d[i - 1];
+		}
+	}
+
+	histogram->subImage(0, 0, 0, histogram->width(), histogram->height(), GL_RED_INTEGER, GL_INT, data.data());
+
+	return histogram;
+}
+
+bool histogramEq(const GlTexture& hist1, const GlTexture& hist2)
+{
+	if (hist1.width() != hist2.width()) {
+		DEBUG_LOG << "different width";
+		return false;
+	}
+	if (hist1.height() != hist2.height()) {
+		DEBUG_LOG << "different height";
+		return false;
+	}
+	int count = hist1.width() * hist1.height();
+	std::vector<GLint> data1(count);
+	std::vector<GLint> data2(count);
+	glGetTextureImage(hist1.raw(), 0, GL_RED_INTEGER, GL_INT, count * sizeof(GLint), data1.data());
+	glGetTextureImage(hist2.raw(), 0, GL_RED_INTEGER, GL_INT, count * sizeof(GLint), data2.data());
+
+	for (size_t k = 0; k < 4; ++k) {
+		GLint* d1 = data1.data() + k * 256;
+		GLint* d2 = data2.data() + k * 256;
+		for (size_t i = 1; i < 256; ++i) {
+			if (d1[i] != d2[i]) {
+				DEBUG_LOG << "Different value at (" << i << ", " << k << "): " << d1[i] << " != " << d2[i];
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+int histogramMax(const GlTexture& histogram)
+{
+	int count = histogram.width() * histogram.height();
+	std::vector<GLint> data(count);
+	glGetTextureImage(histogram.raw(), 0, GL_RED_INTEGER, GL_INT, count * sizeof(GLint), data.data());
+
+	int maxi = 0;
+	for (int i = 0; i < count * 3 / 4; ++i) { // 3/4 because we ignore alpha channels for this
+		maxi = std::max(maxi, data[i]);
+	}
+	return maxi;
+}
+
 std::unique_ptr<GlTexture> inverseCdf(const GlTexture& cdf)
 {
 	// Create texture
@@ -120,8 +241,6 @@ std::unique_ptr<GlTexture> inverseCdf(const GlTexture& cdf)
 	glTextureParameteri(invcdf->raw(), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTextureParameteri(invcdf->raw(), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	invcdf->generateMipmap();
-
-
 
 	// TODO: compute on GPU
 	int count = cdf.width() * cdf.height();
@@ -159,7 +278,7 @@ std::unique_ptr<GlTexture> inverseCdf(const GlTexture& cdf)
 void drawHistogram(const GlTexture & histogram, const GlTexture& image, float x, float y, float w, float h)
 {
 	const ShaderProgram& shader = *ShaderPool::GetShader("HistogramQuad");
-	shader.setUniform("uNormalization", 1.0f / static_cast<float>(image.width() * image.height()));
+	shader.setUniform("uNormalization", 1.0f / static_cast<float>(histogramMax(histogram)));
 	shader.setUniform("uPosition", glm::vec2(x, y));
 	shader.setUniform("uSize", glm::vec2(w, h));
 	histogram.bind(0);
@@ -218,21 +337,34 @@ bool mainGui(const rapidjson::Value& json)
 	auto cdf2 = accumulate(*histogram2);
 	auto invCdf1 = inverseCdf(*cdf1);
 	auto invCdf2 = inverseCdf(*cdf2);
+	auto invgCdf = makeGaussianInverseCdf(1.f / 6.f);
 
-	auto tmp = applyCdf(*inputTexture1, *cdf1);
-	auto outputTexture1 = applyCdf(*tmp, *invCdf2);
+	//auto outputTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invCdf1);
+	auto outputTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invgCdf);
 	auto histogramOutput1 = computeHistogram(*outputTexture1);
 	auto cdfOuput1 = accumulate(*histogramOutput1);
+	auto histogramOuput1 = decumulate(*cdfOuput1);
+
+	// Test
+	auto histogram1b = decumulate(*cdf1);
+	if (!histogramEq(*histogram1, *histogram1b)) {
+		ERR_LOG << "Test NOT passed: histogramEq";
+		return false;
+	}
+	if (!histogramMax(*cdf1) == inputTexture1->width() * inputTexture1->height()) {
+		ERR_LOG << "Test NOT passed: histogramMax";
+		return false;
+	}
 	
 	// Draw textures
 	drawTextureFit(*inputTexture1, 0, 0, res.x/3, res.y * 0.6f);
-	drawHistogram(*cdf1, *inputTexture1, 0, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawHistogram(*histogram1, *inputTexture1, 0, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 
 	drawTextureFit(*inputTexture2, res.x/3, 0, res.x/3, res.y * 0.6f);
-	drawHistogram(*cdf2, *inputTexture2, res.x/3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawHistogram(*invgCdf, *inputTexture2, res.x/3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 
 	drawTextureFit(*outputTexture1, 2*res.x / 3, 0, res.x / 3, res.y * 0.6f);
-	drawHistogram(*cdfOuput1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawHistogram(*histogramOuput1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
 	
 	window.swapBuffers();
 	while (!window.shouldClose()) window.pollEvents();
