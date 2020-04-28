@@ -275,7 +275,7 @@ std::unique_ptr<GlTexture> inverseCdf(const GlTexture& cdf)
 	return invcdf;
 }
 
-void drawHistogram(const GlTexture & histogram, const GlTexture& image, float x, float y, float w, float h)
+void drawHistogram(const GlTexture & histogram, float x, float y, float w, float h)
 {
 	const ShaderProgram& shader = *ShaderPool::GetShader("HistogramQuad");
 	shader.setUniform("uNormalization", 1.0f / static_cast<float>(histogramMax(histogram)));
@@ -327,7 +327,7 @@ std::unique_ptr<GlTexture> tileTexture(const GlTexture& input)
 bool mainGui(const rapidjson::Value& json)
 {
 	LOG << "Openning OpenGL context";
-	glm::vec2 res(1200, 700);
+	glm::vec2 res(1600, 700);
 	Window window(static_cast<int>(res.x), static_cast<int>(res.y), "Histogram Tools");
 	if (!window.isValid()) return false;
 
@@ -345,26 +345,35 @@ bool mainGui(const rapidjson::Value& json)
 	jrOption(histJson, "inputTexture1", textureFilename);
 	auto inputTexture1 = ResourceManager::loadTexture(textureFilename);
 	jrOption(histJson, "inputTexture2", textureFilename);
-	auto inputTexture2 = ResourceManager::loadTexture(textureFilename);
+	//auto inputTexture2 = ResourceManager::loadTexture(textureFilename);
 
 	// Main
 	auto histogram1 = computeHistogram(*inputTexture1);
-	auto histogram2 = computeHistogram(*inputTexture2);
+	//auto histogram2 = computeHistogram(*inputTexture2);
 
 	auto cdf1 = accumulate(*histogram1);
-	auto cdf2 = accumulate(*histogram2);
+	//auto cdf2 = accumulate(*histogram2);
 	auto invCdf1 = inverseCdf(*cdf1);
-	auto invCdf2 = inverseCdf(*cdf2);
+	//auto invCdf2 = inverseCdf(*cdf2);
+	auto gCdf = makeGaussianCdf(1.f / 6.f);
 	auto invgCdf = makeGaussianInverseCdf(1.f / 6.f);
 
-	//auto outputTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invCdf1);
-	auto outputTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invgCdf);
-	auto histogramOutput1 = computeHistogram(*outputTexture1);
-	auto cdfOuput1 = accumulate(*histogramOutput1);
-	auto histogramOuput1 = decumulate(*cdfOuput1);
+	//auto outputTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invgCdf);
+	//auto histogramOutput1 = computeHistogram(*outputTexture1);
+	//auto cdfOuput1 = accumulate(*histogramOutput1);
+	//auto histogramOuput1 = decumulate(*cdfOuput1);
 
-	auto tiled1 = tileTexture(*inputTexture1);
+	//auto normalizedTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invgCdf);
+	auto normalizedTexture1 = applyCdf(*inputTexture1, *cdf1);
+	normalizedTexture1->setWrapMode(GL_REPEAT);
+	auto normalizedTiled1 = tileTexture(*normalizedTexture1);
+	auto tiled1 = applyCdf(*applyCdf(*normalizedTiled1, *gCdf), *invCdf1);
+
+	auto histogramNormalizedTexture1 = computeHistogram(*normalizedTexture1);
+	auto histogramNormalizedTiled1 = computeHistogram(*normalizedTiled1);
 	auto histogramTiled1 = computeHistogram(*tiled1);
+
+	auto cdfNormalizedTexture1 = accumulate(*histogramNormalizedTexture1);
 
 	// Test
 	auto histogram1b = decumulate(*cdf1);
@@ -378,14 +387,17 @@ bool mainGui(const rapidjson::Value& json)
 	}
 	
 	// Draw textures
-	drawTextureFit(*inputTexture1, 0, 0, res.x/3, res.y * 0.6f);
-	drawHistogram(*histogram1, *inputTexture1, 0, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawTextureFit(*inputTexture1, 0, 0, res.x/4, res.y * 0.6f);
+	drawHistogram(*histogram1, 0, res.y * 0.6f, res.x / 4, res.y * 0.4f);
 
-	drawTextureFit(*inputTexture2, res.x/3, 0, res.x/3, res.y * 0.6f);
-	drawHistogram(*invgCdf, *inputTexture2, res.x/3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawTextureFit(*normalizedTexture1, res.x/4, 0, res.x/4, res.y * 0.6f);
+	drawHistogram(*histogramNormalizedTexture1, res.x/4, res.y * 0.6f, res.x / 4, res.y * 0.4f);
 
-	drawTextureFit(*tiled1, 2*res.x / 3, 0, res.x / 3, res.y * 0.6f);
-	drawHistogram(*histogramTiled1, *outputTexture1, 2*res.x / 3, res.y * 0.6f, res.x / 3, res.y * 0.4f);
+	drawTextureFit(*normalizedTiled1, 2*res.x / 4, 0, res.x / 4, res.y * 0.6f);
+	drawHistogram(*cdfNormalizedTexture1, 2*res.x / 4, res.y * 0.6f, res.x / 4, res.y * 0.4f);
+
+	drawTextureFit(*tiled1, 3 * res.x / 4, 0, res.x / 4, res.y * 0.6f);
+	drawHistogram(*histogramTiled1, 3 * res.x / 4, res.y * 0.6f, res.x / 4, res.y * 0.4f);
 	
 	window.swapBuffers();
 	while (!window.shouldClose()) window.pollEvents();
