@@ -66,10 +66,14 @@ void main() {
 	float w1 = 1.0 - length(p1 - xy) * invMaxLen;
 	float w2 = 1.0 - length(p2 - xy) * invMaxLen;
 	float sw = w0 + w1 + w2;
+	float sw2 = w0*w0 + w1*w1 + w2*w2;
 
 	vec4 color = texture(uInputTexture, vec2(co) / imageSize(image).xy);
 	//color = vec4((w0 * r0 + w1 * r1 + w2 * r2) / sw);
 	color = (w0 * color0 + w1 * color1 + w2 * color2) / sw;
+
+	// Contrast restoration
+	color = (color - vec4(0.5)) / sqrt(sw2) + vec4(0.5);
 
 	imageStore(image, co, color);
 }
