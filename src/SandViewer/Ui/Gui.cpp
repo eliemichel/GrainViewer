@@ -328,7 +328,7 @@ void Gui::render() {
 		m_scene->render();
 	}
 
-	if (m_scene->properties().ui) {
+	if (!m_scene || m_scene->properties().ui) {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		DrawFrame();
 	}
@@ -417,7 +417,7 @@ void Gui::onKey(int key, int scancode, int action, int mods) {
 	if (action == GLFW_PRESS) {
 		switch (key) {
 		case GLFW_KEY_ESCAPE:
-			if (auto window = m_window.lock()) {
+			if (auto window = getWindow().lock()) {
 				glfwSetWindowShouldClose(window->glfw(), GL_TRUE);
 			}
 			break;

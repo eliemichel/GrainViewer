@@ -28,17 +28,23 @@ public:
 	void setScene(std::shared_ptr<Scene> scene);
 
 	// Call these resp. before and after loading the scene
-	void  beforeLoading();
-	void  afterLoading();
+	void beforeLoading();
+	void afterLoading();
 
 	void update();
 	void render();
 
 	// event callbacks
-	void onResize(int width, int height);
-	void onMouseButton(int button, int action, int mods);
-	void onKey(int key, int scancode, int action, int mods);
-	void onCursorPosition(double x, double y);
+	virtual void onResize(int width, int height);
+	virtual void onMouseButton(int button, int action, int mods);
+	virtual void onKey(int key, int scancode, int action, int mods);
+	virtual void onCursorPosition(double x, double y);
+
+	float width() const { return m_windowWidth; }
+	float height() const { return m_windowHeight; }
+
+protected:
+	std::weak_ptr<Window> getWindow() const { return m_window; }
 
 private:
 	void setupCallbacks();

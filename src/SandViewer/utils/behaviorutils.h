@@ -162,3 +162,19 @@ constexpr Enum lastValue() {
 	return magic_enum::enum_value<Enum>(magic_enum::enum_count<Enum>() - 1);
 }
 
+
+#define PROPERTIES_OPERATORS_DECL \
+	bool operator==(const Properties& other); \
+	bool operator!=(const Properties& other);
+
+#define PROPERTIES_OPERATORS_DEF(Type) \
+	bool Type::Properties::operator==(const Properties& other) { \
+		bool isEqual = true; \
+		for_each(refl::reflect(*this).members, [&](auto member) { \
+			isEqual = isEqual && (member(*this) != member(other)); \
+		}); \
+		return isEqual; \
+	} \
+	bool Type::Properties::operator!=(const Properties& other) { \
+		return !(*this == other); \
+	}

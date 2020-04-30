@@ -168,6 +168,8 @@ set(All_SRC
 	Ui/MeshRendererDialog.cpp
 	Ui/QuadMeshDataDialog.h
 	Ui/QuadMeshDataDialog.cpp
+	Ui/UiPainter.h
+	Ui/UiPainter.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp
