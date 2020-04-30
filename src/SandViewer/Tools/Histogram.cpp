@@ -311,7 +311,7 @@ std::unique_ptr<GlTexture> applyCdf(const GlTexture& input, const GlTexture& cdf
 	return output;
 }
 
-std::unique_ptr<GlTexture> tileTexture(const GlTexture& input, float tileSize)
+std::unique_ptr<GlTexture> tileTexture(const GlTexture& input)
 {
 	auto output = std::make_unique<GlTexture>(GL_TEXTURE_2D);
 	output->storage(input.levels(), GL_RGBA8, input.width(), input.height());
@@ -320,7 +320,6 @@ std::unique_ptr<GlTexture> tileTexture(const GlTexture& input, float tileSize)
 	const ShaderProgram& shader = *ShaderPool::GetShader("TileTexture");
 	input.bind(0);
 	shader.setUniform("uInputTexture", 0);
-	shader.setUniform("uTileSize", tileSize);
 	glBindImageTexture(0, output->raw(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA8);
 	shader.use();
 	glDispatchCompute(input.width(), input.height(), 1);
@@ -395,20 +394,28 @@ public:
 		return true;
 	}
 
+	enum BlendMode {
+		NoBlend,
+		LinearBlend
+	};
+	struct Properties {
+		float tileSize = 150;
+		bool regularizeCdf = false;
+		int regularizeWindow = 3;
+		BlendMode blendMode = LinearBlend;
+		float randomTranslation = 1.0;
+		float randomRotation = 1.0;
+		bool contrastRestoration = true;
+		PROPERTIES_OPERATORS_DECL
+	};
+	Properties props;
+	bool mustUpdate = true;
+
 	TexturePtr histogram1, histogram2;
 	TexturePtr cdf1, invCdf1, gCdf, invgCdf;
 	TexturePtr normalizedTexture1, normalizedTiled1, tiled1;
 	TexturePtr histogramNormalizedTexture1, histogramNormalizedTiled1, histogramTiled1;
 	TexturePtr cdfNormalizedTexture1;
-
-	struct Properties {
-		float tileSize = 50;
-		bool regularizeCdf = false;
-		int regularizeWindow = 3;
-		PROPERTIES_OPERATORS_DECL
-	};
-	Properties props;
-	bool mustUpdate = true;
 
 	void updateTextures()
 	{
@@ -433,7 +440,10 @@ public:
 		//auto normalizedTexture1 = applyCdf(*applyCdf(*inputTexture1, *cdf1), *invgCdf);
 		normalizedTexture1 = applyCdf(*inputTexture1, *cdf1);
 		normalizedTexture1->setWrapMode(GL_REPEAT);
-		normalizedTiled1 = tileTexture(*normalizedTexture1, props.tileSize);
+
+		autoSetUniforms(*ShaderPool::GetShader("TileTexture"), props);
+		normalizedTiled1 = tileTexture(*normalizedTexture1);
+
 		tiled1 = applyCdf(*applyCdf(*normalizedTiled1, *gCdf), *invCdf1);
 
 		histogramNormalizedTexture1 = computeHistogram(*normalizedTexture1);
@@ -478,9 +488,13 @@ public:
 
 #define _ ReflectionAttributes::
 REFL_TYPE(HistogramTool::Properties)
-REFL_FIELD(tileSize, _ Range(8, 256))
+REFL_FIELD(tileSize, _ Range(8, 1024))
 REFL_FIELD(regularizeCdf)
 REFL_FIELD(regularizeWindow, _ Range(1, 15))
+REFL_FIELD(blendMode)
+REFL_FIELD(randomTranslation)
+REFL_FIELD(randomRotation)
+REFL_FIELD(contrastRestoration)
 REFL_END
 PROPERTIES_OPERATORS_DEF(HistogramTool)
 #undef _
@@ -502,6 +516,10 @@ public:
 				if (auto window = getWindow().lock()) {
 					glfwSetWindowShouldClose(window->glfw(), GL_TRUE);
 				}
+				break;
+
+			case GLFW_KEY_R:
+				ShaderPool::ReloadShaders();
 				break;
 			}
 		}
