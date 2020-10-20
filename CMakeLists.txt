@@ -1,6 +1,6 @@
-# This file is part of Augen Light
+# This file is part of GrainViewer
 #
-# Copyright (c) 2017 - 2019 -- Élie Michel <elie.michel@exppad.com>
+# Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”), to
@@ -21,12 +21,11 @@
 # in the Software.
 
 cmake_minimum_required(VERSION 3.7)
-project(SandViewer)
+project(GrainViewer)
 
 include(cmake/utils.cmake)
 
-option(DEV_MOD "Build in dev mode, use share directory from source tree rather than installation tree" ON)
-option(WITH_GPL "Enable GPL components" OFF)
+option(DEV_MOD "Build in dev mode, use share directory from source tree rather than installation tree. This is useful when hacking on shaders." ON)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

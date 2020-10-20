@@ -1,6 +1,6 @@
-# This file is part of Augen Light
+# This file is part of GrainViewer
 #
-# Copyright (c) 2017 - 2019 -- Élie Michel <elie.michel@exppad.com>
+# Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”), to
@@ -22,36 +22,36 @@
 
 # Copy dll in output directory
 function(target_link_libraries_and_dll target public_or_private lib)
-    target_link_libraries(${target} ${public_or_private} ${lib})
-    add_custom_command(
-        TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:${lib}>
-            $<TARGET_FILE_DIR:${target}>
-    )
+	target_link_libraries(${target} ${public_or_private} ${lib})
+	add_custom_command(
+		TARGET ${target} POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			$<TARGET_FILE:${lib}>
+			$<TARGET_FILE_DIR:${target}>
+	)
 endfunction()
 
 # Reproduce the original folder layout in IDE
 function(group_source_by_folder)
-    foreach(file ${ARGV}) 
-        # Get the directory of the source file
-        get_filename_component(parent_dir "${file}" DIRECTORY)
+	foreach(file ${ARGV}) 
+		# Get the directory of the source file
+		get_filename_component(parent_dir "${file}" DIRECTORY)
 
-        # Remove common directory prefix to make the group
-        string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "" group "${parent_dir}")
+		# Remove common directory prefix to make the group
+		string(REPLACE "${CMAKE_CURRENT_SOURCE_DIR}" "" group "${parent_dir}")
 
-        # Make sure we are using windows slashes
-        string(REPLACE "/" "\\" group "${group}")
+		# Make sure we are using windows slashes
+		string(REPLACE "/" "\\" group "${group}")
 
-        # Group into "Source Files" and "Header Files"
-        if ("${file}" MATCHES ".*\\.cpp")
-           set(group "Source Files\\${group}")
-        elseif("${file}" MATCHES ".*\\.h")
-           set(group "Header Files\\${group}")
-        endif()
+		# Group into "Source Files" and "Header Files"
+		if ("${file}" MATCHES ".*\\.cpp")
+		   set(group "Source Files\\${group}")
+		elseif("${file}" MATCHES ".*\\.h")
+		   set(group "Header Files\\${group}")
+		endif()
 
-        source_group("${group}" FILES "${file}")
-    endforeach()
+		source_group("${group}" FILES "${file}")
+	endforeach()
 endfunction()
 
 macro(enable_multiprocessor_compilation)
@@ -67,3 +67,11 @@ macro(enable_cpp17)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++latest")
 	endif(MSVC)
 endmacro()
+
+function(target_treat_warnings_as_errors target)
+	if(MSVC)
+		target_compile_options(${target} PRIVATE /W4 /WX)
+	else()
+		target_compile_options(${target} PRIVATE -Wall -Wextra -pedantic -Werror)
+	endif()
+endfunction()

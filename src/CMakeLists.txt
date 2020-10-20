@@ -1,6 +1,6 @@
-# This file is part of Augen Light
+# This file is part of GrainViewer
 #
-# Copyright (c) 2017 - 2019 -- Élie Michel <elie.michel@exppad.com>
+# Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the “Software”), to
@@ -24,4 +24,4 @@
 add_subdirectory(External)
 
 # Then we build our project
-add_subdirectory(SandViewer)
+add_subdirectory(GrainViewer)
