@@ -1,60 +1,38 @@
-#include <algorithm>
-#include <cassert>
+/**
+ * This file is part of GrainViewer
+ *
+ * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * The Software is provided “as is”, without warranty of any kind, express or
+ * implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose and non-infringement. In no event shall the
+ * authors or copyright holders be liable for any claim, damages or other
+ * liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings
+ * in the Software.
+ */
+
 #include "Logger.h"
 #include "Filtering.h"
 #include "ShaderPool.h"
 #include "utils/ScopedFramebufferOverride.h"
 
+#include <algorithm>
+#include <cassert>
+
 std::unique_ptr<MipmapDepthBufferGenerator> Filtering::s_mipmapDepthBufferGenerator;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectFramebuffer;
 std::unique_ptr<Framebuffer2> Filtering::s_postEffectDepthOnlyFramebuffer;
-
-//-----------------------------------------------------------------------------
-
-std::unique_ptr<LeanTexture> Filtering::CreateLeanTexture(const GlTexture & sourceTexture)
-{
-	auto tex = std::make_unique<LeanTexture>(sourceTexture.target());
-	std::shared_ptr<ShaderProgram> shader;
-
-	GLsizei width = sourceTexture.width();
-	GLsizei height = sourceTexture.height();
-	GLsizei depth = sourceTexture.depth();
-	GLsizei levels = static_cast<GLsizei>(1 + floor(log2(std::max(width, height))));
-
-	switch (sourceTexture.target()) {
-	case GL_TEXTURE_2D:
-		assert(depth == 1);
-		tex->lean1.storage(levels, GL_RGBA16F, width, height);
-		tex->lean2.storage(levels, GL_RGBA16F, width, height);
-		shader = ShaderPool::GetShader("GenerateLeanMaps_Image2D");
-		break;
-	case GL_TEXTURE_2D_ARRAY:
-		tex->lean1.storage(levels, GL_RGBA16F, width, height, depth);
-		tex->lean2.storage(levels, GL_RGBA16F, width, height, depth);
-		shader = ShaderPool::GetShader("GenerateLeanMaps_Image2DArray");
-		break;
-	case GL_TEXTURE_3D:
-		tex->lean1.storage(levels, GL_RGBA16F, width, height, depth);
-		tex->lean2.storage(levels, GL_RGBA16F, width, height, depth);
-		shader = ShaderPool::GetShader("GenerateLeanMaps_Image3D");
-		break;
-	default:
-		ERR_LOG << "Unsupported texture target: " << sourceTexture.target();
-		return nullptr;
-	}
-
-	shader->use();
-	glBindImageTexture(0, sourceTexture.raw(), 0, GL_TRUE, 0, GL_READ_ONLY, GL_RGBA8);
-	glBindImageTexture(1, tex->lean1.raw(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
-	glBindImageTexture(2, tex->lean2.raw(), 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA16F);
-	glDispatchCompute(width, height, depth);
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-	tex->lean1.generateMipmap();
-	tex->lean2.generateMipmap();
-
-	return std::move(tex);
-}
 
 //-----------------------------------------------------------------------------
 

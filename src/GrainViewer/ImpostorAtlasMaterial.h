@@ -1,8 +1,31 @@
+/**
+ * This file is part of GrainViewer
+ *
+ * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * The Software is provided “as is”, without warranty of any kind, express or
+ * implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose and non-infringement. In no event shall the
+ * authors or copyright holders be liable for any claim, damages or other
+ * liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings
+ * in the Software.
+ */
+
 #pragma once
 
 #include <OpenGL>
 #include "GlTexture.h"
-#include "Filtering.h"
 
 #include <glm/glm.hpp>
 #include <rapidjson/document.h>
@@ -18,7 +41,6 @@ class MeshDataBehavior;
  */
 struct ImpostorAtlasMaterial
 {
-	bool enableLeanMapping;
 	std::unique_ptr<GlTexture> normalAlphaTexture;
 	std::unique_ptr<GlTexture> baseColorTexture;
 	std::unique_ptr<GlTexture> metallicRoughnessTexture;
@@ -27,12 +49,11 @@ struct ImpostorAtlasMaterial
 	float roughness = 0.5;
 
 	GLuint viewCount; // number of precomputed views, computed from normalAlphaTexture depth
-	std::unique_ptr<LeanTexture> leanTextures; // generated iff enableLeanMapping is on
 
 	bool bake = false;
 	// If 'bake' is true, impostor is computed in engine at startup rather than being loaded from files.
 	// in this case, the following options are used:
-	int angularDefinition = 128; // rounded to the closest number such that 2n�
+	int angularDefinition = 128; // rounded to the closest number such that 2n�
 	int spatialDefinition = 128; // number of pixels on each dimension of a precomputed view
 
 	bool deserialize(const rapidjson::Value& json);

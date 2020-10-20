@@ -1,19 +1,19 @@
 /**
- * This file is part of Augen Light
+ * This file is part of GrainViewer
  *
- * Copyright (c) 2017 - 2018 -- …lie Michel <elie.michel@exppad.com>
- * 
+ * Copyright (c) 2017 - 2020 -- T√©l√©com Paris (√âlie Michel <elie.michel@telecom-paris.fr>)
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the ìSoftwareî), to
+ * of this software and associated documentation files (the ‚ÄúSoftware‚Äù), to
  * deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
  * sell copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
  *
- * The Software is provided ìas isî, without warranty of any kind, express or
+ * The Software is provided ‚Äúas is‚Äù, without warranty of any kind, express or
  * implied, including but not limited to the warranties of merchantability,
  * fitness for a particular purpose and non-infringement. In no event shall the
  * authors or copyright holders be liable for any claim, damages or other
@@ -22,14 +22,9 @@
  * in the Software.
  */
 
-#ifndef H_DEBUGUTILS
-#define H_DEBUGUTILS
+#pragma once
 
-#ifdef _WIN32
-#include <windows.h> // Avoid issue with APIENTRY redefinition in Glad
-#endif // _WIN32
-
-#include <glad/modernglad.h>
+#include <OpenGL>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,5 +55,3 @@ void APIENTRY openglCallbackFunction(GLenum source,
  */
 void openglPreFunction(const char *name, void *funcptr, int len_args, ...);
 #endif
-
-#endif // H_DEBUGUTILS

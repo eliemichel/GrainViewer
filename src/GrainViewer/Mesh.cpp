@@ -1,22 +1,39 @@
-// **************************************************
-// Author : Élie Michel <elie.michel@telecom-paristech.fr>
-// UNPUBLISHED CODE.
-// Copyright (C) 2017 Élie Michel.
-// **************************************************
-
-#include <iostream>
-#include <tiny_obj_loader.h>
+/**
+ * This file is part of GrainViewer
+ *
+ * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * The Software is provided “as is”, without warranty of any kind, express or
+ * implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose and non-infringement. In no event shall the
+ * authors or copyright holders be liable for any claim, damages or other
+ * liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings
+ * in the Software.
+ */
 
 #include "Mesh.h"
 #include "utils/fileutils.h"
 #include "Logger.h"
 
-using namespace std;
+#include <tiny_obj_loader.h>
 
-Mesh::Mesh(string filename) {
+#include <iostream>
+
+Mesh::Mesh(const std::string & filename) {
 	m_baseDir = ::baseDir(filename);
 
-    string warn, err;
+    std::string warn, err;
     bool ret = tinyobj::LoadObj(&m_attrib, &m_shapes, &m_materials, &warn, &err, filename.c_str(), joinPath(m_baseDir, "").c_str(), true);
 	if (!warn.empty()) {
 		WARN_LOG << "TinyObj returned: " << warn;
@@ -33,7 +50,7 @@ Mesh::Mesh(string filename) {
 }
 
 
-vector<RichTexturedTriangle> Mesh::triangles() const {
+std::vector<RichTexturedTriangle> Mesh::triangles() const {
 	RichTexturedTriangle tri;
     std::vector<RichTexturedTriangle> triangles;
 
@@ -93,61 +110,18 @@ vector<RichTexturedTriangle> Mesh::triangles() const {
     return triangles;
 }
 
-vector<string> Mesh::diffuseTextures() const {
-	vector<string> textures;
+std::vector<std::string> Mesh::diffuseTextures() const {
+	std::vector<std::string> textures;
 	for (auto mat : m_materials) {
 		textures.push_back(joinPath(m_baseDir, mat.diffuse_texname));
 	}
 	return textures;
 }
 
-vector<string> Mesh::bumpTextures() const {
-	vector<string> textures;
+std::vector<std::string> Mesh::bumpTextures() const {
+	std::vector<std::string> textures;
 	for (auto mat : m_materials) {
 		textures.push_back(joinPath(m_baseDir, mat.bump_texname));
 	}
 	return textures;
 }
-
-
-#if 0
-static void debugMaterial(const tinyobj::material_t & mat) {
-	DEBUG_LOG << "Material: " << mat.name;
-
-	DEBUG_LOG << "ambient: " << mat.ambient[0] << ", " << mat.ambient[1] << ", " << mat.ambient[2];
-	DEBUG_LOG << "diffuse: " << mat.diffuse[0] << ", " << mat.diffuse[1] << ", " << mat.diffuse[2];
-	DEBUG_LOG << "specular: " << mat.specular[0] << ", " << mat.specular[1] << ", " << mat.specular[2];
-	DEBUG_LOG << "transmittance: " << mat.transmittance[0] << ", " << mat.transmittance[1] << ", " << mat.transmittance[2];
-	DEBUG_LOG << "emission: " << mat.emission[0] << ", " << mat.emission[1] << ", " << mat.emission[2];
-	DEBUG_LOG << "shininess: " << mat.shininess;
-	DEBUG_LOG << "ior: " << mat.ior;       // index of refraction
-	DEBUG_LOG << "dissolve: " << mat.dissolve;  // 1 == opaque; 0 == fully transparent
-												// illumination model (see http://www.fileformat.info/format/material/)
-	DEBUG_LOG << "illum: " << mat.illum;
-
-	DEBUG_LOG << "dummy: " << mat.dummy;  // Suppress padding warning.
-
-	DEBUG_LOG << "ambient_texname: " << mat.ambient_texname;             // map_Ka
-	DEBUG_LOG << "diffuse_texname: " << mat.diffuse_texname;             // map_Kd
-	DEBUG_LOG << "specular_texname: " << mat.specular_texname;            // map_Ks
-	DEBUG_LOG << "specular_highlight_texname: " << mat.specular_highlight_texname;  // map_Ns
-	DEBUG_LOG << "bump_texname: " << mat.bump_texname;                // map_bump, bump
-	DEBUG_LOG << "displacement_texname: " << mat.displacement_texname;        // disp
-	DEBUG_LOG << "alpha_texname: " << mat.alpha_texname;               // map_d
-
-																	   // PBR extension
-																	   // http://exocortex.com/blog/extending_wavefront_mtl_to_support_pbr
-	DEBUG_LOG << "roughness: " << mat.roughness;                // [0, 1] default 0
-	DEBUG_LOG << "metallic: " << mat.metallic;                 // [0, 1] default 0
-	DEBUG_LOG << "sheen: " << mat.sheen;                    // [0, 1] default 0
-	DEBUG_LOG << "clearcoat_thickness: " << mat.clearcoat_thickness;      // [0, 1] default 0
-	DEBUG_LOG << "clearcoat_roughness: " << mat.clearcoat_roughness;      // [0, 1] default 0
-	DEBUG_LOG << "anisotropy: " << mat.anisotropy;               // aniso. [0, 1] default 0
-	DEBUG_LOG << "anisotropy_rotation: " << mat.anisotropy_rotation;      // anisor. [0, 1] default 0
-	DEBUG_LOG << "roughness_texname: " << mat.roughness_texname;  // map_Pr
-	DEBUG_LOG << "metallic_texname: " << mat.metallic_texname;   // map_Pm
-	DEBUG_LOG << "sheen_texname: " << mat.sheen_texname;      // map_Ps
-	DEBUG_LOG << "emissive_texname: " << mat.emissive_texname;   // map_Ke
-	DEBUG_LOG << "normal_texname: " << mat.normal_texname;     // norm. For normal mapping.
-}
-#endif

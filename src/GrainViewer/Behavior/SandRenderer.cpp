@@ -41,11 +41,7 @@ bool SandRenderer::deserialize(const rapidjson::Value & json, const EnvironmentV
 	jrArray<SandRendererModel>(json, "models", models);
 	for (auto m : models) {
 		if (!m.normalAlpha().empty()) {
-			bool success = loadImpostorTexture(m_normalAlphaTextures, m.normalAlpha());
-			if (success) {
-				auto tex = Filtering::CreateLeanTexture(*m_normalAlphaTextures.back());
-				m_leanTextures.push_back(std::move(tex));
-			}
+			loadImpostorTexture(m_normalAlphaTextures, m.normalAlpha());
 		}
 		if (!m.baseColor().empty()) {
 			loadImpostorTexture(m_baseColorTextures, m.baseColor());
