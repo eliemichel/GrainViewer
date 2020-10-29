@@ -1,6 +1,8 @@
 Grain Viewer
 ============
 
+![Screenshot of GrainViewer](doc/images/screenshot.png)
+
 ### About
 
 This is the official implementation of the research paper *"Real-time multiscale rendering of dense dynamic stackings"* by Élie Michel and Tamy Boubekeur, published in Computer Graphics forum (Pacific Graphics).
