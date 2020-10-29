@@ -8,7 +8,9 @@ GrainViewer is the official implementation of the research paper *"Real-time mul
 Basic Usage
 -----------
 
-For a first test, you can simply run the GrainViewerDemo shortcut. This will run GrainViewer.exe with the scene file data/ball.json. For other examples, just run GrainViewer with the other json files of this directory (you can for instance drag and drop the json scene file onto GrainViewer.exe in the file explorer.)
+If you downloaded a release zip, for a first test, you can simply run the GrainViewerDemo shortcut. This will run GrainViewer.exe with the scene file data/ball.json. For other examples, just run GrainViewer with the other json files of this directory (you can for instance drag and drop the json scene file onto GrainViewer.exe in the file explorer.)
+
+If you are using the git repository, example scenes can be found in [share/scenes](share/scenes). To use these, you will need to download additional binary data using the `download-data.bat` or `download-data.sh` script.
 
 For a more advanced use, you can edit the json files with a text editor. See "Scene files" section bellow.
 
