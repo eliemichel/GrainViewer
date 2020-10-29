@@ -66,7 +66,6 @@ set(Core_SRC
 set(All_SRC
 	${Core_SRC}
 
-	Behavior/IPointCloudData.h
 	Behavior/GltfDataBehavior.h
 	Behavior/GltfDataBehavior.cpp
 	Behavior/MeshDataBehavior.h
@@ -75,8 +74,6 @@ set(All_SRC
 	Behavior/MeshRenderer.cpp
 	Behavior/TransformBehavior.h
 	Behavior/TransformBehavior.cpp
-	Behavior/TestPrefixSumRenderer.h
-	Behavior/TestPrefixSumRenderer.cpp
 	Behavior/LightGizmo.h
 	Behavior/LightGizmo.cpp
 	Behavior/UberSandRenderer.h
@@ -85,6 +82,7 @@ set(All_SRC
 	Behavior/PointCloudDataBehavior.cpp
 	Behavior/PointCloudSplitter.h
 	Behavior/PointCloudSplitter.cpp
+	Behavior/PointCloudView.h
 	Behavior/InstanceSandRenderer.h
 	Behavior/InstanceSandRenderer.cpp
 	Behavior/ImpostorSandRenderer.h
@@ -173,6 +171,7 @@ set(All_SRC
 	GlobalTimer.cpp
 	ImpostorAtlasMaterial.h
 	ImpostorAtlasMaterial.cpp
+	IPointCloudData.h
 	Light.h
 	Light.cpp
 	Mesh.h

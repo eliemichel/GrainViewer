@@ -24,5 +24,29 @@
 
 #pragma once
 
-bool filterPointToPointDistance(const std::string & inputFilename, const std::string & outputFilename);
+#include "IPointCloudData.h"
+#include "PointCloudSplitter.h"
+
+/**
+ * Proxy to an externally allocated element buffer,
+ * used by PointCloudSplitter to return sub parts of the original point cloud.
+ * This is technically just a closure around PointCloudSplitter's method that
+ * are a bit like IPointCloudData but with an extra model parameter.
+ */
+class PointCloudView : public IPointCloudData {
+public:
+	PointCloudView(const PointCloudSplitter& splitter, PointCloudSplitter::RenderModel model)
+		: m_splitter(splitter), m_model(model) {}
+	// IPointCloudData implementation
+	GLsizei pointCount() const override { return m_splitter.pointCount(m_model); }
+	GLsizei frameCount() const override { return m_splitter.frameCount(m_model); }
+	GLuint vao() const override { return m_splitter.vao(m_model); }
+	const GlBuffer& vbo() const override { return m_splitter.vbo(m_model); }
+	std::shared_ptr<GlBuffer> ebo() const override { return m_splitter.ebo(m_model); }
+	GLint pointOffset() const override { return m_splitter.pointOffset(m_model); }
+
+private:
+	const PointCloudSplitter& m_splitter;
+	PointCloudSplitter::RenderModel m_model;
+};
 

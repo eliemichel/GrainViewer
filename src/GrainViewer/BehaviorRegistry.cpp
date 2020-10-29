@@ -29,7 +29,6 @@
 #include "Behavior/MeshDataBehavior.h"
 #include "Behavior/MeshRenderer.h"
 #include "Behavior/TransformBehavior.h"
-#include "Behavior/TestPrefixSumRenderer.h"
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
 #include "Behavior/PointCloudSplitter.h"
@@ -40,13 +39,14 @@
 #include "Behavior/SandBehavior.h"
 #include "Behavior/QuadMeshData.h"
 
+#include "Behavior/PointCloudView.h"
+
 void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
 #define handleType(T) if (type == BehaviorRegistryEntry<T>::Name()) { b = IBehaviorHolder::addBehavior<T>(obj); }
 	handleType(MeshDataBehavior);
 	handleType(MeshRenderer);
 	handleType(TransformBehavior);
-	handleType(TestPrefixSumRenderer);
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
 	handleType(PointCloudSplitter);
@@ -62,7 +62,7 @@ std::weak_ptr<IPointCloudData> BehaviorRegistry::getPointCloudDataComponent(Beha
 	std::weak_ptr<IPointCloudData> pointData;
 	if (preferedModel != PointCloudSplitter::RenderModel::None) {
 		if (auto splitter = behavior.getComponent<PointCloudSplitter>().lock()) {
-			pointData = splitter->subPointCloud(preferedModel);
+			pointData = static_cast<std::shared_ptr<IPointCloudData>>(splitter->subPointCloud(preferedModel));
 		}
 	}
 	if (pointData.expired()) pointData = behavior.getComponent<PointCloudDataBehavior>();

@@ -53,9 +53,8 @@ const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 	"PSEUDO_LEAN",
 };
 
-///////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------
 // Behavior implementation
-///////////////////////////////////////////////////////////////////////////////
 
 bool UberSandRenderer::deserialize(const rapidjson::Value & json)
 {
@@ -105,9 +104,8 @@ void UberSandRenderer::render(const Camera& camera, const World& world, RenderTy
 	}
 }
 
-///////////////////////////////////////////////////////////////////////////////
+//-----------------------------------------------------------------------------
 // private members
-///////////////////////////////////////////////////////////////////////////////
 
 void UberSandRenderer::draw(const IPointCloudData& pointData) const
 {
