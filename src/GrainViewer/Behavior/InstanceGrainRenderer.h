@@ -25,53 +25,66 @@
 #pragma once
 
 #include <OpenGL>
-
 #include "Behavior.h"
-#include "ImpostorAtlasMaterial.h"
+#include "GlTexture.h"
+#include "utils/ReflectionAttributes.h"
+#include "StandardMaterial.h"
 
 #include <refl.hpp>
-
 #include <glm/glm.hpp>
-
 #include <memory>
 
 class ShaderProgram;
 class TransformBehavior;
+class GrainBehavior;
+class MeshDataBehavior;
+class IPointCloudData;
 
 /**
- * Behavior holding sand properties that are common to all sand renderers.
+ * Render points from an IPointCloudData component by instancing the mesh from a MeshData component .
+ * If a PointCloudSplitter component is available, use it's Instance sub-cloud.
  */
-class SandBehavior : public Behavior {
+class InstanceGrainRenderer : public Behavior {
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
-	const std::vector<ImpostorAtlasMaterial> & atlases() const { return m_atlases; }
+	void start() override;
+	void update(float time, int frame) override;
+	void render(const Camera& camera, const World& world, RenderType target) const override;
 
 public:
 	// Properties (serialized and displayed in UI)
 	struct Properties {
-		// Outer radius of the grain. The grain is entierly contained in a sphere of this radius.
-		float grainRadius = 0.01f;
-		// Inner over outer radius ratio. The sphere of inner radius is entierly contained in the grain geometry.
-		// This ratio ranges from 0 (arbitrary grain) to 1 (perfectly spherical grain).
-		float grainInnerRadiusRatio = 0.8f;
-		// If true, fake colors are used to display which model is used to render which grains.
-		bool debugRenderType = false;
+		// Correct scale of the MeshData mesh when using it as instance.
+		float grainMeshScale = 1.0f;
 	};
 	Properties & properties() { return m_properties; }
 	const Properties& properties() const { return m_properties; }
 
 private:
+	glm::mat4 modelMatrix() const;
+
+private:
 	Properties m_properties;
-	std::vector<ImpostorAtlasMaterial> m_atlases;
+
+	std::string m_shaderName = "InstanceGrain";
+	std::shared_ptr<ShaderProgram> m_shader;
+
+	std::weak_ptr<TransformBehavior> m_transform;
+	std::weak_ptr<GrainBehavior> m_sand;
+	std::weak_ptr<MeshDataBehavior> m_mesh;
+	std::weak_ptr<IPointCloudData> m_pointData;
+
+	std::unique_ptr<GlTexture> m_colormapTexture;
+	std::vector<StandardMaterial> m_materials; // may be emtpy, in which case materials from MeshData are used
+
+	float m_time;
 };
 
 #define _ ReflectionAttributes::
-REFL_TYPE(SandBehavior::Properties)
-REFL_FIELD(grainRadius, _ Range(0.0f, 0.1f))
-REFL_FIELD(grainInnerRadiusRatio, _ Range(0.0f, 1.0f))
-REFL_FIELD(debugRenderType)
+REFL_TYPE(InstanceGrainRenderer::Properties)
+REFL_FIELD(grainMeshScale, _ Range(0.0f, 5.0f))
 REFL_END
 #undef _
 
-registerBehaviorType(SandBehavior)
+registerBehaviorType(InstanceGrainRenderer)

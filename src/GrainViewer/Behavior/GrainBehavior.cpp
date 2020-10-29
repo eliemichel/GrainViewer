@@ -22,20 +22,16 @@
  * in the Software.
  */
 
-#pragma once
+#include "GrainBehavior.h"
+#include "TransformBehavior.h"
+#include "ShaderPool.h"
 
-#include "Dialog.h"
-#include "Behavior/UberSandRenderer.h"
+#include "utils/jsonutils.h"
+#include "utils/behaviorutils.h"
 
-#include <memory>
-
-class UberSandRendererDialog : public Dialog {
-public:
-	void draw() override;
-	void setControlledBehavior(std::weak_ptr<UberSandRenderer> behavior) { m_cont = behavior; }
-
-private:
-	std::weak_ptr<UberSandRenderer> m_cont;
-};
-
-registerDialogForBehavior(UberSandRendererDialog, UberSandRenderer)
+bool GrainBehavior::deserialize(const rapidjson::Value & json)
+{
+	autoDeserialize(json, m_properties);
+	jrArray(json, "atlases", m_atlases);
+	return true;
+}

@@ -22,22 +22,20 @@
  * in the Software.
  */
 
-#include "InstanceSandRendererDialog.h"
-#include "utils/guiutils.h"
-#include "utils/behaviorutils.h"
-#include <imgui.h>
+#pragma once
 
-void InstanceSandRendererDialog::draw()
-{
-	if (auto cont = m_cont.lock()) {
-		if (ImGui::CollapsingHeader("InstanceSandRenderer", ImGuiTreeNodeFlags_DefaultOpen)) {
-			bool enabled = cont->isEnabled();
-			ImGui::Checkbox("Enabled", &enabled);
-			cont->setEnabled(enabled);
+#include "Dialog.h"
+#include "Behavior/FarGrainRenderer.h"
 
-			BeginDisable(!enabled);
-			autoUi(cont->properties());
-			EndDisable(!enabled);
-		}
-	}
-}
+#include <memory>
+
+class FarGrainRendererDialog : public Dialog {
+public:
+	void draw() override;
+	void setControlledBehavior(std::weak_ptr<FarGrainRenderer> behavior) { m_cont = behavior; }
+
+private:
+	std::weak_ptr<FarGrainRenderer> m_cont;
+};
+
+registerDialogForBehavior(FarGrainRendererDialog, FarGrainRenderer)

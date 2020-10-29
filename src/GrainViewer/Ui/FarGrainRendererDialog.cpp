@@ -22,17 +22,16 @@
  * in the Software.
  */
 
-#include "UberSandRendererDialog.h"
+#include "FarGrainRendererDialog.h"
 #include "utils/guiutils.h"
 #include "utils/behaviorutils.h"
 
 #include <imgui.h>
-#include <glm/gtc/type_ptr.hpp>
 
-void UberSandRendererDialog::draw()
+void FarGrainRendererDialog::draw()
 {
 	if (auto cont = m_cont.lock()) {
-		if (ImGui::CollapsingHeader("UberSandRenderer", ImGuiTreeNodeFlags_DefaultOpen)) {
+		if (ImGui::CollapsingHeader("FarGrainRenderer", ImGuiTreeNodeFlags_DefaultOpen)) {
 			bool enabled = cont->isEnabled();
 			ImGui::Checkbox("Enabled", &enabled);
 			cont->setEnabled(enabled);

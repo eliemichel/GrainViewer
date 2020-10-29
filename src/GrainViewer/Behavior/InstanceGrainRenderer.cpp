@@ -22,10 +22,10 @@
  * in the Software.
  */
 
-#include "InstanceSandRenderer.h"
+#include "InstanceGrainRenderer.h"
 #include "TransformBehavior.h"
 #include "MeshDataBehavior.h"
-#include "SandBehavior.h"
+#include "GrainBehavior.h"
 #include "IPointCloudData.h"
 #include "ShaderPool.h"
 #include "ResourceManager.h"
@@ -35,7 +35,7 @@
 #include "utils/jsonutils.h"
 #include "utils/behaviorutils.h"
 
-bool InstanceSandRenderer::deserialize(const rapidjson::Value & json)
+bool InstanceGrainRenderer::deserialize(const rapidjson::Value & json)
 {
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 	std::string colormap;
@@ -47,24 +47,24 @@ bool InstanceSandRenderer::deserialize(const rapidjson::Value & json)
 	return true;
 }
 
-void InstanceSandRenderer::start()
+void InstanceGrainRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<SandBehavior>();
+	m_sand = getComponent<GrainBehavior>();
 	m_mesh = getComponent<MeshDataBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Instance);
 
 	m_shader = ShaderPool::GetShader(m_shaderName);
 }
 
-void InstanceSandRenderer::update(float time, int frame)
+void InstanceGrainRenderer::update(float time, int frame)
 {
 	m_time = time;
 }
 
-void InstanceSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
+void InstanceGrainRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer((target == RenderType::ShadowMap ? "InstanceSandRenderer_shadowmap" : "InstanceSandRenderer"));
+	ScopedTimer timer((target == RenderType::ShadowMap ? "InstanceGrainRenderer_shadowmap" : "InstanceGrainRenderer"));
 
 	auto mesh = m_mesh.lock();
 	auto pointData = m_pointData.lock();
@@ -120,7 +120,7 @@ void InstanceSandRenderer::render(const Camera& camera, const World& world, Rend
 
 //-----------------------------------------------------------------------------
 
-glm::mat4 InstanceSandRenderer::modelMatrix() const
+glm::mat4 InstanceGrainRenderer::modelMatrix() const
 {
 	if (auto transform = m_transform.lock()) {
 		return transform->modelMatrix();

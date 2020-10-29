@@ -22,11 +22,11 @@
  * in the Software.
  */
 
-#include "ImpostorSandRenderer.h"
+#include "ImpostorGrainRenderer.h"
 #include "TransformBehavior.h"
 #include "ShaderPool.h"
 #include "BehaviorRegistry.h"
-#include "SandBehavior.h"
+#include "GrainBehavior.h"
 #include "ResourceManager.h"
 #include "utils/ScopedFramebufferOverride.h"
 #include "GlobalTimer.h"
@@ -37,7 +37,7 @@
 
 //-----------------------------------------------------------------------------
 
-const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
+const std::vector<std::string> ImpostorGrainRenderer::s_shaderVariantDefines = {
 	"NO_DISCARD",
 	"PASS_SHADOW_MAP",
 	"PASS_BLIT_TO_MAIN_FBO",
@@ -46,7 +46,7 @@ const std::vector<std::string> ImpostorSandRenderer::s_shaderVariantDefines = {
 	"PRECOMPUTE_IN_VERTEX",
 };
 
-bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
+bool ImpostorGrainRenderer::deserialize(const rapidjson::Value & json)
 {
 	jrOption(json, "shader", m_shaderName, m_shaderName);
 
@@ -60,15 +60,15 @@ bool ImpostorSandRenderer::deserialize(const rapidjson::Value & json)
 	return true;
 }
 
-void ImpostorSandRenderer::start()
+void ImpostorGrainRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<SandBehavior>();
+	m_sand = getComponent<GrainBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Impostor);
 	m_splitter = getComponent<PointCloudSplitter>();
 }
 
-void ImpostorSandRenderer::update(float time, int frame)
+void ImpostorGrainRenderer::update(float time, int frame)
 {
 	m_time = time;
 	if (properties().precomputeViewMatrices && !m_precomputedViewMatrices) {
@@ -76,9 +76,9 @@ void ImpostorSandRenderer::update(float time, int frame)
 	}
 }
 
-void ImpostorSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
+void ImpostorGrainRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer((target == RenderType::ShadowMap ? "ImpostorSandRenderer_shadowmap" : "ImpostorSandRenderer"));
+	ScopedTimer timer((target == RenderType::ShadowMap ? "ImpostorGrainRenderer_shadowmap" : "ImpostorGrainRenderer"));
 
 	auto pointData = m_pointData.lock();
 	if (!pointData) return;
@@ -175,7 +175,7 @@ void ImpostorSandRenderer::render(const Camera& camera, const World& world, Rend
 
 //-----------------------------------------------------------------------------
 
-void ImpostorSandRenderer::draw(const IPointCloudData& pointData, const ShaderProgram& shader) const
+void ImpostorGrainRenderer::draw(const IPointCloudData& pointData, const ShaderProgram& shader) const
 {
 	// Draw call
 	shader.use();
@@ -192,7 +192,7 @@ void ImpostorSandRenderer::draw(const IPointCloudData& pointData, const ShaderPr
 	glBindVertexArray(0);
 }
 
-void ImpostorSandRenderer::setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const
+void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const
 {
 	const Properties& props = properties();
 
@@ -241,7 +241,7 @@ void ImpostorSandRenderer::setCommonUniforms(const ShaderProgram& shader, const 
 	}
 }
 
-void ImpostorSandRenderer::precomputeViewMatrices()
+void ImpostorGrainRenderer::precomputeViewMatrices()
 {
 	auto sand = m_sand.lock();
 	if (!sand) return;
@@ -266,7 +266,7 @@ void ImpostorSandRenderer::precomputeViewMatrices()
 	m_precomputedViewMatrices->finalize();
 }
 
-glm::mat4 ImpostorSandRenderer::modelMatrix() const
+glm::mat4 ImpostorGrainRenderer::modelMatrix() const
 {
 	if (auto transform = m_transform.lock()) {
 		return transform->modelMatrix();
@@ -275,7 +275,7 @@ glm::mat4 ImpostorSandRenderer::modelMatrix() const
 	}
 }
 
-std::shared_ptr<ShaderProgram> ImpostorSandRenderer::getShader(ShaderVariantFlagSet flags) const
+std::shared_ptr<ShaderProgram> ImpostorGrainRenderer::getShader(ShaderVariantFlagSet flags) const
 {
 	constexpr int nFlags = static_cast<int>(magic_enum::enum_count<ShaderVariantFlag>());
 	if (m_shaders.empty()) {

@@ -32,11 +32,11 @@
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
 #include "Behavior/PointCloudSplitter.h"
-#include "Behavior/UberSandRenderer.h"
+#include "Behavior/FarGrainRenderer.h"
 #include "Behavior/GltfDataBehavior.h"
-#include "Behavior/InstanceSandRenderer.h"
-#include "Behavior/ImpostorSandRenderer.h"
-#include "Behavior/SandBehavior.h"
+#include "Behavior/InstanceGrainRenderer.h"
+#include "Behavior/ImpostorGrainRenderer.h"
+#include "Behavior/GrainBehavior.h"
 #include "Behavior/QuadMeshData.h"
 
 #include "Behavior/PointCloudView.h"
@@ -50,11 +50,11 @@ void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_pt
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
 	handleType(PointCloudSplitter);
-	handleType(UberSandRenderer);
+	handleType(FarGrainRenderer);
 	handleType(GltfDataBehavior);
-	handleType(InstanceSandRenderer);
-	handleType(ImpostorSandRenderer);
-	handleType(SandBehavior);
+	handleType(InstanceGrainRenderer);
+	handleType(ImpostorGrainRenderer);
+	handleType(GrainBehavior);
 	handleType(QuadMeshData);
 }
 

@@ -48,12 +48,12 @@ using namespace std;
 
 // TODO: Find a way to avoid this function
 #include "LightGizmoDialog.h"
-#include "UberSandRendererDialog.h"
+#include "FarGrainRendererDialog.h"
 #include "TransformDialog.h"
 #include "PointCloudSplitterDialog.h"
-#include "InstanceSandRendererDialog.h"
-#include "ImpostorSandRendererDialog.h"
-#include "SandBehaviorDialog.h"
+#include "InstanceGrainRendererDialog.h"
+#include "ImpostorGrainRendererDialog.h"
+#include "GrainBehaviorDialog.h"
 #include "MeshRendererDialog.h"
 #include "QuadMeshDataDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
@@ -64,12 +64,12 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
 	handleBehavior(LightGizmo);
-	handleBehavior(UberSandRenderer);
+	handleBehavior(FarGrainRenderer);
 	handleBehavior(TransformBehavior);
 	handleBehavior(PointCloudSplitter);
-	handleBehavior(InstanceSandRenderer);
-	handleBehavior(ImpostorSandRenderer);
-	handleBehavior(SandBehavior);
+	handleBehavior(InstanceGrainRenderer);
+	handleBehavior(ImpostorGrainRenderer);
+	handleBehavior(GrainBehavior);
 	handleBehavior(MeshRenderer);
 	handleBehavior(QuadMeshData);
 	return nullptr;

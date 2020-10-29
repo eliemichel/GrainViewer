@@ -97,18 +97,6 @@ ShaderPool::ShaderPool()
 		{ "light-gizmo", ShaderProgram::RenderShader,{} }
 	});
 	m_defaultShaders.insert({
-		"GenerateLeanMaps_Image2D",
-		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_2D" } }
-	});
-	m_defaultShaders.insert({
-		"GenerateLeanMaps_Image2DArray",
-		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_2D_ARRAY" } }
-	});
-	m_defaultShaders.insert({
-		"GenerateLeanMaps_Image3D",
-		{ "generate-lean-maps", ShaderProgram::ComputeShader, { "USING_IMAGE_3D" } }
-	});
-	m_defaultShaders.insert({
 		"GenerateMipmapDepthBuffer",
 		{ "generate-mipmap-zbuffer", ShaderProgram::RenderShader, {} }
 	});

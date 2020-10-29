@@ -29,9 +29,9 @@
 #include "utils/strutils.h"
 #include "utils/behaviorutils.h"
 #include "utils/ScopedFramebufferOverride.h"
-#include "UberSandRenderer.h"
+#include "FarGrainRenderer.h"
 #include "TransformBehavior.h"
-#include "SandBehavior.h"
+#include "GrainBehavior.h"
 #include "ShaderPool.h"
 #include "ShaderProgram.h"
 #include "GlBuffer.h"
@@ -44,7 +44,7 @@
 
 #include <magic_enum.hpp>
 
-const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
+const std::vector<std::string> FarGrainRenderer::s_shaderVariantDefines = {
 	"SHELL_CULLING",
 	"PASS_DEPTH",
 	"PASS_EPSILON_DEPTH",
@@ -56,7 +56,7 @@ const std::vector<std::string> UberSandRenderer::s_shaderVariantDefines = {
 //-----------------------------------------------------------------------------
 // Behavior implementation
 
-bool UberSandRenderer::deserialize(const rapidjson::Value & json)
+bool FarGrainRenderer::deserialize(const rapidjson::Value & json)
 {
 
 	jrOption(json, "shader", m_shaderName, m_shaderName);
@@ -67,10 +67,10 @@ bool UberSandRenderer::deserialize(const rapidjson::Value & json)
 	return true;
 }
 
-void UberSandRenderer::start()
+void FarGrainRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<SandBehavior>();
+	m_sand = getComponent<GrainBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Point);
 
 	if (!m_colormapTextureName.empty()) {
@@ -78,14 +78,14 @@ void UberSandRenderer::start()
 	}
 }
 
-void UberSandRenderer::update(float time, int frame)
+void FarGrainRenderer::update(float time, int frame)
 {
 	m_time = time;
 }
 
-void UberSandRenderer::render(const Camera& camera, const World& world, RenderType target) const
+void FarGrainRenderer::render(const Camera& camera, const World& world, RenderType target) const
 {
-	ScopedTimer timer((target == RenderType::ShadowMap ? "UberSandRenderer_shadowmap" : "UberSandRenderer"));
+	ScopedTimer timer((target == RenderType::ShadowMap ? "FarGrainRenderer_shadowmap" : "FarGrainRenderer"));
 
 	// Sanity checks
 	auto pointData = m_pointData.lock();
@@ -107,7 +107,7 @@ void UberSandRenderer::render(const Camera& camera, const World& world, RenderTy
 //-----------------------------------------------------------------------------
 // private members
 
-void UberSandRenderer::draw(const IPointCloudData& pointData) const
+void FarGrainRenderer::draw(const IPointCloudData& pointData) const
 {
 	glBindVertexArray(pointData.vao());
 	if (auto ebo = pointData.ebo()) {
@@ -123,7 +123,7 @@ void UberSandRenderer::draw(const IPointCloudData& pointData) const
 	glBindVertexArray(0);
 }
 
-void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const Camera& camera, const World& world) const
+void FarGrainRenderer::renderToGBuffer(const IPointCloudData& pointData, const Camera& camera, const World& world) const
 {
 	ScopedFramebufferOverride scoppedFramebufferOverride; // to automatically restore fbo binding at the end of scope
 
@@ -245,7 +245,7 @@ void UberSandRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 	}
 }
 
-void UberSandRenderer::renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const
+void FarGrainRenderer::renderToShadowMap(const IPointCloudData& pointData, const Camera& camera, const World& world) const
 {
 	const Properties& props = properties();
 	ShaderVariantFlagSet flags = ShaderPassDepth;
@@ -264,7 +264,7 @@ void UberSandRenderer::renderToShadowMap(const IPointCloudData& pointData, const
 	draw(pointData);
 }
 
-glm::mat4 UberSandRenderer::modelMatrix() const {
+glm::mat4 FarGrainRenderer::modelMatrix() const {
 	if (auto transform = m_transform.lock()) {
 		return transform->modelMatrix();
 	} else {
@@ -272,7 +272,7 @@ glm::mat4 UberSandRenderer::modelMatrix() const {
 	}
 }
 
-GLint UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Camera & camera, GLint nextTextureUnit) const {
+GLint FarGrainRenderer::setCommonUniforms(const ShaderProgram & shader, const Camera & camera, GLint nextTextureUnit) const {
 	GLint o = nextTextureUnit;
 
 	glm::mat4 viewModelMatrix = camera.viewMatrix() * modelMatrix();
@@ -299,7 +299,7 @@ GLint UberSandRenderer::setCommonUniforms(const ShaderProgram & shader, const Ca
 	return o;
 }
 
-void UberSandRenderer::bindDepthTexture(ShaderProgram & shader, GLuint textureUnit) const
+void FarGrainRenderer::bindDepthTexture(ShaderProgram & shader, GLuint textureUnit) const
 {
 	GLint depthTexture;
 	GLint drawFboId = 0;
@@ -309,7 +309,7 @@ void UberSandRenderer::bindDepthTexture(ShaderProgram & shader, GLuint textureUn
 	shader.setUniform("uDepthTexture", static_cast<GLint>(textureUnit));
 }
 
-std::shared_ptr<ShaderProgram> UberSandRenderer::getShader(ShaderVariantFlagSet flags) const
+std::shared_ptr<ShaderProgram> FarGrainRenderer::getShader(ShaderVariantFlagSet flags) const
 {
 	if (m_shaders.empty()) {
 		m_shaders.resize(_ShaderVariantFlagsCount);

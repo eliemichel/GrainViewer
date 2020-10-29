@@ -38,11 +38,11 @@
 
 class ShaderProgram;
 class TransformBehavior;
-class SandBehavior;
+class GrainBehavior;
 class IPointCloudData;
 class PointCloudSplitter;
 
-class ImpostorSandRenderer : public Behavior {
+class ImpostorGrainRenderer : public Behavior {
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
@@ -102,16 +102,16 @@ private:
 	void setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const;
 	void precomputeViewMatrices();
 	glm::mat4 modelMatrix() const;
-	std::shared_ptr<ShaderProgram> ImpostorSandRenderer::getShader(ShaderVariantFlagSet flags) const;
+	std::shared_ptr<ShaderProgram> ImpostorGrainRenderer::getShader(ShaderVariantFlagSet flags) const;
 
 private:
 	Properties m_properties;
 
-	std::string m_shaderName = "ImpostorSand";
+	std::string m_shaderName = "ImpostorGrain";
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders;
 
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<SandBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_sand;
 	std::weak_ptr<IPointCloudData> m_pointData;
 	std::weak_ptr<PointCloudSplitter> m_splitter;
 
@@ -121,7 +121,7 @@ private:
 	float m_time;
 };
 
-REFL_TYPE(ImpostorSandRenderer::Properties)
+REFL_TYPE(ImpostorGrainRenderer::Properties)
 REFL_FIELD(grainScale)
 REFL_FIELD(debugShape)
 REFL_FIELD(interpolationMode)
@@ -134,4 +134,4 @@ REFL_FIELD(firstPassOnly)
 REFL_FIELD(hitSphereCorrectionFactor)
 REFL_END
 
-registerBehaviorType(ImpostorSandRenderer)
+registerBehaviorType(ImpostorGrainRenderer)

@@ -33,7 +33,7 @@
 #include <string>
 
 class TransformBehavior;
-class SandBehavior;
+class GrainBehavior;
 class ShaderProgram;
 class IPointCloudData;
 class GlTexture;
@@ -42,7 +42,7 @@ class GlTexture;
  * A sand renderer focused on far grains, not implementing the closer models
  * namely impostors and instances. It does epsilon-depth-testing
  */
-class UberSandRenderer : public Behavior {
+class FarGrainRenderer : public Behavior {
 public:
 	// Behavior implementation
 	bool deserialize(const rapidjson::Value & json) override;
@@ -110,14 +110,14 @@ private:
 	std::shared_ptr<ShaderProgram> getShader(ShaderVariantFlagSet flags = 0) const;
 
 public:
-	std::string m_shaderName = "UberSand";
+	std::string m_shaderName = "FarGrain";
 	std::string m_colormapTextureName = "";
 	Properties m_properties;
 
 	// One shader by combination of flags
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<SandBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_sand;
 	std::weak_ptr<IPointCloudData> m_pointData;
 	std::unique_ptr<GlTexture> m_colormapTexture;
 
@@ -127,7 +127,7 @@ public:
 };
 
 using namespace ReflectionAttributes;
-REFL_TYPE(UberSandRenderer::Properties)
+REFL_TYPE(FarGrainRenderer::Properties)
 REFL_FIELD(radius, Range(0.0f, 0.1f))
 REFL_FIELD(epsilonFactor, Range(0.01f, 20.0f))
 REFL_FIELD(useShellCulling)
@@ -144,4 +144,4 @@ REFL_FIELD(checkboardSprites)
 REFL_FIELD(showSampleCount)
 REFL_END
 
-registerBehaviorType(UberSandRenderer)
+registerBehaviorType(FarGrainRenderer)

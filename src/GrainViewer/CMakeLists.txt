@@ -76,19 +76,19 @@ set(All_SRC
 	Behavior/TransformBehavior.cpp
 	Behavior/LightGizmo.h
 	Behavior/LightGizmo.cpp
-	Behavior/UberSandRenderer.h
-	Behavior/UberSandRenderer.cpp
+	Behavior/FarGrainRenderer.h
+	Behavior/FarGrainRenderer.cpp
 	Behavior/PointCloudDataBehavior.h
 	Behavior/PointCloudDataBehavior.cpp
 	Behavior/PointCloudSplitter.h
 	Behavior/PointCloudSplitter.cpp
 	Behavior/PointCloudView.h
-	Behavior/InstanceSandRenderer.h
-	Behavior/InstanceSandRenderer.cpp
-	Behavior/ImpostorSandRenderer.h
-	Behavior/ImpostorSandRenderer.cpp
-	Behavior/SandBehavior.h
-	Behavior/SandBehavior.cpp
+	Behavior/InstanceGrainRenderer.h
+	Behavior/InstanceGrainRenderer.cpp
+	Behavior/ImpostorGrainRenderer.h
+	Behavior/ImpostorGrainRenderer.cpp
+	Behavior/GrainBehavior.h
+	Behavior/GrainBehavior.cpp
 	Behavior/QuadMeshData.h
 	Behavior/QuadMeshData.cpp
 
@@ -116,8 +116,8 @@ set(All_SRC
 	Ui/TestGui.cpp
 	Ui/Window.h
 	Ui/Window.cpp
-	Ui/UberSandRendererDialog.h
-	Ui/UberSandRendererDialog.cpp
+	Ui/FarGrainRendererDialog.h
+	Ui/FarGrainRendererDialog.cpp
 	Ui/SceneDialog.h
 	Ui/SceneDialog.cpp
 	Ui/LightGizmoDialog.h
@@ -130,12 +130,12 @@ set(All_SRC
 	Ui/WorldDialog.cpp
 	Ui/PointCloudSplitterDialog.h
 	Ui/PointCloudSplitterDialog.cpp
-	Ui/InstanceSandRendererDialog.h
-	Ui/InstanceSandRendererDialog.cpp
-	Ui/ImpostorSandRendererDialog.h
-	Ui/ImpostorSandRendererDialog.cpp
-	Ui/SandBehaviorDialog.h
-	Ui/SandBehaviorDialog.cpp
+	Ui/InstanceGrainRendererDialog.h
+	Ui/InstanceGrainRendererDialog.cpp
+	Ui/ImpostorGrainRendererDialog.h
+	Ui/ImpostorGrainRendererDialog.cpp
+	Ui/GrainBehaviorDialog.h
+	Ui/GrainBehaviorDialog.cpp
 	Ui/GlobalTimerDialog.h
 	Ui/GlobalTimerDialog.cpp
 	Ui/MeshRendererDialog.h

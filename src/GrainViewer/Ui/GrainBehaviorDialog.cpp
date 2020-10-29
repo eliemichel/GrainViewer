@@ -22,16 +22,22 @@
  * in the Software.
  */
 
-#include "SandBehavior.h"
-#include "TransformBehavior.h"
-#include "ShaderPool.h"
-
-#include "utils/jsonutils.h"
+#include "GrainBehaviorDialog.h"
+#include "utils/guiutils.h"
 #include "utils/behaviorutils.h"
+#include <imgui.h>
 
-bool SandBehavior::deserialize(const rapidjson::Value & json)
+void GrainBehaviorDialog::draw()
 {
-	autoDeserialize(json, m_properties);
-	jrArray(json, "atlases", m_atlases);
-	return true;
+	if (auto cont = m_cont.lock()) {
+		if (ImGui::CollapsingHeader("GrainBehavior", ImGuiTreeNodeFlags_DefaultOpen)) {
+			bool enabled = cont->isEnabled();
+			ImGui::Checkbox("Enabled", &enabled);
+			cont->setEnabled(enabled);
+
+			BeginDisable(!enabled);
+			autoUi(cont->properties());
+			EndDisable(!enabled);
+		}
+	}
 }

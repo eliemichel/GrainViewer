@@ -24,18 +24,18 @@
 
 #pragma once
 
-#include "Behavior/ImpostorSandRenderer.h"
+#include "Behavior/GrainBehavior.h"
 #include "Dialog.h"
 
 #include <memory>
 
-class ImpostorSandRendererDialog : public Dialog {
+class GrainBehaviorDialog : public Dialog {
 public:
 	void draw() override;
-	void setControlledBehavior(std::weak_ptr<ImpostorSandRenderer> behavior) { m_cont = behavior; }
+	void setControlledBehavior(std::weak_ptr<GrainBehavior> behavior) { m_cont = behavior; }
 
 private:
-	std::weak_ptr<ImpostorSandRenderer> m_cont;
+	std::weak_ptr<GrainBehavior> m_cont;
 };
 
-registerDialogForBehavior(ImpostorSandRendererDialog, ImpostorSandRenderer)
+registerDialogForBehavior(GrainBehaviorDialog, GrainBehavior)
