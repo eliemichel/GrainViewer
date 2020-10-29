@@ -194,9 +194,9 @@ void FarGrainRenderer::renderToGBuffer(const IPointCloudData& pointData, const C
 
 		GLint o = setCommonUniforms(shader, camera);
 
-		if (auto sand = m_grain.lock()) {
-			for (size_t k = 0; k < sand->atlases().size(); ++k) {
-				o = sand->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
+		if (auto grain = m_grain.lock()) {
+			for (size_t k = 0; k < grain->atlases().size(); ++k) {
+				o = grain->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
 			}
 		}
 
@@ -281,9 +281,9 @@ GLint FarGrainRenderer::setCommonUniforms(const ShaderProgram & shader, const Ca
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
 	autoSetUniforms(shader, m_properties);
-	if (auto sand = m_grain.lock()) {
-		autoSetUniforms(shader, sand->properties());
-		shader.setUniform("uEpsilon", m_properties.epsilonFactor * sand->properties().grainRadius);
+	if (auto grain = m_grain.lock()) {
+		autoSetUniforms(shader, grain->properties());
+		shader.setUniform("uEpsilon", m_properties.epsilonFactor * grain->properties().grainRadius);
 	} else {
 		shader.setUniform("uEpsilon", m_properties.epsilonFactor * m_properties.radius);
 	}

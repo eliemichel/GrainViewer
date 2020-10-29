@@ -71,7 +71,7 @@ private:
 	std::shared_ptr<ShaderProgram> m_shader;
 
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<GrainBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_grain;
 	std::weak_ptr<MeshDataBehavior> m_mesh;
 	std::weak_ptr<IPointCloudData> m_pointData;
 

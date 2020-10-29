@@ -39,7 +39,7 @@ class ShaderProgram;
 class TransformBehavior;
 
 /**
- * Behavior holding sand properties that are common to all sand renderers.
+ * Behavior holding sagrainnd properties that are common to all grain renderers.
  */
 class GrainBehavior : public Behavior {
 public:

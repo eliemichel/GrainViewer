@@ -50,7 +50,7 @@ bool InstanceGrainRenderer::deserialize(const rapidjson::Value & json)
 void InstanceGrainRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<GrainBehavior>();
+	m_grain = getComponent<GrainBehavior>();
 	m_mesh = getComponent<MeshDataBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Instance);
 
@@ -81,8 +81,8 @@ void InstanceGrainRenderer::render(const Camera& camera, const World& world, Ren
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
 	autoSetUniforms(shader, properties());
-	if (auto sand = m_sand.lock()) {
-		autoSetUniforms(shader, sand->properties());
+	if (auto grain = m_grain.lock()) {
+		autoSetUniforms(shader, grain->properties());
 	}
 
 	shader.setUniform("uPointCount", static_cast<GLuint>(pointData->pointCount()));

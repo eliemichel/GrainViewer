@@ -203,8 +203,8 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
 	autoSetUniforms(shader, properties());
-	if (auto sand = m_grain.lock()) {
-		autoSetUniforms(shader, sand->properties());
+	if (auto grain = m_grain.lock()) {
+		autoSetUniforms(shader, grain->properties());
 	}
 
 	auto pointData = m_pointData.lock();
@@ -219,9 +219,9 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 		shader.setUniform("uColormapTexture", o++);
 	}
 
-	if (auto sand = m_grain.lock()) {
-		for (size_t k = 0; k < sand->atlases().size(); ++k) {
-			o = sand->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
+	if (auto grain = m_grain.lock()) {
+		for (size_t k = 0; k < grain->atlases().size(); ++k) {
+			o = grain->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
 		}
 	}
 
@@ -243,14 +243,14 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 
 void ImpostorGrainRenderer::precomputeViewMatrices()
 {
-	auto sand = m_grain.lock();
-	if (!sand) return;
+	auto grain = m_grain.lock();
+	if (!grain) return;
 
 	m_precomputedViewMatrices = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);
 	// Check that viewCount is the same for all impostors
-	GLuint n = sand->atlases()[0].viewCount;
-	for (int i = 1 ; i < sand->atlases().size() ; ++i) {
-		if (sand->atlases()[i].viewCount != n) {
+	GLuint n = grain->atlases()[0].viewCount;
+	for (int i = 1 ; i < grain->atlases().size() ; ++i) {
+		if (grain->atlases()[i].viewCount != n) {
 			ERR_LOG << "Precomputed view matrices can only be used when all impostors use the same number of views";
 			properties().precomputeViewMatrices = false;
 			return;

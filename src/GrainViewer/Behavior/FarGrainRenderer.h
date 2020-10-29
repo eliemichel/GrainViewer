@@ -39,8 +39,8 @@ class IPointCloudData;
 class GlTexture;
 
 /**
- * A sand renderer focused on far grains, not implementing the closer models
- * namely impostors and instances. It does epsilon-depth-testing
+ * A grain renderer focused on furthest grains, that are subpixelic.
+ * It does epsilon-depth-testing.
  */
 class FarGrainRenderer : public Behavior {
 public:
