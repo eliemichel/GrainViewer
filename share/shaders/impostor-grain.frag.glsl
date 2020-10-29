@@ -89,7 +89,7 @@ uniform mat4 viewModelMatrix;
 #include "include/impostor.inc.glsl"
 #include "include/random.inc.glsl"
 #include "include/depth.inc.glsl"
-#include "sand/procedural-color.inc.glsl"
+#include "grain/procedural-color.inc.glsl"
 
 uniform SphericalImpostor uImpostor[3];
 uniform float uGrainInnerRadiusRatio;

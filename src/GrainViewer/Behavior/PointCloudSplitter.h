@@ -40,7 +40,7 @@
 class ShaderProgram;
 class PointCloudView;
 class TransformBehavior;
-class SandBehavior;
+class GrainBehavior;
 
 /**
  * The Point Cloud Splitter behavior uses the preRender pass to split
@@ -132,7 +132,7 @@ private:
 	std::shared_ptr<ShaderProgram> m_occlusionCullingShader;
 
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<SandBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_grain;
 	std::weak_ptr<IPointCloudData> m_pointData;
 
 	std::shared_ptr<GlBuffer> m_elementBuffer; // must be shared because exposed through IPointCloudData interface

@@ -1,0 +1,174 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 24,
+			"near": 0.1,
+			"far": 100,
+
+			"outputFrameBase": "Record/$BASEFILE/beauty/frame",
+			"turntable": {
+				"center": [0, 0, 0],
+				"quat": [-0.183621, 0.361926, 0.815055, 0.413505],
+				"zoom": 4.47925
+			}
+		}
+	],
+
+	"deferredShader": {
+		"defines": [ ],
+		"colormap": "Textures/turbo.png",
+		"shadowMapBiasBase": 1.0,
+		"shadowMapBiasExponent": -2
+	},
+
+	"lights": [
+		{
+			"position": [0, 10, 5],
+			"color": [3, 3, 3],
+			"hasShadowMap": true,
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 15
+		},
+		{
+			"position": [0, 1, 10],
+			"color": [0.8, 1.0, 1.2],
+			"hasShadowMap": false,
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world",
+		"Mesh": "standard-mesh",
+		"GrainSplit": {
+			"baseFile": "grain/globalatomic-splitter",
+			"type": "compute",
+			"snippets": { "settings": "#define LOCAL_SIZE_X 128" }
+		},
+		"GrainSplitOcclusionPrepass": {
+			"baseFile": "grain/occlusion-culling"
+		},
+		"InstanceGrain": {
+			"baseFile": "instance-grain",
+			"defines": [ ]
+		},
+		"ImpostorGrain": {
+			"baseFile": "impostor-grain",
+			"defines": [ ]
+		},
+		"FarGrain": {
+			"baseFile": "far-grain",
+			"defines": [ "PROCEDURAL_BASECOLOR3" ]
+		}
+	},
+
+	"world": {
+		"shader": "World"
+	},
+
+	"objects": [
+		{
+			"type": "RuntimeObject",
+			"ignore": false,
+			"name": "Coffee Grains",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.017, 0, 0, 0,
+						0, 0, 0.017, 0,
+						0, 0.017, 0, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "Meshes/coffee00_midpZ.obj"
+				},
+				{
+					"type": "PointCloudDataBehavior",
+					"filename": "PointClouds/coffee-roaster-250frames-radius0.01.bin"
+				},
+				{
+					"type": "GrainBehavior",
+					"grainRadius": 0.01,
+					"grainInnerRadiusRatio": 0.95,
+					"atlases": [
+						{
+							"normalAlpha": "Impostors/coffee00-128v-128p/normal",
+							"baseColor": "Impostors/coffee00-128v-128p/baseColor",
+							"roughness": 0.3882,
+							"metallic": 0.0,
+
+							"bake": true,
+							"filename": "Meshes/coffee00_midpZ.obj",
+							"angularDefinition": 128,
+							"spatialDefinition": 128,
+							"save": true
+						}
+					]
+				},
+				{
+					"type": "PointCloudSplitter",
+					"shader": "GrainSplit",
+					"occlusionCullingShader": "GrainSplitOcclusionPrepass",
+					"instanceLimit": 1.6,
+					"impostorLimit": 10.0
+				},
+				{
+					"type": "InstanceGrainRenderer",
+					"shader": "InstanceGrain",
+					"colormap": "Textures/colormap3.png",
+					"grainMeshScale": 2.0
+				},
+				{
+					"type": "ImpostorGrainRenderer",
+					"shader": "ImpostorGrain",
+					"colormap": "Textures/colormap3.png",
+					"grainScale": 1.0,
+					"precomputeInVertex": true,
+					"prerenderSurface": true
+				},
+				{
+					"type": "FarGrainRenderer",
+					"shader": "FarGrain",
+					"colormap": "Textures/colormap3.png",
+					"radius": 0.01,
+					"epsilonFactor": 10.0,
+					"useShellCulling": true,
+					"debugShape": 0,
+					"weightMode": 0
+				}
+			]
+		},
+		{
+			"type": "RuntimeObject",
+			"name": "Plate",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.017, 0, 0, 0,
+						0, 0, 0.017, 0,
+						0, 0.017, 0, 0,
+						0, 0, 0.0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "Meshes/plate.obj"
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		}
+	]
+}}

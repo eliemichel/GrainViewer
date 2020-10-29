@@ -32,6 +32,13 @@
 #include <cstdlib> // for EXIT_FAILURE and EXIT_SUCCESS
 #include <memory>
 
+// Force running on nvidia chip if available
+#ifdef _WIN32
+extern "C" {
+	_declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
+#endif // _WIN32
+
 int main(int argc, char *argv[]) {
 	const char *title = "Grain Viewer -- Copyright (c) 2017 - 2020 -- Telecom Paris (Elie Michel, CG Group)";
 

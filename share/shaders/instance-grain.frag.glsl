@@ -24,7 +24,7 @@ uniform bool uDebugRenderType = false;
 uniform vec3 uDebugRenderColor = vec3(172.0/255.0, 23.0/255.0, 1.0/255.0);
 
 #include "include/random.inc.glsl"
-#include "sand/procedural-color.inc.glsl"
+#include "grain/procedural-color.inc.glsl"
 
 void main() {
     SurfacePoint surf = SurfacePoint(

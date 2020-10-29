@@ -64,7 +64,7 @@ uniform bool uPrerenderSurface = false;
 #include "include/utils.inc.glsl"
 #include "include/random.inc.glsl"
 #include "include/sprite.inc.glsl"
-#include "sand/random-grains.inc.glsl"
+#include "grain/random-grains.inc.glsl"
 
 #ifdef PRECOMPUTE_IN_VERTEX
 #include "include/raytracing.inc.glsl"

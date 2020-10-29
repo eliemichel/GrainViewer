@@ -24,7 +24,7 @@
 
 #include "PointCloudSplitter.h"
 #include "TransformBehavior.h"
-#include "SandBehavior.h"
+#include "GrainBehavior.h"
 #include "BehaviorRegistry.h"
 #include "utils/ScopedFramebufferOverride.h"
 #include "ShaderPool.h"
@@ -58,7 +58,7 @@ bool PointCloudSplitter::deserialize(const rapidjson::Value& json)
 void PointCloudSplitter::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<SandBehavior>();
+	m_grain = getComponent<GrainBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this);
 
 	// Initialize element buffer
@@ -266,9 +266,9 @@ void PointCloudSplitter::setCommonUniforms(const ShaderProgram& shader, const Ca
 
 
 	autoSetUniforms(shader, properties());
-	if (auto sand = m_sand.lock()) {
-		autoSetUniforms(shader, sand->properties());
-		shader.setUniform("uOuterOverInnerRadius", 1.0f / sand->properties().grainInnerRadiusRatio);
+	if (auto grain = m_grain.lock()) {
+		autoSetUniforms(shader, grain->properties());
+		shader.setUniform("uOuterOverInnerRadius", 1.0f / grain->properties().grainInnerRadiusRatio);
 	}
 
 	shader.setUniform("uPointCount", m_elementCount);

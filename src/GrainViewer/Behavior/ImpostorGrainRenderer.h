@@ -111,7 +111,7 @@ private:
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders;
 
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<GrainBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_grain;
 	std::weak_ptr<IPointCloudData> m_pointData;
 	std::weak_ptr<PointCloudSplitter> m_splitter;
 

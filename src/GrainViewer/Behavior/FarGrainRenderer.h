@@ -117,7 +117,7 @@ public:
 	// One shader by combination of flags
 	mutable std::vector<std::shared_ptr<ShaderProgram>> m_shaders; // mutable for lazy loading, do NOT use this directly, rather use getShader()
 	std::weak_ptr<TransformBehavior> m_transform;
-	std::weak_ptr<GrainBehavior> m_sand;
+	std::weak_ptr<GrainBehavior> m_grain;
 	std::weak_ptr<IPointCloudData> m_pointData;
 	std::unique_ptr<GlTexture> m_colormapTexture;
 

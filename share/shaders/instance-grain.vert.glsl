@@ -45,7 +45,7 @@ uniform bool uUsePointElements = true;
 
 #include "include/random.inc.glsl"
 #include "include/anim.inc.glsl"
-#include "sand/procedural-color.inc.glsl"
+#include "grain/procedural-color.inc.glsl"
 
 void main() {
     uint pointId =

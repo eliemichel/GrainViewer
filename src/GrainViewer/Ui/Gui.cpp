@@ -150,6 +150,11 @@ static void window_size_callback(GLFWwindow* window, int width, int height) {
 	gui->onResize(width, height);
 }
 
+static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	Gui* gui = static_cast<Gui*>(glfwGetWindowUserPointer(window));
+	gui->onScroll(xoffset, yoffset);
+}
+
 void Gui::setupCallbacks()
 {
 	if (auto window = m_window.lock()) {
@@ -158,6 +163,7 @@ void Gui::setupCallbacks()
 		glfwSetCursorPosCallback(window->glfw(), cursor_pos_callback);
 		glfwSetMouseButtonCallback(window->glfw(), mouse_button_callback);
 		glfwSetWindowSizeCallback(window->glfw(), window_size_callback);
+		glfwSetScrollCallback(window->glfw(), scroll_callback);
 	}
 }
 
@@ -416,6 +422,20 @@ void Gui::onCursorPosition(double x, double y) {
 		for (auto& camera : m_scene->cameras()) {
 			if (camera->properties().controlInViewport) {
 				camera->updateMousePosition(static_cast<float>(x), static_cast<float>(y));
+			}
+		}
+	}
+}
+
+void Gui::onScroll(double xoffset, double yoffset) {
+	if (m_imguiFocus) {
+		return;
+	}
+
+	if (m_scene) {
+		for (auto& camera : m_scene->cameras()) {
+			if (camera->properties().controlInViewport) {
+				camera->zoom(- 2 * static_cast<float>(yoffset));
 			}
 		}
 	}

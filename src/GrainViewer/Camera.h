@@ -111,6 +111,8 @@ public:
 
 	inline void startMouseZoom() { m_isMouseZoomStarted = true; m_isLastMouseUpToDate = false; }
 	inline void stopMouseZoom() { m_isMouseZoomStarted = false; }
+
+	inline void zoom(float factor) { updateDeltaMouseZoom(0, 0, 0, factor); }
 	
 	inline void startMousePanning() { m_isMousePanningStarted = true; m_isLastMouseUpToDate = false; }
 	inline void stopMousePanning() { m_isMousePanningStarted = false; }

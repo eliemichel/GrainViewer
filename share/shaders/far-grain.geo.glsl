@@ -37,7 +37,7 @@ out FragmentData {
 #include "include/sprite.inc.glsl"
 #include "include/random.inc.glsl"
 #include "include/zbuffer.inc.glsl"
-#include "sand/procedural-color.inc.glsl"
+#include "grain/procedural-color.inc.glsl"
 
 #include "include/raytracing.inc.glsl"
 #include "include/gbuffer2.inc.glsl"

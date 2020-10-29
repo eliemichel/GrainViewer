@@ -63,7 +63,7 @@ bool ImpostorGrainRenderer::deserialize(const rapidjson::Value & json)
 void ImpostorGrainRenderer::start()
 {
 	m_transform = getComponent<TransformBehavior>();
-	m_sand = getComponent<GrainBehavior>();
+	m_grain = getComponent<GrainBehavior>();
 	m_pointData = BehaviorRegistry::getPointCloudDataComponent(*this, PointCloudSplitter::RenderModel::Impostor);
 	m_splitter = getComponent<PointCloudSplitter>();
 }
@@ -203,7 +203,7 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 	shader.setUniform("viewModelMatrix", viewModelMatrix);
 
 	autoSetUniforms(shader, properties());
-	if (auto sand = m_sand.lock()) {
+	if (auto sand = m_grain.lock()) {
 		autoSetUniforms(shader, sand->properties());
 	}
 
@@ -219,7 +219,7 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 		shader.setUniform("uColormapTexture", o++);
 	}
 
-	if (auto sand = m_sand.lock()) {
+	if (auto sand = m_grain.lock()) {
 		for (size_t k = 0; k < sand->atlases().size(); ++k) {
 			o = sand->atlases()[k].setUniforms(shader, MAKE_STR("uImpostor[" << k << "]."), o);
 		}
@@ -243,7 +243,7 @@ void ImpostorGrainRenderer::setCommonUniforms(const ShaderProgram& shader, const
 
 void ImpostorGrainRenderer::precomputeViewMatrices()
 {
-	auto sand = m_sand.lock();
+	auto sand = m_grain.lock();
 	if (!sand) return;
 
 	m_precomputedViewMatrices = std::make_unique<GlBuffer>(GL_SHADER_STORAGE_BUFFER);

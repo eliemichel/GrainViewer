@@ -1,0 +1,153 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 24,
+			"near": 0.1,
+			"far": 200,
+
+			"turntable": {
+				"center": [-0.653843, -0.21688, -0.234794],
+				"quat": [-0.103755, 0.497764, 0.842966, 0.17571],
+				"zoom": 7.0778
+			}
+		}
+	],
+
+	"deferredShader": {
+		"defines": [ ],
+		"colormap": "Textures/turbo.png",
+		"shadowMapBiasBase": 0.45,
+		"shadowMapBiasExponent": -3,
+		"transparentFilm": true
+	},
+
+	"lights": [
+		{
+			"position": [0, 30, 3],
+			"color": [3, 3, 3],
+			"hasShadowMap": true,
+			"shadowMapSize": 2048,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 39,
+			"shadowMapFov": 45
+		},
+		{
+			"position": [0, 1, 10],
+			"color": [1.45, 1.5, 1.6],
+			"hasShadowMap": true,
+			"shadowMapSize": 2048,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world",
+		"Mesh": "standard-mesh",
+		"GrainSplit": {
+			"baseFile": "grain/globalatomic-splitter",
+			"type": "compute",
+			"snippets": { "settings": "#define LOCAL_SIZE_X 128" }
+		},
+		"GrainSplitOcclusionPrepass": {
+			"baseFile": "grain/occlusion-culling"
+		},
+		"InstanceGrain": {
+			"baseFile": "instance-grain",
+			"defines": [ "PROCEDURAL_BASECOLOR" ]
+		},
+		"ImpostorGrain": {
+			"baseFile": "impostor-grain",
+			"defines": [ "PROCEDURAL_BASECOLOR" ]
+		},
+		"FarGrain": {
+			"baseFile": "far-grain",
+			"defines": [ "PROCEDURAL_BASECOLOR" ]
+		}
+	},
+
+	"world": {
+		"shader": "World"
+	},
+
+	"objects": [
+		{
+			"type": "RuntimeObject",
+			"ignore": false,
+			"name": "Nut Heap",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1.0, 0, 0, 0,
+						0, 1.0, 0, 0,
+						0, 0, 1.0, 0,
+						0, 0, 0, 1.0
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "Meshes/nut01_Z.obj",
+					"offset": [-0.026166, -0.0027945, 0.004641]
+				},
+				{
+					"type": "PointCloudDataBehavior",
+					"filename": "PointClouds/heap-positions-radius0.032.bin"
+				},
+				{
+					"type": "GrainBehavior",
+					"grainRadius": 0.032,
+					"grainInnerRadiusRatio": 0.5,
+					"atlases": [
+						{
+							"normalAlpha": "Impostors/$BASEFILE/normal",
+							"baseColor": "Impostors/$BASEFILE/baseColor",
+							"roughness": 0.5,
+							"metallic": 0.0,
+
+							"bake": true,
+							"filename": "Meshes/nut01_Z.obj",
+							"angularDefinition": 200,
+							"spatialDefinition": 128,
+							"save": true
+						}
+					]
+				},
+				{
+					"type": "PointCloudSplitter",
+					"shader": "GrainSplit",
+					"occlusionCullingShader": "GrainSplitOcclusionPrepass",
+					"instanceLimit": 1.1,
+					"impostorLimit": 100.0
+				},
+				{
+					"type": "InstanceGrainRenderer",
+					"shader": "InstanceGrain",
+					"colormap": "Textures/colormap-nut01.png",
+					"grainMeshScale": 2.573
+				},
+				{
+					"type": "ImpostorGrainRenderer",
+					"shader": "ImpostorGrain",
+					"colormap": "Textures/colormap-nut01.png",
+					"grainScale": 1.0,
+					"precomputeInVertex": true,
+					"prerenderSurface": true,
+					"samplingMode": "Mixed"
+				},
+				{
+					"type": "FarGrainRenderer",
+					"shader": "FarGrain",
+					"colormap": "Textures/colormap-nut01.png",
+					"radius": 0.00574232,
+					"epsilonFactor": 10.0,
+					"useShellCulling": true,
+					"debugShape": 0,
+					"weightMode": 0
+				}
+			]
+		}
+	]
+}}

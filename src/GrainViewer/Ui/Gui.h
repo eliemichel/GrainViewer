@@ -57,6 +57,7 @@ public:
 	virtual void onMouseButton(int button, int action, int mods);
 	virtual void onKey(int key, int scancode, int action, int mods);
 	virtual void onCursorPosition(double x, double y);
+	virtual void onScroll(double xoffset, double yoffset);
 
 	float width() const { return m_windowWidth; }
 	float height() const { return m_windowHeight; }
