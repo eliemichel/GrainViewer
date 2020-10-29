@@ -116,10 +116,6 @@ set(All_SRC
 	Ui/TestGui.cpp
 	Ui/Window.h
 	Ui/Window.cpp
-	Ui/SandRendererDialog.h
-	Ui/SandRendererDialog.cpp
-	Ui/FarSandRendererDialog.h
-	Ui/FarSandRendererDialog.cpp
 	Ui/UberSandRendererDialog.h
 	Ui/UberSandRendererDialog.cpp
 	Ui/SceneDialog.h
@@ -146,8 +142,6 @@ set(All_SRC
 	Ui/MeshRendererDialog.cpp
 	Ui/QuadMeshDataDialog.h
 	Ui/QuadMeshDataDialog.cpp
-	Ui/UiPainter.h
-	Ui/UiPainter.cpp
 
 	AnimationManager.h
 	AnimationManager.cpp

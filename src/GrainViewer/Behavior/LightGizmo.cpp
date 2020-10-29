@@ -22,7 +22,6 @@
  * in the Software.
  */
 
-
 #include "LightGizmo.h"
 #include "ResourceManager.h"
 #include "ShaderProgram.h"

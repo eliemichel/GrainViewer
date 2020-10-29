@@ -24,5 +24,7 @@
 
 #pragma once
 
+#include <string>
+
 bool filterPointToPointDistance(const std::string & inputFilename, const std::string & outputFilename);
 

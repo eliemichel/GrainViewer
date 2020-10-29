@@ -1,10 +1,31 @@
-#include <limits>
-#include <imgui.h>
-#include <glm/gtc/type_ptr.hpp>
+/**
+ * This file is part of GrainViewer
+ *
+ * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * The Software is provided “as is”, without warranty of any kind, express or
+ * implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose and non-infringement. In no event shall the
+ * authors or copyright holders be liable for any claim, damages or other
+ * liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings
+ * in the Software.
+ */
 
-#include "utils/guiutils.h"
 #include "WorldDialog.h"
-#include "Light.h"
+#include "utils/guiutils.h"
+
+#include <imgui.h>
 
 void WorldDialog::draw()
 {
@@ -14,27 +35,6 @@ void WorldDialog::draw()
 			bool shadowMaps = cont->isShadowMapEnabled();
 			ImGui::Checkbox("Shadow Maps (global toggle)", &shadowMaps);
 			cont->setShadowMapEnabled(shadowMaps);
-
-			/*
-			int i = 0;
-			for (auto& l : world.lights()) {
-				ImGui::PushID(i);
-				if (ImGui::CollapsingHeader(("Light " + std::to_string(i++)).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
-					BeginDisable(!shadowMaps);
-					bool shadowMap = l->hasShadowMap();
-					ImGui::Checkbox("Shadow Maps", &shadowMap);
-					l->setHasShadowMap(shadowMap);
-					EndDisable(!shadowMaps);
-
-					glm::vec3 position = l->position();
-					ImGui::InputFloat3("Position", (float*)&position);
-					l->setPosition(position);
-
-					ImGui::ColorEdit3("Color", glm::value_ptr(l->color()));
-				}
-				ImGui::PopID();
-			}
-			*/
 		}
 	}
 }

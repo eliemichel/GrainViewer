@@ -1,8 +1,26 @@
-// **************************************************
-// Author : Élie Michel <elie.michel@telecom-paristech.fr>
-// UNPUBLISHED CODE.
-// Copyright (C) 2017 Élie Michel.
-// **************************************************
+/**
+ * This file is part of GrainViewer
+ *
+ * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the “Software”), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * The Software is provided “as is”, without warranty of any kind, express or
+ * implied, including but not limited to the warranties of merchantability,
+ * fitness for a particular purpose and non-infringement. In no event shall the
+ * authors or copyright holders be liable for any claim, damages or other
+ * liability, whether in an action of contract, tort or otherwise, arising
+ * from, out of or in connection with the software or the use or other dealings
+ * in the Software.
+ */
 
 #include <OpenGL>
 
@@ -29,12 +47,7 @@
 using namespace std;
 
 // TODO: Find a way to avoid this function
-#ifdef WITH_GPL
-#include "Sand6DataDialog.h"
-#endif // WITH_GPL
-#include "SandRendererDialog.h"
 #include "LightGizmoDialog.h"
-#include "FarSandRendererDialog.h"
 #include "UberSandRendererDialog.h"
 #include "TransformDialog.h"
 #include "PointCloudSplitterDialog.h"
@@ -50,9 +63,7 @@ static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared
 		dialog->setControlledBehavior(std::dynamic_pointer_cast<T>(component)); \
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
-	handleBehavior(SandRenderer);
 	handleBehavior(LightGizmo);
-	handleBehavior(FarSandRenderer);
 	handleBehavior(UberSandRenderer);
 	handleBehavior(TransformBehavior);
 	handleBehavior(PointCloudSplitter);
@@ -101,7 +112,7 @@ void Gui::Shutdown()
 
 static void printUsage() {
 	cerr
-		<< "Augen -- real time viewer" << endl
+		<< "GrainViewer -- real time grain viewer" << endl
 		<< "Author : Élie Michel (http://perso.telecom-paristech.fr/~emichel)" << endl
 		<< endl
 		<< "Keyboard commands" << endl
