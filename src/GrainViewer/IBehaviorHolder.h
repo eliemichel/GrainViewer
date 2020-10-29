@@ -25,7 +25,6 @@
 #pragma once
 
 #include "Logger.h"
-#include "utils/tplutils.h"
 
 #include <memory>
 #include <map>
@@ -46,7 +45,7 @@ public:
 
 		behavior->setParent(iparent);
 
-		const char *type = TypeName<BehaviorType>().Get();
+		const char *type = BehaviorRegistryEntry<BehaviorType>::Name();
 		auto pair = std::pair(type, behavior);
 		iparent->m_behaviors.push_back(pair);
 		iparent->m_behaviorsMap.insert(pair);
@@ -55,7 +54,7 @@ public:
 
 	template<typename BehaviorType>
 	std::weak_ptr<BehaviorType> getBehavior() {
-		const char *type = TypeName<BehaviorType>().Get();
+		const char *type = BehaviorRegistryEntry<BehaviorType>::Name();
 		std::string key = type;
 		auto result = m_behaviorsMap.equal_range(key);
 		auto count = std::distance(result.first, result.second);

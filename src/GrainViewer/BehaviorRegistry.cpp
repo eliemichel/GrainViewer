@@ -28,14 +28,11 @@
 
 #include "Behavior/MeshDataBehavior.h"
 #include "Behavior/MeshRenderer.h"
-#include "Behavior/ImpostorCloudRenderer.h"
-#include "Behavior/SandRenderer.h"
 #include "Behavior/TransformBehavior.h"
 #include "Behavior/TestPrefixSumRenderer.h"
 #include "Behavior/LightGizmo.h"
 #include "Behavior/PointCloudDataBehavior.h"
 #include "Behavior/PointCloudSplitter.h"
-#include "Behavior/FarSandRenderer.h"
 #include "Behavior/UberSandRenderer.h"
 #include "Behavior/GltfDataBehavior.h"
 #include "Behavior/InstanceSandRenderer.h"
@@ -45,27 +42,20 @@
 
 void BehaviorRegistry::addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type)
 {
-#define handleType(T) if (type == TypeName<T>().Get()) { b = IBehaviorHolder::addBehavior<T>(obj); }
-#ifdef WITH_GPL
-	handleType(Sand6Data);
-#endif // WITH_GPL
+#define handleType(T) if (type == BehaviorRegistryEntry<T>::Name()) { b = IBehaviorHolder::addBehavior<T>(obj); }
 	handleType(MeshDataBehavior);
 	handleType(MeshRenderer);
-	handleType(ImpostorCloudRenderer);
-	handleType(SandRenderer);
 	handleType(TransformBehavior);
 	handleType(TestPrefixSumRenderer);
 	handleType(LightGizmo);
 	handleType(PointCloudDataBehavior);
 	handleType(PointCloudSplitter);
-	handleType(FarSandRenderer);
 	handleType(UberSandRenderer);
 	handleType(GltfDataBehavior);
 	handleType(InstanceSandRenderer);
 	handleType(ImpostorSandRenderer);
 	handleType(SandBehavior);
 	handleType(QuadMeshData);
-#undef handleType
 }
 
 std::weak_ptr<IPointCloudData> BehaviorRegistry::getPointCloudDataComponent(Behavior& behavior, PointCloudSplitter::RenderModel preferedModel) {

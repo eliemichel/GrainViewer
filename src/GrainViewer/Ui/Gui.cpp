@@ -45,14 +45,11 @@ using namespace std;
 #include "QuadMeshDataDialog.h"
 static std::shared_ptr<Dialog> makeComponentDialog(std::string type, std::shared_ptr<Behavior> component) {
 #define handleBehavior(T) \
-	if (type == TypeName<T>().Get()) { \
+	if (type == BehaviorRegistryEntry<T>::Name()) { \
 		auto dialog = DialogFactory<T>().MakeShared(); \
 		dialog->setControlledBehavior(std::dynamic_pointer_cast<T>(component)); \
 		return std::dynamic_pointer_cast<Dialog>(dialog); \
 	}
-#ifdef WITH_GPL
-	handleBehavior(Sand6Data);
-#endif // WITH_GPL
 	handleBehavior(SandRenderer);
 	handleBehavior(LightGizmo);
 	handleBehavior(FarSandRenderer);

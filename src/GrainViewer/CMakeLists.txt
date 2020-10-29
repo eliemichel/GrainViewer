@@ -69,22 +69,16 @@ set(All_SRC
 	Behavior/IPointCloudData.h
 	Behavior/GltfDataBehavior.h
 	Behavior/GltfDataBehavior.cpp
-	Behavior/ImpostorCloudRenderer.h
-	Behavior/ImpostorCloudRenderer.cpp
 	Behavior/MeshDataBehavior.h
 	Behavior/MeshDataBehavior.cpp
 	Behavior/MeshRenderer.h
 	Behavior/MeshRenderer.cpp
-	Behavior/SandRenderer.h
-	Behavior/SandRenderer.cpp
 	Behavior/TransformBehavior.h
 	Behavior/TransformBehavior.cpp
 	Behavior/TestPrefixSumRenderer.h
 	Behavior/TestPrefixSumRenderer.cpp
 	Behavior/LightGizmo.h
 	Behavior/LightGizmo.cpp
-	Behavior/FarSandRenderer.h
-	Behavior/FarSandRenderer.cpp
 	Behavior/UberSandRenderer.h
 	Behavior/UberSandRenderer.cpp
 	Behavior/PointCloudDataBehavior.h
@@ -102,7 +96,6 @@ set(All_SRC
 
 	utils/shader.h
 	utils/shader.cpp
-	utils/tplutils.h
 	utils/jsonutils.h
 	utils/jsonutils.cpp
 	utils/guiutils.h
@@ -191,6 +184,7 @@ set(All_SRC
 	Scene.h
 	Scene.cpp
 	Scene_load.cpp
+	SerializationType.h
 	ShadowMap.h
 	ShadowMap.cpp
 	StandardMaterial.h

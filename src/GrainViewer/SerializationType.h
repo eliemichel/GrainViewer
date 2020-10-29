@@ -24,10 +24,14 @@
 
 #pragma once
 
-// template utils (https://stackoverflow.com/questions/4484982/how-to-convert-typename-t-to-string-in-c)
-template <typename T> struct TypeName { static const char* Get() { return "object"; } };
-#define ENABLE_TYPENAME(A) template<> struct TypeName<A> { static const char *Get() { return #A; }};
-ENABLE_TYPENAME(int)
-ENABLE_TYPENAME(float)
-ENABLE_TYPENAME(std::string)
-//
+template<typename T>
+struct SerializationType {
+	static const char* Name() { return "object"; }
+};
+
+#define registerSerializationType(T) \
+template<> struct SerializationType<T> { static const char* Name() { return #T; } };
+
+registerSerializationType(int)
+registerSerializationType(float)
+registerSerializationType(std::string)

@@ -25,7 +25,7 @@
 #pragma once
 
 #include "Logger.h"
-#include "utils/tplutils.h"
+#include "SerializationType.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -100,7 +100,7 @@ inline bool jrOption(const rapidjson::Value& json, const std::string & key, T & 
 
 	const rapidjson::Value& d = json[key.c_str()];
 	if (!_read(target, d)) {
-		WARN_LOG << "Ignoring '" << key << "' (expected type " << TypeName<T>::Get() << ")";
+		WARN_LOG << "Ignoring '" << key << "' (expected type " << SerializationType<T>::Name() << ")";
 		target = defaultValue;
 		return false;
 	}
@@ -124,7 +124,7 @@ inline bool jrArray(const rapidjson::Value& json, const std::string & key, std::
 			const rapidjson::Value& dd = d[i];
 			T & item = target[static_cast<size_t>(i)];
 			if (!_read(item, dd)) {
-				WARN_LOG << "Ignoring '" << key << "' (error while parsing item #" << i << " as type " << TypeName<T>::Get() << ")";
+				WARN_LOG << "Ignoring '" << key << "' (error while parsing item #" << i << " as type " << SerializationType<T>::Name() << ")";
 				target.resize(0);
 				return false;
 			}
