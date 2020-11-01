@@ -38,6 +38,12 @@ cmake ..
 
 You can chose which compiler to use in the call to `cmake`, using the `-G` option. See for instance [`build-msvc16.bat`](build-msvc16.bat) to build for Visual Studio 16 (2019), or the other build files for `mingw` or `gcc`. More easily, you can also just run one of those scripts, it will even get the git submodules.
 
+You may set the following additional option using `-DOPTION=value`:
+
+ - `DEV_MOD` Turn this off when building binaries meant to be distributed
+ - `GIT_SUBMODULE` Turn this off if you don't want cmake to check out submodules (if you are already including this project as a submodule for instance)
+ - `DOWNLOAD_EXAMPLE_DATA` Turn this off to prevent cmake from automatically downloading example data (roughly 800MB).
+
 Once CMake has run, you can build the project. You can do it in command line, from the `build` directory:
 
 ```

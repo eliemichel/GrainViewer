@@ -75,3 +75,55 @@ function(target_treat_warnings_as_errors target)
 		target_compile_options(${target} PRIVATE -Wall -Wextra -pedantic -Werror)
 	endif()
 endfunction()
+
+# From https://cliutils.gitlab.io/modern-cmake/chapters/projects/submodule.html
+macro(fetch_submodules)
+	find_package(Git QUIET)
+	if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
+	# Update submodules as needed
+		
+		if(GIT_SUBMODULE)
+			message(STATUS "Submodule update")
+			execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+							WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+							RESULT_VARIABLE GIT_SUBMOD_RESULT)
+			if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+				message(FATAL_ERROR "git submodule update --init failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+			endif()
+		endif()
+	endif()
+
+	if(NOT EXISTS "${PROJECT_SOURCE_DIR}/src/External/glad/CMakeLists.txt")
+		message(FATAL_ERROR "The submodules were not downloaded! GIT_SUBMODULE was turned off or failed. Please update submodules and try again.")
+	endif()
+endmacro()
+
+macro(fetch_example_data)
+	if(DOWNLOAD_EXAMPLE_DATA AND NOT EXISTS "${PROJECT_SOURCE_DIR}/share/scenes/Textures")
+		message(STATUS "Downloading additionnal example data...")
+		if(WIN32)
+		    set(DOWNLOAD_SCRIPT "download-data.bat")
+		else()
+			set(DOWNLOAD_SCRIPT "download-data")
+		endif()
+		execute_process(COMMAND "${PROJECT_SOURCE_DIR}/${DOWNLOAD_SCRIPT}"
+						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+						RESULT_VARIABLE DOWNLOAD_SCRIPT_RESULT)
+		if(NOT DOWNLOAD_SCRIPT_RESULT EQUAL "0")
+			message(FATAL_ERROR "download-data script failed with ${DOWNLOAD_SCRIPT_RESULT}")
+		endif()
+	endif()
+endmacro()
+
+function(target_set_default_command_line target arguments)
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+		FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${target}.vcxproj.user"
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"
+			"<Project ToolsVersion=\"16.0\">\n"
+			"  <PropertyGroup>\n"
+			"    <LocalDebuggerCommandArguments>${arguments}</LocalDebuggerCommandArguments>\n"
+			"    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>\n"
+			"  </PropertyGroup>\n"
+			"</Project>")
+	endif()
+endfunction()

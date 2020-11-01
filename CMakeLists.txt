@@ -26,6 +26,11 @@ project(GrainViewer)
 include(cmake/utils.cmake)
 
 option(DEV_MOD "Build in dev mode, use share directory from source tree rather than installation tree. This is useful when hacking on shaders." ON)
+option(DOWNLOAD_EXAMPLE_DATA "Download additionnal example data" ON)
+option(GIT_SUBMODULE "Check submodules during build" ON)
+
+fetch_submodules()
+fetch_example_data()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

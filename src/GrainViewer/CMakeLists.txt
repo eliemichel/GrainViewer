@@ -226,9 +226,13 @@ target_link_libraries(GrainViewer LINK_PRIVATE ${LIBS})
 
 target_compile_definitions(GrainViewer PRIVATE -DNOMINMAX)
 #target_treat_warnings_as_errors(GrainViewer)
+target_set_default_command_line(GrainViewer ${PROJECT_SOURCE_DIR}/share/scenes/nut01-heap.json)
 
 # For IDE projects
 group_source_by_folder(${SRC})
+# Set as startup project in Visual Studio
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT GrainViewer)
+
 
 ###############################################################################
 # Tools - PointCloudConvert
