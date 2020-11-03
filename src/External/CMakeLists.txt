@@ -37,7 +37,7 @@ if (MSVC)
 	endforeach()
 	list(APPEND NEW_FLAGS "/w")
 	string(REPLACE ";" " " CMAKE_CXX_FLAGS "${NEW_FLAGS}")
-endif()
+endif(MSVC)
 
 ###############################################################################
 # Submodules
@@ -101,10 +101,34 @@ add_library(tinyexr STATIC
 target_include_directories(tinyexr PUBLIC tinyexr)
 set_property(TARGET tinyexr PROPERTY FOLDER "External")
 
+# zlib
+add_subdirectory(zlib)
+set_property(TARGET zlib PROPERTY FOLDER "External")
+set_property(TARGET zlibstatic PROPERTY FOLDER "External")
+
+# libpng
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
+
+set(PNG_TESTS OFF CACHE BOOL "" FORCE)
+set(PNG_SHARED OFF CACHE BOOL "" FORCE)
+set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
+add_subdirectory(libpng)
+set_property(TARGET png_static PROPERTY FOLDER "External")
+
+add_library(libpng INTERFACE)
+target_include_directories(libpng INTERFACE
+	zlib
+	${CMAKE_CURRENT_BINARY_DIR}/zlib
+	libpng
+	${CMAKE_CURRENT_BINARY_DIR}/libpng
+)
+target_link_libraries(libpng INTERFACE zlibstatic png_static)
+
 ###############################################################################
 # Repackaged third party libraries
 ###############################################################################
 
+add_subdirectory(tinypngout)
 add_subdirectory(tinygltf)
 add_subdirectory(nanoflann)
 add_subdirectory(refl-cpp)

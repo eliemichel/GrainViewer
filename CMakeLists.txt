@@ -34,6 +34,4 @@ fetch_example_data()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-message(status "cmake cxx flags: ${CMAKE_CXX_FLAGS}")
-
 add_subdirectory(src)
