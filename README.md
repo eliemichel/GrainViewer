@@ -30,7 +30,9 @@ To build from source, git clone this repository as usual, don't forget submodule
 
 ## Usage
 
-Example scenes can be found in [share/scenes](share/scenes). To use these, you will need to download additional binary data using the `download-data.bat` or `download-data.sh` script.
+Example scenes can be found in [share/scenes](share/scenes). To use these, you will need to download additional binary data using the `download-minimal-data.bat` or `download-minimal-data.sh` script (or the `full` version for additionnal examples). Run for instance:
+
+    build/src/GrainViewer/GrainViewer share/scenes/not01-heap.json
 
 For detailed end user instruction, please refer to the [doc/user-manual.md](doc/user-manual.md) file.
 
