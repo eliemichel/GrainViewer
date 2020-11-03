@@ -28,6 +28,7 @@ class Window;
 
 #include <string>
 #include <vector>
+#include <memory>
 
 /**
  * Gui for tests, displaying a progress bar and some debug info

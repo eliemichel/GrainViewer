@@ -39,7 +39,7 @@
 #include <algorithm>
 
 
-#define MAKE_STR(streamline) (std::ostringstream() << streamline).str()
+#define MAKE_STR(streamline) static_cast<std::ostringstream&&>(std::ostringstream() << streamline).str()
 
 class PointCloudFlannAdaptor {
 public:
