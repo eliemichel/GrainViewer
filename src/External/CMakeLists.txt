@@ -26,16 +26,18 @@
 
 # Not the most elegant way to do so, and not portable, but this is a notoriously
 # hard thing to do with cmake...
-message("Hiding warnings for all targets defined here in External.")
-set(NEW_FLAGS "")
-separate_arguments(CMAKE_CXX_FLAGS)
-foreach(FLAG ${CMAKE_CXX_FLAGS})
-	if(NOT FLAG MATCHES "/W[0-4]")
-		list(APPEND NEW_FLAGS ${FLAG})
-	endif()
-endforeach()
-list(APPEND NEW_FLAGS "/w")
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${NEW_FLAGS}")
+if (MSVC)
+	message("Hiding warnings for all targets defined here in External.")
+	set(NEW_FLAGS "")
+	separate_arguments(CMAKE_CXX_FLAGS)
+	foreach(FLAG ${CMAKE_CXX_FLAGS})
+		if(NOT FLAG MATCHES "/W[0-4]")
+			list(APPEND NEW_FLAGS ${FLAG})
+		endif()
+	endforeach()
+	list(APPEND NEW_FLAGS "/w")
+	string(REPLACE ";" " " CMAKE_CXX_FLAGS "${NEW_FLAGS}")
+endif()
 
 ###############################################################################
 # Submodules
@@ -99,36 +101,10 @@ add_library(tinyexr STATIC
 target_include_directories(tinyexr PUBLIC tinyexr)
 set_property(TARGET tinyexr PROPERTY FOLDER "External")
 
-# zlib
-add_subdirectory(zlib)
-set_property(TARGET zlib PROPERTY FOLDER "External")
-set_property(TARGET zlibstatic PROPERTY FOLDER "External")
-set_property(TARGET example PROPERTY FOLDER "External")
-set_property(TARGET minigzip PROPERTY FOLDER "External")
-
-# libpng
-include_directories(zlib ${CMAKE_CURRENT_BINARY_DIR}/zlib)
-
-set(PNG_TESTS OFF CACHE BOOL "" FORCE)
-set(PNG_SHARED OFF CACHE BOOL "" FORCE)
-set(PNG_BUILD_ZLIB ON CACHE BOOL "" FORCE)
-add_subdirectory(libpng)
-set_property(TARGET png_static PROPERTY FOLDER "External")
-
-add_library(libpng INTERFACE)
-target_include_directories(libpng INTERFACE
-	zlib
-	${CMAKE_CURRENT_BINARY_DIR}/zlib
-	libpng
-	${CMAKE_CURRENT_BINARY_DIR}/libpng
-)
-target_link_libraries(libpng INTERFACE zlibstatic png_static)
-
 ###############################################################################
 # Repackaged third party libraries
 ###############################################################################
 
-add_subdirectory(tinypngout)
 add_subdirectory(tinygltf)
 add_subdirectory(nanoflann)
 add_subdirectory(refl-cpp)

@@ -98,13 +98,11 @@ public:
 
 public:
 	// File output
-	static bool saveImage(const std::string & filename, int width, int height, const void *data);
-	static bool saveImage_libpng(const std::string & filename, int width, int height, void *data);
+	static bool saveImage(const std::string & filename, int width, int height, int channels, const void *data, bool vflip = false);
 
-	static bool saveTexture(const std::string & filename, const GlTexture & texture);
 	static bool saveTextureStack(const std::string& dirname, const GlTexture& texture, bool vflip = false);
-	static bool saveTexture_libpng(const std::string & filename, GLuint tex, GLint level = 0, bool vflip = false, GLint slice = 0);
-	static bool saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level = 0, bool vflip = false, GLint slice = 0);
+	static bool saveTexture(const std::string & filename, GLuint tex, GLint level = 0, bool vflip = false, GLint slice = 0);
+	static bool saveTexture(const std::string& filename, const GlTexture& texture, GLint level = 0, bool vflip = false, GLint slice = 0);
 
 	static bool saveTexture_tinyexr(const std::string & filename, GLuint tex, GLint level = 0);
 	static bool saveTexture_tinyexr(const std::string & filename, const GlTexture& texture, GLint level = 0);

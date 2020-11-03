@@ -407,7 +407,7 @@ void Scene::recordFrame(const Camera & camera, const std::string & filename, Rec
 			GLint destHeight = static_cast<GLint>(camera.targetFramebuffer()->height());
 			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			if (outputSettings.saveOnDisc) {
-				ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+				ResourceManager::saveImage(filename, destWidth, destHeight, 3, pixels);
 			}
 		}
 		else if (outputSettings.autoOutputResolution) {
@@ -415,7 +415,7 @@ void Scene::recordFrame(const Camera & camera, const std::string & filename, Rec
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glReadnPixels(0, 0, m_width, m_height, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			if (outputSettings.saveOnDisc) {
-				ResourceManager::saveImage(filename, m_width, m_height, pixels);
+				ResourceManager::saveImage(filename, m_width, m_height, 3, pixels);
 			}
 		}
 		else if (m_outputFramebuffer) {
@@ -435,7 +435,7 @@ void Scene::recordFrame(const Camera & camera, const std::string & filename, Rec
 			m_outputFramebuffer->bind();
 			glReadnPixels(0, 0, destWidth, destHeight, GL_RGB, GL_UNSIGNED_BYTE, bufSize, const_cast<void*>(pixels));
 			if (outputSettings.saveOnDisc) {
-				ResourceManager::saveImage(filename, destWidth, destHeight, pixels);
+				ResourceManager::saveImage(filename, destWidth, destHeight, 3, pixels);
 			}
 		}
 	}

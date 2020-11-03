@@ -32,11 +32,9 @@
 #include "Logger.h"
 
 #include <glm/glm.hpp>
-#include <png.h>
 #include <stb_image.h>
 #include <stb_image_write.h>
 #include <tinyexr.h>
-#include <TinyPngOut.hpp>
 
 #include <cmath>
 #include <fstream>
@@ -270,92 +268,11 @@ static T * rotateImage(T *image, size_t width, size_t height, size_t nbChannels,
 // File output
 ///////////////////////////////////////////////////////////////////////////////
 
-bool ResourceManager::saveImage(const std::string & filename, int width, int height, const void *data)
+bool ResourceManager::saveImage(const std::string & filename, int width, int height, int channels, const void *data, bool vflip)
 {
+	stbi_flip_vertically_on_write(vflip ? 1 : 0);
 	fs::create_directories(fs::path(filename).parent_path());
-	std::ofstream out(filename, std::ios::binary);
-	if (!out.is_open()) {
-		WARN_LOG << "Could not open file '" << filename << "'";
-		return false;
-	}
-	TinyPngOut pngout(static_cast<uint32_t>(width), static_cast<uint32_t>(height), out);
-	pngout.write(static_cast<const uint8_t*>(data), static_cast<size_t>(width * height));
-	return true;
-}
-
-bool ResourceManager::saveImage_libpng(const std::string & filename, int width, int height, void *data)
-{
-	FILE *fp;
-#ifdef _WIN32
-	fopen_s(&fp, filename.c_str(), "wb");
-#else // _WIN32
-	fp = fopen(filename.c_str(), "wb");
-#endif // _WIN32
-	if (!fp) {
-		return false;
-	}
-
-	png_structp png_ptr = png_create_write_struct(
-		PNG_LIBPNG_VER_STRING,
-		(png_voidp)nullptr,
-		[](png_structp png_ptr, png_const_charp c) { ERR_LOG << "PNG error: " << c; },
-		[](png_structp png_ptr, png_const_charp c) { WARN_LOG << "PNG warning: " << c; }
-	);
-
-	if (!png_ptr) {
-		return false;
-	}
-
-	png_infop info_ptr = png_create_info_struct(png_ptr);
-	if (!info_ptr) {
-		png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
-		return false;
-	}
-
-	if (setjmp(png_jmpbuf(png_ptr))) {
-		png_destroy_write_struct(&png_ptr, &info_ptr);
-		fclose(fp);
-		return false;
-	}
-
-	png_set_check_for_invalid_index(png_ptr, 0);
-	png_init_io(png_ptr, fp);
-
-	png_set_IHDR(
-		png_ptr,
-		info_ptr,
-		static_cast<png_uint_32>(width),
-		static_cast<png_uint_32>(height),
-		8,
-		PNG_COLOR_TYPE_RGBA,
-		PNG_INTERLACE_NONE,
-		PNG_COMPRESSION_TYPE_DEFAULT,
-		PNG_FILTER_TYPE_DEFAULT
-	);
-	png_write_info(png_ptr, info_ptr);
-
-	std::vector<png_bytep> row_pointers(height);
-	for (int i = 0; i < height; ++i) {
-		row_pointers[i] = static_cast<png_bytep>(data) + 4 * i * width;
-	}
-
-	png_write_image(png_ptr, row_pointers.data());
-	png_write_end(png_ptr, NULL);
-
-	fclose(fp);
-	png_destroy_write_struct(&png_ptr, &info_ptr);
-
-	return true;
-}
-
-bool ResourceManager::saveTexture(const std::string & filename, const GlTexture & texture)
-{
-	GLsizei w = texture.width();
-	GLsizei h = texture.height();
-	GLsizei d = texture.depth();
-	std::vector<uint8_t> pixels(3 * w * h);
-	glGetTextureSubImage(texture.raw(), 0, 0, 0, 0, w, h, d, GL_RGB, GL_UNSIGNED_BYTE, w * h * 3 * sizeof(uint8_t), pixels.data());
-	return saveImage(filename, w, h, pixels.data());
+	return stbi_write_png(filename.c_str(), width, height, channels, data, width * channels) == 0;
 }
 
 bool ResourceManager::saveTextureStack(const std::string& dirname, const GlTexture& texture, bool vflip)
@@ -372,15 +289,15 @@ bool ResourceManager::saveTextureStack(const std::string& dirname, const GlTextu
 
 	for (GLint slice = 0; slice < d; ++slice) {
 		fs::path slicename = dir / string_format("view%04d.png", slice);
-		if (!saveTexture_libpng(slicename.string(), texture, level, vflip, slice)) {
-			//return false;
+		if (!saveTexture(slicename.string(), texture, level, vflip, slice)) {
+			WARN_LOG << "Could not write file '" << slicename << "'";
 		}
 	}
 
 	return true;
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint tex, GLint level, bool vflip, GLint slice)
+bool ResourceManager::saveTexture(const std::string & filename, GLuint tex, GLint level, bool vflip, GLint slice)
 {
 	// Avoid padding
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -415,7 +332,7 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	GLint internalformat;
 	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_INTERNAL_FORMAT, &internalformat);
 
-	std::vector<png_byte> pixels;
+	std::vector<unsigned char> pixels;
 
 	switch (internalformat) {
 	case GL_DEPTH_COMPONENT16:
@@ -423,23 +340,23 @@ bool ResourceManager::saveTexture_libpng(const std::string & filename, GLuint te
 	case GL_DEPTH_COMPONENT32:
 	{
 		GLsizei byteCount = w * h;
-		pixels = std::vector<png_byte>(byteCount, 0);
-		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		pixels = std::vector<unsigned char>(byteCount, 0);
+		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, byteCount * sizeof(unsigned char), pixels.data());
 		return stbi_write_png(filename.c_str(), w, h, 1, pixels.data(), w) == 0;
 	}
 	default:
 	{
 		GLsizei byteCount = 4 * w * h;
 		pixels.resize(byteCount);
-		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_RGBA, GL_UNSIGNED_BYTE, byteCount * sizeof(png_byte), pixels.data());
+		glGetTextureSubImage(tex, 0, 0, 0, slice, w, h, 1, GL_RGBA, GL_UNSIGNED_BYTE, byteCount * sizeof(unsigned char), pixels.data());
 		return stbi_write_png(filename.c_str(), w, h, 4, pixels.data(), 4 * w) == 0;
 	}
 	}
 }
 
-bool ResourceManager::saveTexture_libpng(const std::string& filename, const GlTexture& texture, GLint level, bool vflip, GLint slice)
+bool ResourceManager::saveTexture(const std::string& filename, const GlTexture& texture, GLint level, bool vflip, GLint slice)
 {
-	return saveTexture_libpng(filename, texture.raw(), level, vflip, slice);
+	return saveTexture(filename, texture.raw(), level, vflip, slice);
 }
 
 bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint tex, GLint level)
@@ -475,8 +392,6 @@ bool ResourceManager::saveTexture_tinyexr(const std::string & filename, GLuint t
 
 	GLint internalformat;
 	glGetTextureLevelParameteriv(tex, level, GL_TEXTURE_INTERNAL_FORMAT, &internalformat);
-
-	std::vector<png_byte> pixels;
 
 	switch (internalformat) {
 	case GL_DEPTH_COMPONENT16:
@@ -598,7 +513,7 @@ bool ResourceManager::saveTextureMipMaps(const std::string& prefix, GLuint tex)
 	glGetTextureParameteriv(tex, GL_TEXTURE_BASE_LEVEL, &baseLevel);
 	glGetTextureParameteriv(tex, GL_TEXTURE_MAX_LEVEL, &maxLevel);
 	for (GLint level = baseLevel; level < maxLevel; ++level) {
-		if (!ResourceManager::saveTexture_libpng(prefix + std::to_string(level) + ".png", tex, level)) {
+		if (!ResourceManager::saveTexture(prefix + std::to_string(level) + ".png", tex, level)) {
 			return false;
 		}
 	}

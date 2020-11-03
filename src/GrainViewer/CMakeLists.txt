@@ -204,8 +204,6 @@ set(LIBS
 	glm
 	tinyobjloader
 	tinyexr
-	tinypngout
-	libpng
 	tinygltf
 	nanoflann
 	refl-cpp
