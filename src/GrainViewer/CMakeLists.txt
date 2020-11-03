@@ -148,6 +148,7 @@ set(All_SRC
 	Behavior.h
 	BehaviorRegistry.h
 	BehaviorRegistry.cpp
+	BehaviorRegistryEntry.h
 	Camera.h
 	Camera.cpp
 	IBehaviorHolder.h

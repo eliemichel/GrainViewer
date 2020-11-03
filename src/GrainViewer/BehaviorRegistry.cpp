@@ -25,6 +25,7 @@
 #include "BehaviorRegistry.h"
 #include "Behavior.h"
 #include "RuntimeObject.h"
+#include "BehaviorRegistryEntry.h"
 
 #include "Behavior/MeshDataBehavior.h"
 #include "Behavior/MeshRenderer.h"

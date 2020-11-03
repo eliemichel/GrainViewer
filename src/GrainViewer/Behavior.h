@@ -34,13 +34,9 @@
 #include "EnvironmentVariables.h"
 #include "IBehaviorHolder.h"
 #include "SerializationType.h"
+#include "BehaviorRegistryEntry.h"
 
 class AnimationManager;
-
-template <typename T> struct BehaviorRegistryEntry { static const char* Name() { return "object"; } };
-#define registerBehaviorType(T) \
-registerSerializationType(T) \
-template<> struct BehaviorRegistryEntry<T> { static const char *Name() { return #T; }};
 
 /**
  * Behaviors are attached to objects, kind of following an entity-component design
