@@ -106,9 +106,10 @@ macro(fetch_example_data)
 		if(WIN32)
 		    set(DOWNLOAD_SCRIPT "${PROJECT_SOURCE_DIR}/download-data.bat")
 		else()
-			set(DOWNLOAD_SCRIPT "sh ${PROJECT_SOURCE_DIR}/download-data.sh")
+			set(DOWNLOAD_SCRIPT sh ${PROJECT_SOURCE_DIR}/download-data.sh)
 		endif()
-		execute_process(COMMAND "${DOWNLOAD_SCRIPT}"
+		message(STATUS "running ${DOWNLOAD_SCRIPT}...")
+		execute_process(COMMAND ${DOWNLOAD_SCRIPT}
 						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 						RESULT_VARIABLE DOWNLOAD_SCRIPT_RESULT)
 		if(NOT DOWNLOAD_SCRIPT_RESULT EQUAL "0")
