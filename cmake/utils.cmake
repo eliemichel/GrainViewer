@@ -102,12 +102,12 @@ macro(fetch_example_data)
 	if(DOWNLOAD_EXAMPLE_DATA AND NOT EXISTS "${PROJECT_SOURCE_DIR}/share/scenes/Textures")
 		message(STATUS "Downloading additionnal example data...")
 		if(WIN32)
-		    set(DOWNLOAD_SCRIPT "download-data.bat")
+		    set(DOWNLOAD_SCRIPT "${PROJECT_SOURCE_DIR}/download-data.bat")
 		else()
-			set(DOWNLOAD_SCRIPT "download-data.sh")
+			set(DOWNLOAD_SCRIPT "sh ${PROJECT_SOURCE_DIR}/download-data.sh")
 		endif()
-		execute_process(COMMAND "${PROJECT_SOURCE_DIR}/${DOWNLOAD_SCRIPT}"
-						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+		execute_process(COMMAND "${DOWNLOAD_SCRIPT}"
+						WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 						RESULT_VARIABLE DOWNLOAD_SCRIPT_RESULT)
 		if(NOT DOWNLOAD_SCRIPT_RESULT EQUAL "0")
 			message(FATAL_ERROR "download-data script failed with ${DOWNLOAD_SCRIPT_RESULT}")
