@@ -47,7 +47,7 @@ PostEffect::PostEffect()
 	};
 
 	glCreateBuffers(1, &m_vbo);
-	glNamedBufferStorage(m_vbo, sizeof(points), points, NULL);
+	glNamedBufferStorage(m_vbo, sizeof(points), points, 0);
 
 	glCreateVertexArrays(1, &m_vao);
 	glVertexArrayVertexBuffer(m_vao, 0, m_vbo, 0, 3 * sizeof(GLfloat));

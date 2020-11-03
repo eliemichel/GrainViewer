@@ -25,6 +25,7 @@
 #pragma once
 
 #include "Logger.h"
+#include "BehaviorRegistryEntry.h"
 
 #include <memory>
 #include <map>

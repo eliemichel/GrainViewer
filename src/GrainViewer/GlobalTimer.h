@@ -105,7 +105,7 @@ public:
 
 private:
     struct Timer {
-        std::chrono::steady_clock::time_point startTime;
+        std::chrono::high_resolution_clock::time_point startTime;
         std::string message;
         GLuint queries[2]; // GPU timer queries for begin and end
 

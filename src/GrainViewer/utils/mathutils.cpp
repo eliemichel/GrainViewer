@@ -34,7 +34,9 @@ int ilog2(int x) {
 
 // From J. Dupuy's dj_brdf.h
 using float_t = float;
+#ifndef __GNUC__ // a bug in gcc makes it not declaring logf in the std namespace
 using std::logf;
+#endif
 
 // See: http://www.johndcook.com/blog/cpp_erf/, by John D. Cook
 float djerf(float x)

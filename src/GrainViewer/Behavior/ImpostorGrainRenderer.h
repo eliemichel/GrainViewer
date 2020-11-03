@@ -102,7 +102,7 @@ private:
 	void setCommonUniforms(const ShaderProgram& shader, const Camera& camera) const;
 	void precomputeViewMatrices();
 	glm::mat4 modelMatrix() const;
-	std::shared_ptr<ShaderProgram> ImpostorGrainRenderer::getShader(ShaderVariantFlagSet flags) const;
+	std::shared_ptr<ShaderProgram> getShader(ShaderVariantFlagSet flags) const;
 
 private:
 	Properties m_properties;
