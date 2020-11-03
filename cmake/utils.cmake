@@ -104,7 +104,7 @@ macro(fetch_example_data)
 		if(WIN32)
 		    set(DOWNLOAD_SCRIPT "download-data.bat")
 		else()
-			set(DOWNLOAD_SCRIPT "download-data")
+			set(DOWNLOAD_SCRIPT "download-data.sh")
 		endif()
 		execute_process(COMMAND "${PROJECT_SOURCE_DIR}/${DOWNLOAD_SCRIPT}"
 						WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
