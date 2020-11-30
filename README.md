@@ -8,17 +8,16 @@ Grain Viewer
 This is the official implementation of the research paper *"Real-time multiscale rendering of dense dynamic stackings"* by Élie Michel and Tamy Boubekeur, published in Computer Graphics forum (Pacific Graphics).
 
 ```
-@article{Michel_Boubekeur:2020,
-	author = {Michel, {\'{E}}. and Boubekeur, T.},
+@article{MB:2020:RTM,
+	author = {Michel, {\'{E}}lie. and Boubekeur, Tamy},
 	title = {Real Time Multiscale Rendering of Dense Dynamic Stackings},
-	journal = {Computer Graphics Forum},
+	journal = {Computer Graphics Forum (Proc. Pacific Graphics 2020)},
 	volume = {39},
 	number = {7},
-	pages = {?-?},
-	doi = {?},
-	url = {https://onlinelibrary.wiley.com/doi/abs/?},
-	eprint = {https://onlinelibrary.wiley.com/doi/pdf/?},
-	year = {2020}
+	pages = {169-179},
+	doi = {https://doi.org/10.1111/cgf.14135},
+	url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/cgf.14135},
+	year = {2020},
 }
 ```
 
