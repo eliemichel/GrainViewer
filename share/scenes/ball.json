@@ -1,0 +1,147 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 24,
+			"near": 0.1,
+			"far": 100,
+
+			"outputFrameBase": "Record\\$BASEFILE\\beauty\\frame",
+			"//orthographicsSale": 1.0,
+			"//resolution": [256, 256]
+		}
+	],
+
+	"deferredShader": {
+		"defines": [ ],
+		"colormap": "Textures/turbo.png"
+	},
+
+	"lights": [
+		{
+			"position": [0, 10, 1],
+			"color": [3, 3, 3],
+			"hasShadowMap": false,
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
+		},
+		{
+			"position": [0, 1, 10],
+			"color": [0.45, 0.5, 0.6],
+			"hasShadowMap": false,
+			"shadowMapSize": 1024,
+			"shadowMapNear": 7.5,
+			"shadowMapFar": 13,
+			"shadowMapFov": 50
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world",
+		"Mesh": "standard-mesh",
+		"GrainSplit": {
+			"baseFile": "grain/globalatomic-splitter",
+			"type": "compute",
+			"snippets": { "settings": "#define LOCAL_SIZE_X 128" }
+		},
+		"GrainSplitOcclusionPrepass": {
+			"baseFile": "grain/occlusion-culling"
+		},
+		"InstanceGrain": {
+			"baseFile": "instance-grain",
+			"defines": [ ]
+		},
+		"ImpostorGrain": {
+			"baseFile": "impostor-grain",
+			"defines": [ ]
+		},
+		"FarGrain": {
+			"baseFile": "far-grain",
+			"defines": [ ]
+		}
+	},
+
+	"world": {
+		"shader": "World"
+	},
+
+	"objects": [
+		{
+			"type": "RuntimeObject",
+			"ignore": false,
+			"name": "Coffee Grains",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1, 0, 0, 0,
+						0, 0, 1, 0,
+						0, 1, 0, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "Meshes/coffee00_lowpZ.obj"
+				},
+				{
+					"type": "PointCloudDataBehavior",
+					"filename": "PointClouds/ball-radius0.00574232.bin"
+				},
+				{
+					"type": "GrainBehavior",
+					"grainRadius": 0.00574232,
+					"grainInnerRadiusRatio": 0.95,
+					"atlases": [
+						{
+							"normalAlpha": "Impostors\\coffee00-128v-128p\\normal",
+							"baseColor": "Impostors\\coffee00-128v-128p\\baseColor",
+							"roughness": 0.3882,
+							"metallic": 0.0,
+
+							"":"Turn this to false to load from already baked files",
+							"bake": true,
+							"filename": "Meshes/coffee00_midpZ.obj",
+							"angularDefinition": 128,
+							"spatialDefinition": 128,
+							"save": true
+						}
+					]
+				},
+				{
+					"type": "PointCloudSplitter",
+					"shader": "GrainSplit",
+					"occlusionCullingShader": "GrainSplitOcclusionPrepass",
+					"instanceLimit": 1.6,
+					"impostorLimit": 10.0
+				},
+				{
+					"type": "InstanceGrainRenderer",
+					"shader": "InstanceGrain",
+					"colormap": "Textures/colormap3.png",
+					"grainMeshScale": 2.0
+				},
+				{
+					"type": "ImpostorGrainRenderer",
+					"shader": "ImpostorGrain",
+					"colormap": "Textures/colormap3.png",
+					"grainScale": 1.0,
+					"precomputeInVertex": true,
+					"prerenderSurface": true
+				},
+				{
+					"type": "FarGrainRenderer",
+					"shader": "FarGrain",
+					"colormap": "Textures/colormap3.png",
+					"radius": 0.00574232,
+					"epsilonFactor": 10.0,
+					"useShellCulling": true,
+					"debugShape": 0,
+					"weightMode": 0
+				}
+			]
+		}
+	]
+}}

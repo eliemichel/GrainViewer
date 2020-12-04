@@ -1,0 +1,183 @@
+{"augen":{
+	"cameras": [
+		{
+			"projection": "perspective",
+			"fov": 39.6,
+			"near": 0.1,
+			"far": 100.0,
+			"viewMatrix": {
+				"buffer": "hzb-test-scene-camera.bin",
+				"startFrame": 0
+			}
+		}
+	],
+
+	"deferredShader": {
+		"defines": []
+	},
+
+	"lights": [
+		{
+			"position": [5, 3, 4],
+			"color": [1, 1, 1]
+		},
+		{
+			"position": [-8, 2, 4],
+			"color": [1, 0.9, 0.9]
+		},
+		{
+			"position": [2, -5, -3],
+			"color": [0.8, 0.8, 1]
+		}
+	],
+
+	"shaders": {
+		"World": "basic-world",
+		"Mesh": "basic-mesh-directrendering"
+	},
+
+	"objects": [
+		{
+			"name": "OcclusionGeometry",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1, 0, 0, 0,
+						0, 0, 1, 0,
+						0, -1, 0, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-occlusion.obj"
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		},
+		{
+			"name": "Village",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						1, 0, 0, 0,
+						0, 0, 1, 0,
+						0, -1, 0, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-occlusion.obj"
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		},
+		{
+			"name": "PawnGeometry",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.25, 0, 0, 0,
+						0, 0, 0.25, 0,
+						0, -0.25, 0, 0,
+						-5, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-pawn.obj",
+					"computeBoundingSphere": true
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		},
+		{
+			"name": "PawnGeometry",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.25, 0, 0, 0,
+						0, 0, 0.25, 0,
+						0, -0.25, 0, 0,
+						-2, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-pawn.obj",
+					"computeBoundingSphere": true
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		},
+		{
+			"name": "PawnGeometry",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.25, 0, 0, 0,
+						0, 0, 0.25, 0,
+						0, -0.25, 0, 0,
+						0, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-pawn.obj",
+					"computeBoundingSphere": true
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		},
+		{
+			"name": "PawnGeometry",
+			"type": "RuntimeObject",
+			"behaviors": [
+				{
+					"type": "TransformBehavior",
+					"modelMatrix": [
+						0.25, 0, 0, 0,
+						0, 0, 0.25, 0,
+						0, -0.25, 0, 0,
+						2, 0, 0, 1
+					]
+				},
+				{
+					"type": "MeshDataBehavior",
+					"filename": "hzb-test-scene-pawn.obj",
+					"computeBoundingSphere": true
+				},
+				{
+					"type": "MeshRenderer",
+					"shader": "Mesh"
+				}
+			]
+		}
+	]
+}}

@@ -1,0 +1,24 @@
+[submodule "src/External/glfw"]
+	path = src/External/glfw
+	url = https://github.com/glfw/glfw
+[submodule "src/External/glad"]
+	path = src/External/glad
+	url = https://github.com/Dav1dde/glad
+[submodule "src/External/imgui"]
+	path = src/External/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "src/External/glm"]
+	path = src/External/glm
+	url = https://github.com/g-truc/glm
+[submodule "src/External/rapidjson"]
+	path = src/External/rapidjson
+	url = https://github.com/Tencent/rapidjson/
+[submodule "src/External/tinyobjloader"]
+	path = src/External/tinyobjloader
+	url = https://github.com/syoyo/tinyobjloader
+[submodule "src/External/tinyexr"]
+	path = src/External/tinyexr
+	url = https://github.com/syoyo/tinyexr
+[submodule "src/External/modernglad"]
+	path = src/External/modernglad
+	url = https://github.com/eliemichel/ModernGlad
