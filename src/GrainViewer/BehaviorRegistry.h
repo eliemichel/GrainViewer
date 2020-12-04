@@ -1,5 +1,10 @@
 /**
- * This file is part of GrainViewer
+ * This file is part of GrainViewer, the reference implementation of:
+ *
+ *   Michel, Élie and Boubekeur, Tamy (2020).
+ *   Real Time Multiscale Rendering of Dense Dynamic Stackings,
+ *   Computer Graphics Forum (Proc. Pacific Graphics 2020), 39: 169-179.
+ *   https://doi.org/10.1111/cgf.14135
  *
  * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
  *
@@ -39,14 +44,18 @@ public:
 	 * Add a behavior to a RuntimeObject shared pointer
 	 * TODO: Find a way to avoid this function
 	 */
-	static void addBehavior(std::shared_ptr<Behavior> & b, std::shared_ptr<RuntimeObject> & obj, const std::string & type);
+	static void addBehavior(
+		std::shared_ptr<Behavior> & b,
+		std::shared_ptr<RuntimeObject> & obj,
+		const std::string & type
+	);
 
-    /**
-     * TODO: Our component system does not play along well with inheritance, hence
-     * this registry that emulates something that would ideally be like
-     * getComponent<IPointCloudData>()
-     */
-    static std::weak_ptr<IPointCloudData> getPointCloudDataComponent(
-        Behavior& behavior,
-        PointCloudSplitter::RenderModel preferedModel = PointCloudSplitter::RenderModel::None);
+	/**
+	 * TODO: Our component system does not play along well with inheritance, hence
+	 * this registry that emulates something that would ideally be like
+	 * getComponent<IPointCloudData>()
+	 */
+	static std::weak_ptr<IPointCloudData> getPointCloudDataComponent(
+		Behavior& behavior,
+		PointCloudSplitter::RenderModel preferedModel = PointCloudSplitter::RenderModel::None);
 };

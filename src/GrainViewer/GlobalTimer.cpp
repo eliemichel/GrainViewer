@@ -1,5 +1,10 @@
 ﻿/**
- * This file is part of GrainViewer
+ * This file is part of GrainViewer, the reference implementation of:
+ *
+ *   Michel, Élie and Boubekeur, Tamy (2020).
+ *   Real Time Multiscale Rendering of Dense Dynamic Stackings,
+ *   Computer Graphics Forum (Proc. Pacific Graphics 2020), 39: 169-179.
+ *   https://doi.org/10.1111/cgf.14135
  *
  * Copyright (c) 2017 - 2020 -- Télécom Paris (Élie Michel <elie.michel@telecom-paris.fr>)
  *
