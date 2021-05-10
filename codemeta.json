@@ -1,0 +1,53 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/MIT",
+    "codeRepository": "git+https://github.com/eliemichel/GrainViewer",
+    "dateCreated": "2017-06-01",
+    "datePublished": "2020-12-04",
+    "dateModified": "2020-12-04",
+    "downloadUrl": "https://github.com/eliemichel/GrainViewer/releases/tag/v1.0.0",
+    "issueTracker": "https://github.com/eliemichel/GrainViewer/issues",
+    "name": "Grain Viewer",
+    "version": "1.0.0",
+    "identifier": "10.1111/cgf.14135",
+    "description": "Real-time multi-scale renderer of fully dynamic dense grain stackings.",
+    "applicationCategory": "Computer Graphics",
+    "releaseNotes": "Initial release",
+    "developmentStatus": "inactive",
+    "referencePublication": "https://doi.org/10.1111/cgf.14135",
+    "keywords": [
+        "real-time",
+        "level-of-detail",
+        "rendering",
+        "computer graphics"
+    ],
+    "programmingLanguage": [
+        "C++"
+    ],
+    "operatingSystem": [
+        "Window",
+        "linux"
+    ],
+    "softwareRequirements": [
+        "Python 3",
+        "CMake 3.7",
+        "C++17"
+    ],
+    "relatedLink": [
+        "https://perso.telecom-paristech.fr/boubek/papers/RTStacking/"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "https://orcid.org/0000-0002-2147-3427",
+            "givenName": "Élie",
+            "familyName": "Michel",
+            "email": "elie.michel@telecom-paris.fr",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "LTCI, Télécom Paris, Institut Polytechnique de Paris"
+            }
+        }
+    ]
+}
