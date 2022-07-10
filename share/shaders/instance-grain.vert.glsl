@@ -24,6 +24,7 @@ out VertexData {
     vec2 uv;
     flat uint materialId;
     vec3 baseColor;
+    flat uint id;
 } vert;
 
 uniform mat4 modelMatrix;
@@ -72,6 +73,7 @@ void main() {
     vert.uv = vec2(uv.x, 1.-uv.y);
     vert.materialId = materialId;
     vert.baseColor = proceduralColor(vert.position_ws, pointId);
+    vert.id = pointId;
     
     gl_Position = projectionMatrix * viewMatrix * vec4(vert.position_ws, 1.0);
 }

@@ -1,7 +1,7 @@
 #version 450 core
 #include "sys:defines"
 
-#pragma varopt PASS_BLIT_TO_MAIN_FBO
+#pragma varopt PASS_BLIT_TO_MAIN_FBO PASS_SHADOW_MAP
 #pragma opt PRECOMPUTE_IN_VERTEX
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,6 +99,8 @@ void main() {
     geo.id = animPointId%20; // WTF?
     geo.gs_from_ws = randomGrainMatrix(int(geo.id), geo.position_ws);
 
+    #if defined(PASS_SHADOW_MAP)
+    #else
 	if (uPrerenderSurface && uUseOcclusionMap) {
 		vec2 fragCoord = resolution.xy * (gl_Position.xy / gl_Position.w * 0.5 + 0.5);
 		fragCoord = clamp(fragCoord, vec2(0.5), resolution.xy - vec2(0.5));
@@ -108,6 +110,7 @@ void main() {
 		if (uPrerenderSurfaceStep == 0 && isSurface) return;
 		if (uPrerenderSurfaceStep == 1 && !isSurface) return;
 	}
+	#endif // PASS_SHADOW_MAP
 
 #ifdef PRECOMPUTE_IN_VERTEX
 	Ray ray_ws;

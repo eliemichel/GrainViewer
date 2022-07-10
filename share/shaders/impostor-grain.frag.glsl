@@ -12,6 +12,7 @@
 
 //#define MIXEDHIT_SAMPLING
 //#define SPHEREHIT_SAMPLING
+//#define PROCEDURAL_BASECOLOR
 
 uniform bool uDebugRenderType = false;
 uniform vec3 uDebugRenderColor = vec3(150.0/255.0, 231.0/255.0, 12.0/255.0);
@@ -165,7 +166,7 @@ void main() {
 #if defined(PASS_SHADOW_MAP) && !defined(SET_DEPTH)
 	// Early quit for shadow maps unless we alter fragment depth
 	vec3 v;
-	if (!intersectRaySphere(v, ray_ws, geo.position_ws.xyz, geo.radius*2)) {
+	if (!intersectRaySphere(v, ray_ws, geo.position_ws.xyz, geo.radius)) {
 		discard;
 	}
 	return;
@@ -204,6 +205,9 @@ void main() {
 	}
 	else if (isUsingProceduralColor()) {
 		fragment.baseColor = proceduralColor(geo.position_ws.xyz, geo.id);
+		//float r = randomGrainColorFactor(int(geo.id));
+		//float s = randomGrainColorFactor(int(geo.id) + 436);
+		//fragment.baseColor += vec3(r - 0.1, s - 0.5, 0.0) * 0.05;
 	}
 
 	pack(fragment);
