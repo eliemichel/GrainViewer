@@ -38,11 +38,15 @@
 #include "ShadowMap.h"
 #include "RuntimeObject.h"
 #include "RenderType.h"
+#include "AnimationManager.h"
+
+#include <glm/gtc/type_ptr.hpp>
+#include <fstream>
 
 World::World()
 {}
 
-bool World::deserialize(const rapidjson::Value & json)
+bool World::deserialize(const rapidjson::Value & json, std::shared_ptr<AnimationManager> animations)
 {
 	bool valid;
 
@@ -96,9 +100,15 @@ bool World::deserialize(const rapidjson::Value & json)
 
 			if (!l.HasMember("position")) { ERR_LOG << "light requires a position"; continue; }
 			const rapidjson::Value& p = l["position"];
-			valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
-			if (!valid) { ERR_LOG << "light position must be an array of 3 numbers"; continue; }
-			glm::vec3 pos = glm::vec3(p[0].GetFloat(), p[1].GetFloat(), p[2].GetFloat());
+			glm::vec3 pos = glm::vec3(0.0);
+			bool usePositionBuffer = p.IsObject() && p.HasMember("buffer") && animations;
+			if (usePositionBuffer) {
+				// Will load later, once light object is allocated
+			} else {
+				valid = p.IsArray() && p.Size() == 3 && p[0].IsNumber() && p[1].IsNumber() && p[2].IsNumber();
+				if (!valid) { ERR_LOG << "light position must be an array of 3 numbers, or an object with a 'buffer' field"; continue; }
+				pos = glm::vec3(p[0].GetFloat(), p[1].GetFloat(), p[2].GetFloat());
+			}
 
 			if (!l.HasMember("color")) { ERR_LOG << "light requires a color"; continue; }
 			const rapidjson::Value& c = l["color"];
@@ -120,9 +130,45 @@ bool World::deserialize(const rapidjson::Value & json)
 			float shadowMapFar;
 			jrOption(l, "shadowMapFar", shadowMapFar, 20.0f);
 
+			bool isTurning;
+			jrOption(l, "isTurning", isTurning, false);
+
 			// Add light
-			auto light = std::make_shared<Light>(pos, col, shadowMapSize, isShadowMapRich, hasShadowMap);
+			auto light =
+				isTurning
+				? std::make_shared<TurningLight>(pos, col, shadowMapSize, isShadowMapRich, hasShadowMap)
+				: std::make_shared<Light>(pos, col, shadowMapSize, isShadowMapRich, hasShadowMap);
 			light->shadowMap().setProjection(shadowMapFov, shadowMapNear, shadowMapFar);
+
+			if (usePositionBuffer) {
+				std::string path = ResourceManager::resolveResourcePath(p["buffer"].GetString());
+				LOG << "Loading light movement from " << path << "...";
+
+				std::ifstream file(path, std::ios::binary | std::ios::ate);
+				if (!file.is_open()) {
+					ERR_LOG << "Could not open position buffer file: " << path;
+					return false;
+				}
+				std::streamsize size = file.tellg() / sizeof(float);
+				if (size % 3 != 0) {
+					ERR_LOG << "position buffer size must be a multiple of 3 (in file " << path << ")";
+					return false;
+				}
+				file.seekg(0, std::ios::beg);
+				std::shared_ptr<float[]> buffer(new float[size]);
+				if (!file.read(reinterpret_cast<char*>(buffer.get()), size * sizeof(float))) {
+					ERR_LOG << "Could not read position buffer from file: " << path;
+					return false;
+				}
+
+				int startFrame = p.HasMember("startFrame") ? p["startFrame"].GetInt() : 0;
+				int frameCount = static_cast<int>(size) / 3 - 1;
+				animations->addAnimation([startFrame, frameCount, buffer, light](float time, int frame) {
+					glm::vec3 position = glm::make_vec3(buffer.get() + 3 * (frame - startFrame) % frameCount);
+					light->setPosition(position);
+				});
+			}
+
 			m_lights.push_back(light);
 		}
 	}

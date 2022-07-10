@@ -98,7 +98,7 @@ bool Scene::load(const std::string & filename)
 		}
 	}
 
-	if (!m_world->deserialize(root)) { // look at both root["world"] and root["lights"]
+	if (!m_world->deserialize(root, m_animationManager)) { // look at both root["world"] and root["lights"]
 		return false;
 	}
 	m_world->start();

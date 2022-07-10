@@ -41,6 +41,7 @@
 class Light;
 class ShaderProgram;
 class RuntimeObject;
+class AnimationManager;
 
 /**
  * Contains all lighting information for a render
@@ -48,7 +49,7 @@ class RuntimeObject;
 class World {
 public:
 	World();
-	bool deserialize(const rapidjson::Value & json);
+	bool deserialize(const rapidjson::Value & json, std::shared_ptr<AnimationManager> animations);
 	void start();
 	void update(float time);
 	void reloadShaders();

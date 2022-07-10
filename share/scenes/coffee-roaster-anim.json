@@ -119,7 +119,7 @@
 					"shader": "GrainSplit",
 					"occlusionCullingShader": "GrainSplitOcclusionPrepass",
 					"instanceLimit": 1.6,
-					"impostorLimit": 10.0
+					"impostorLimit": 20.0
 				},
 				{
 					"type": "InstanceGrainRenderer",

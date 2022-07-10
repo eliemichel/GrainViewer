@@ -390,14 +390,14 @@ void Camera::deserialize(const rapidjson::Value & json, const EnvironmentVariabl
 					return;
 				}
 				std::streamsize size = file.tellg() / sizeof(float);
+				if (size % 16 != 0) {
+					ERR_LOG << "viewMatrix buffer size must be a multiple of 16 (in file " << path << ")";
+					return;
+				}
 				file.seekg(0, std::ios::beg);
 				std::shared_ptr<float[]> buffer(new float[size]);
 				if (!file.read(reinterpret_cast<char*>(buffer.get()), size * sizeof(float))) {
 					ERR_LOG << "Could not read viewMatrix buffer from file: " << path;
-					return;
-				}
-				if (size % 16 != 0) {
-					ERR_LOG << "viewMatrix buffer size must be a multiple of 16 (in file " << path << ")";
 					return;
 				}
 
