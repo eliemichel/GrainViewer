@@ -46,7 +46,7 @@ def lookFrom(p):
     y = z.cross(x).normalized()
     return Matrix.Translation(p) @ Matrix([x, y, z]).transposed().to_4x4()
 
-def import_camera_mesh(context, filename):
+def import_camera_mesh(context, filename, scale=1.0):
     camera = context.scene.camera
 
     for i, line in enumerate(open(filename, 'r')):
@@ -55,7 +55,7 @@ def import_camera_mesh(context, filename):
             print("Unable to parse line: %s " % line)
             exit(1)
 
-        p = Vector(coords)
+        p = Vector(coords) * scale
         camera.matrix_world = lookFrom(p)
         camera.keyframe_insert(data_path="location", frame=i)
         camera.keyframe_insert(data_path="rotation_euler", frame=i)
@@ -64,7 +64,7 @@ def import_camera_mesh(context, filename):
 
 
 from bpy_extras.io_utils import ImportHelper
-from bpy.props import StringProperty, BoolProperty, EnumProperty
+from bpy.props import StringProperty, BoolProperty, EnumProperty, FloatProperty
 from bpy.types import Operator
 
 
@@ -80,9 +80,15 @@ class ImportCameraMesh(Operator, ImportHelper):
         options={'HIDDEN'},
         maxlen=255,  # Max internal buffer length, longer would be clamped.
     )
+    
+    scale: FloatProperty(
+        name="Scale",
+        description="Multiply positions by this factor",
+        default=1.0,
+    )
 
     def execute(self, context):
-        return import_camera_mesh(context, self.filepath)
+        return import_camera_mesh(context, self.filepath, scale=self.scale)
 
 
 def menu_func_import(self, context):
